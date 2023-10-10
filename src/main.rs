@@ -1,21 +1,21 @@
 mod composer;
+mod key_event_sequence;
 mod keyboard_hook;
+mod keyboard_layout;
+mod sequence;
+mod settings;
 
 use windows::{
     core::Result,
-    Win32::UI::WindowsAndMessaging::{DispatchMessageW, GetMessageW, TranslateMessage, MSG},
+    Win32::UI::WindowsAndMessaging::{DispatchMessageA, GetMessageA, TranslateMessage, MSG},
 };
 
-use keyboard_hook::KeyboardHook;
-
 fn run() -> Result<()> {
-    let kb_hook = KeyboardHook::new()?;
-
     let mut msg = MSG::default();
     unsafe {
-        while GetMessageW(&mut msg, None, 0, 0).into() {
+        while GetMessageA(&mut msg, None, 0, 0).into() {
             TranslateMessage(&msg);
-            DispatchMessageW(&msg);
+            DispatchMessageA(&msg);
         }
     }
 
