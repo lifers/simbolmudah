@@ -12,7 +12,10 @@ use windows::Win32::{
     },
 };
 
-use crate::keyboard_controller::{compose_sequence, push_input, search_sequence, send_back};
+use crate::{
+    composer::ComposeError,
+    keyboard_controller::{compose_sequence, push_input, search_sequence, send_back, send_string, clear_input},
+};
 
 thread_local! {
     /// STAGE variable controls how low_level_keyboard_proc behave.
@@ -80,10 +83,17 @@ impl KeyboardHook {
             _ => false,
         };
         let kb_hook = lparam.0 as *const KBDLLHOOKSTRUCT;
-        let is_injected = (*kb_hook).flags.0 | LLKHF_INJECTED.0 != 0;
+        let is_injected = (*kb_hook).flags.0 & LLKHF_INJECTED.0 != 0;
+        // dbg!((*kb_hook).vkCode);
+        // dbg!(is_key);
+        // dbg!((*kb_hook).flags.0 & LLKHF_INJECTED.0);
 
         if ncode == HC_ACTION as i32 && is_key && !is_injected {
             let compose_stage = STAGE.get();
+
+            dbg!(compose_stage);
+            dbg!(wparamu);
+            dbg!((*kb_hook).vkCode);
             push_input(&(*kb_hook));
 
             match compose_stage {
@@ -93,7 +103,7 @@ impl KeyboardHook {
                         return LRESULT(1);
                     } else {
                         // Do nothing
-                        send_back(0).unwrap();
+                        clear_input();
                     }
                 }
                 1 => {
@@ -111,7 +121,16 @@ impl KeyboardHook {
                     } else {
                         STAGE.set(254);
                         // send to sequence tree
-                        compose_sequence(true, &(*kb_hook));
+                        match compose_sequence(true, &(*kb_hook)) {
+                            Ok(c) => {
+                                send_string(c.to_string().into()).unwrap();
+                            }
+                            Err(ComposeError::NotFound) => {
+                                send_back(0).unwrap();
+                                STAGE.set(0);
+                            }
+                            Err(ComposeError::Incomplete) => {}
+                        };
                     }
                     return LRESULT(1);
                 }
@@ -121,13 +140,32 @@ impl KeyboardHook {
                     } else {
                         STAGE.set(254);
                         // send to sequence tree
-                        compose_sequence(true, &(*kb_hook));
+                        match compose_sequence(true, &(*kb_hook)) {
+                            Ok(c) => {
+                                send_string(c.to_string().into()).unwrap();
+                            }
+                            Err(ComposeError::NotFound) => {
+                                send_back(0).unwrap();
+                                STAGE.set(0);
+                            }
+                            Err(ComposeError::Incomplete) => {}
+                        };
                     }
                     return LRESULT(1);
                 }
                 254 => {
                     // send to sequence tree
-                    compose_sequence(false, &(*kb_hook));
+                    match compose_sequence(true, &(*kb_hook)) {
+                        Ok(c) => {
+                            send_string(c.to_string().into()).unwrap();
+                        }
+                        Err(ComposeError::NotFound) => {
+                            send_back(0).unwrap();
+                            STAGE.set(0);
+                        }
+                        Err(ComposeError::Incomplete) => {}
+                    };
+                    return LRESULT(1);
                 }
                 255 => {
                     //send to search engine

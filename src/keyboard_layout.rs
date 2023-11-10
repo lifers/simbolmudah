@@ -16,15 +16,15 @@ use windows::Win32::UI::{
 };
 
 thread_local! {
-    static POSSIBLE_DEAD_KEYS: RefCell<HashMap<OsString, u16>> = RefCell::new(HashMap::new());
-    static POSSIBLE_ALTGR_KEYS: RefCell<HashMap<OsString, OsString>> = RefCell::new(HashMap::new());
+    static POSSIBLE_DEAD_KEYS: RefCell<HashMap<char, u16>> = RefCell::new(HashMap::new());
+    static POSSIBLE_ALTGR_KEYS: RefCell<HashMap<char, char>> = RefCell::new(HashMap::new());
     static SAVED_DEAD_KEY: Cell<u16> = Cell::new(Default::default());
     static CURRENT_LAYOUT: Cell<HKL> = Cell::new(Default::default());
 }
 
 #[derive(Debug)]
 pub enum ParseVKError {
-    DeadKey(OsString),
+    DeadKey(char),
     NoTranslation,
     InvalidUnicode,
 }
@@ -32,7 +32,7 @@ pub enum ParseVKError {
 impl Display for ParseVKError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ParseVKError::DeadKey(x) => write!(f, "Dead key is {:?}", x),
+            ParseVKError::DeadKey(x) => write!(f, "Dead key is {x}"),
             ParseVKError::NoTranslation => write!(f, "No VK translation available"),
             ParseVKError::InvalidUnicode => write!(f, "Invalid Unicode produced by ToUnicodeEx"),
         }
@@ -46,7 +46,7 @@ pub fn vk_to_unicode(
     scan_code: u32,
     keystate: &[u8; 256],
     flags: u32,
-) -> Result<OsString, ParseVKError> {
+) -> Result<char, ParseVKError> {
     let mut buffer = [0; 8];
     let status = unsafe {
         ToUnicodeEx(
@@ -74,11 +74,12 @@ pub fn vk_to_unicode(
 
     if status == 0 {
         Err(ParseVKError::NoTranslation)
-    } else if let Ok(ret) = OsString::from_wide(&buffer).into_string() {
+    } else if let Ok(s) = OsString::from_wide(&buffer).into_string() {
+        let fchar = s.chars().next().unwrap();
         if status < 0 {
-            Err(ParseVKError::DeadKey(ret.into()))
+            Err(ParseVKError::DeadKey(fchar))
         } else {
-            Ok(ret.into())
+            Ok(fchar)
         }
     } else {
         Err(ParseVKError::InvalidUnicode)
@@ -93,7 +94,7 @@ fn to_unicode_ex_clear_buffer() {
 pub fn analyze_layout() {
     CURRENT_LAYOUT.set(unsafe { GetKeyboardLayout(0) });
 
-    let mut no_altgr = vec![OsString::new(); 0x200];
+    let mut no_altgr = ['\0'; 0x200];
     let mut state = [0u8; 256];
     const FT: &[bool; 2] = &[true, false];
 
@@ -122,9 +123,8 @@ pub fn analyze_layout() {
 
         if let Ok(x) = curr {
             if *has_altgr {
-                if no_altgr[altgr_codepoint] != "" && no_altgr[altgr_codepoint] != x {
-                    POSSIBLE_ALTGR_KEYS
-                        .with_borrow_mut(|m| m.insert(no_altgr[altgr_codepoint].clone(), x));
+                if no_altgr[altgr_codepoint] != '\0' && no_altgr[altgr_codepoint] != x {
+                    POSSIBLE_ALTGR_KEYS.with_borrow_mut(|m| m.insert(no_altgr[altgr_codepoint], x));
                 }
             } else {
                 no_altgr[altgr_codepoint] = x;

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ffi::OsString, cell::RefCell};
+use std::{cell::RefCell, collections::HashMap};
 
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     VIRTUAL_KEY, VK_BACK, VK_CONTROL, VK_DELETE, VK_DOWN, VK_END, VK_HOME, VK_LCONTROL, VK_LEFT,
@@ -29,7 +29,7 @@ thread_local! {
 #[derive(PartialEq, Eq)]
 pub enum Key {
     VirtualKey(VIRTUAL_KEY),
-    String(OsString),
+    Char(char),
 }
 
 impl Key {

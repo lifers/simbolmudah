@@ -1,19 +1,14 @@
 use std::{cell::RefCell, ffi::OsString, mem::size_of, os::windows::prelude::OsStrExt};
 
-use windows::{
-    core::Result,
-    Win32::{
-        Foundation::GetLastError,
-        UI::{
-            Input::KeyboardAndMouse::{
-                GetKeyboardState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
-                KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, KEYEVENTF_UNICODE,
-                VIRTUAL_KEY,
-            },
-            WindowsAndMessaging::{
-                KBDLLHOOKSTRUCT, KBDLLHOOKSTRUCT_FLAGS, LLKHF_EXTENDED, LLKHF_UP,
-            },
+use windows::Win32::{
+    Foundation::GetLastError,
+    UI::{
+        Input::KeyboardAndMouse::{
+            GetKeyboardState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
+            KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, KEYEVENTF_UNICODE,
+            VIRTUAL_KEY,
         },
+        WindowsAndMessaging::{KBDLLHOOKSTRUCT, KBDLLHOOKSTRUCT_FLAGS, LLKHF_EXTENDED, LLKHF_UP},
     },
 };
 
@@ -51,7 +46,11 @@ pub fn push_input(event: &KBDLLHOOKSTRUCT) {
     STORED_SEQUENCE.with_borrow_mut(|v| v.push(input));
 }
 
-fn send(out: &[INPUT]) -> Result<()> {
+pub fn clear_input() {
+    let _ = STORED_SEQUENCE.take();
+}
+
+fn send(out: &[INPUT]) -> windows::core::Result<()> {
     unsafe {
         if SendInput(&out, size_of::<INPUT>() as i32) != out.len() as u32 {
             GetLastError()
@@ -61,12 +60,12 @@ fn send(out: &[INPUT]) -> Result<()> {
     }
 }
 
-pub fn send_back(skip: usize) -> Result<()> {
+pub fn send_back(skip: usize) -> windows::core::Result<()> {
     let out = STORED_SEQUENCE.take();
     send(&out[skip..])
 }
 
-fn send_string(str: OsString) -> Result<()> {
+pub fn send_string(str: OsString) -> windows::core::Result<()> {
     let out: Vec<_> = str
         .encode_wide()
         .flat_map(|c| {
@@ -96,10 +95,12 @@ fn send_string(str: OsString) -> Result<()> {
             ]
         })
         .collect();
+
+    clear_input();
     send(&out)
 }
 
-pub fn compose_sequence(new: bool, event: &KBDLLHOOKSTRUCT) {
+pub fn compose_sequence(new: bool, event: &KBDLLHOOKSTRUCT) -> Result<char, ComposeError> {
     if new {
         analyze_layout();
     }
@@ -108,22 +109,21 @@ pub fn compose_sequence(new: bool, event: &KBDLLHOOKSTRUCT) {
 
     let vk = event.vkCode as u16;
     match vk_to_unicode(VIRTUAL_KEY(vk), event.scanCode, &mut keystate, 0) {
-        Ok(s) => CONVERTED_SEQUENCE.with_borrow_mut(|v| v.push(Key::String(s))),
+        Ok(s) => CONVERTED_SEQUENCE.with_borrow_mut(|v| v.push(Key::Char(s))),
         Err(ParseVKError::DeadKey(s)) => {
-            CONVERTED_SEQUENCE.with_borrow_mut(|v| v.push(Key::String(s)))
+            CONVERTED_SEQUENCE.with_borrow_mut(|v| v.push(Key::Char(s)))
         }
         Err(ParseVKError::NoTranslation) => {
             CONVERTED_SEQUENCE.with_borrow_mut(|v| v.push(Key::VirtualKey(VIRTUAL_KEY(vk))))
         }
-        Err(ParseVKError::InvalidUnicode) => {}
+        Err(ParseVKError::InvalidUnicode) => {
+            panic!("invalid unicode")
+        }
     };
-    match search(CONVERTED_SEQUENCE.take()) {
-        Ok(s) => send_string(s).unwrap(),
-        Err(ComposeError::NotFound) => send_back(0).unwrap(),
-        Err(ComposeError::Incomplete) => {}
-    };
+
+    search(CONVERTED_SEQUENCE.take())
 }
 
-pub fn search_sequence() -> Result<()> {
+pub fn search_sequence() -> windows::core::Result<()> {
     Ok(())
 }

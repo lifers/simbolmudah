@@ -9,22 +9,14 @@ pub enum ComposeError {
     NotFound,
 }
 
-pub fn search(seq: KeySequence) -> Result<OsString, ComposeError> {
-    let ans = vec![
-        Key::VirtualKey(VK_MENU),
-        Key::String("o".into()),
-        Key::String("e".into()),
-    ];
-    let ans2 = vec![
-        Key::VirtualKey(VK_MENU),
-        Key::String(">".into()),
-        Key::String("=".into()),
-    ];
+pub fn search(seq: KeySequence) -> Result<char, ComposeError> {
+    let ans = vec![Key::VirtualKey(VK_MENU), Key::Char('o'), Key::Char('e')];
+    let ans2 = vec![Key::VirtualKey(VK_MENU), Key::Char('>'), Key::Char('=')];
 
     if seq == ans {
-        Ok("œ".into())
+        Ok('œ')
     } else if seq == ans2 {
-        Ok("≥".into())
+        Ok('≥')
     } else {
         Err(ComposeError::NotFound)
     }
