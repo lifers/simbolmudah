@@ -26,7 +26,7 @@ thread_local! {
     });
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum Key {
     VirtualKey(VIRTUAL_KEY),
     Char(char),
