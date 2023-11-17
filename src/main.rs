@@ -1,7 +1,9 @@
+mod character_sender;
 mod composer;
 mod keyboard_controller;
 mod keyboard_hook;
 mod keyboard_layout;
+mod keysym_reader;
 mod sequence;
 mod settings;
 

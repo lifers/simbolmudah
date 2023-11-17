@@ -1,20 +1,18 @@
-use std::{cell::RefCell, ffi::OsString, mem::size_of, os::windows::prelude::OsStrExt};
+use std::cell::RefCell;
 
-use windows::Win32::{
-    Foundation::GetLastError,
-    UI::{
-        Input::KeyboardAndMouse::{
-            GetKeyboardState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
-            KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, KEYEVENTF_UNICODE,
-            VIRTUAL_KEY,
-        },
-        WindowsAndMessaging::{KBDLLHOOKSTRUCT, KBDLLHOOKSTRUCT_FLAGS, LLKHF_EXTENDED, LLKHF_UP},
+use windows::Win32::UI::{
+    Input::KeyboardAndMouse::{
+        GetKeyboardState, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY,
+        KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, VIRTUAL_KEY, VK_CAPITAL, VK_CONTROL, VK_MENU,
+        VK_SHIFT,
     },
+    WindowsAndMessaging::{KBDLLHOOKSTRUCT, KBDLLHOOKSTRUCT_FLAGS, LLKHF_EXTENDED, LLKHF_UP},
 };
 
 use crate::{
+    character_sender::send,
     composer::{search, ComposeError},
-    keyboard_layout::{analyze_layout, vk_to_unicode, ParseVKError},
+    keyboard_layout::{vk_to_unicode, ParseVKError},
     sequence::{key::Key, key_sequence::KeySequence},
 };
 
@@ -50,80 +48,63 @@ pub fn clear_input() {
     let _ = STORED_SEQUENCE.take();
 }
 
-fn send(out: &[INPUT]) -> windows::core::Result<()> {
-    unsafe {
-        if SendInput(&out, size_of::<INPUT>() as i32) != out.len() as u32 {
-            GetLastError()
-        } else {
-            Ok(())
-        }
-    }
-}
-
-pub fn send_back(skip: usize) -> windows::core::Result<()> {
+pub fn abort_control(skip: usize) -> windows::core::Result<()> {
     let out = STORED_SEQUENCE.take();
     send(&out[skip..])
 }
 
-pub fn send_string(str: OsString) -> windows::core::Result<()> {
-    let out: Vec<_> = str
-        .encode_wide()
-        .flat_map(|c| {
-            vec![
-                INPUT {
-                    r#type: INPUT_KEYBOARD,
-                    Anonymous: INPUT_0 {
-                        ki: KEYBDINPUT {
-                            wVk: VIRTUAL_KEY(c),
-                            wScan: 0,
-                            dwFlags: KEYEVENTF_UNICODE,
-                            ..Default::default()
-                        },
-                    },
-                },
-                INPUT {
-                    r#type: INPUT_KEYBOARD,
-                    Anonymous: INPUT_0 {
-                        ki: KEYBDINPUT {
-                            wVk: VIRTUAL_KEY(c),
-                            wScan: 0,
-                            dwFlags: KEYEVENTF_UNICODE | KEYEVENTF_KEYUP,
-                            ..Default::default()
-                        },
-                    },
-                },
-            ]
-        })
-        .collect();
-
-    clear_input();
-    send(&out)
-}
-
-pub fn compose_sequence(new: bool, event: &KBDLLHOOKSTRUCT) -> Result<char, ComposeError> {
-    if new {
-        analyze_layout();
-    }
+pub fn compose_sequence(
+    event: &KBDLLHOOKSTRUCT,
+    has_shift: bool,
+    has_altgr: bool,
+    has_capslock: bool,
+) -> Result<char, ComposeError> {
     let mut keystate = [0; 256];
     unsafe { GetKeyboardState(&mut keystate).unwrap() };
 
+    keystate[VK_SHIFT.0 as usize] = if has_shift { 0x80 } else { 0 };
+    keystate[VK_CONTROL.0 as usize] = if has_altgr { 0x80 } else { 0 };
+    keystate[VK_MENU.0 as usize] = if has_altgr { 0x80 } else { 0 };
+    keystate[VK_CAPITAL.0 as usize] = if has_capslock { 1 } else { 0 };
+
     let vk = event.vkCode as u16;
-    match vk_to_unicode(VIRTUAL_KEY(vk), event.scanCode, &mut keystate, 0) {
+    match vk_to_unicode(VIRTUAL_KEY(vk), event.scanCode, &keystate, 4) {
         Ok(s) => CONVERTED_SEQUENCE.with_borrow_mut(|v| v.push(Key::Char(s))),
         Err(ParseVKError::DeadKey(s)) => {
-            CONVERTED_SEQUENCE.with_borrow_mut(|v| v.push(Key::Char(s)))
+            CONVERTED_SEQUENCE.with_borrow_mut(|v| v.push(Key::Char(s)));
         }
         Err(ParseVKError::NoTranslation) => {
-            CONVERTED_SEQUENCE.with_borrow_mut(|v| v.push(Key::VirtualKey(VIRTUAL_KEY(vk))))
+            return Err(ComposeError::Incomplete);
+            // CONVERTED_SEQUENCE.with_borrow_mut(|v| v.push(Key::VirtualKey(VIRTUAL_KEY(vk))))
         }
         Err(ParseVKError::InvalidUnicode) => {
-            panic!("invalid unicode")
+            panic!("invalid unicode");
         }
     };
 
-    search(CONVERTED_SEQUENCE.take())
+    CONVERTED_SEQUENCE.with_borrow(|v| println!("{:?}", v));
+    let mut res = Err(ComposeError::Incomplete);
+    CONVERTED_SEQUENCE.with_borrow(|v| res = search(v));
+    if res == Err(ComposeError::NotFound) || res.is_ok() {
+        CONVERTED_SEQUENCE.with_borrow_mut(|v| v.clear());
+    }
+    dbg!(res)
 }
 
 pub fn search_sequence() -> windows::core::Result<()> {
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{ffi::OsString, os::windows::ffi::OsStrExt};
+
+    #[test]
+    fn char_to_os_string() {
+        let c = 'œ';
+        let s: OsString = c.to_string().into();
+        let s: Vec<_> = s.encode_wide().collect();
+        let ans = [339];
+        assert_eq!(s, ans);
+    }
 }
