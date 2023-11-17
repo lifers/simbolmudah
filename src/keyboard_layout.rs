@@ -87,8 +87,8 @@ pub fn vk_to_unicode(
 }
 
 fn to_unicode_ex_clear_buffer() {
-    let _ = vk_to_unicode(VK_SPACE, 0, &[0; 256], 0);
-    let _ = vk_to_unicode(VK_SPACE, 0, &[0; 256], 0);
+    let _ = vk_to_unicode(VK_SPACE, 0, &[0; 256], 4);
+    let _ = vk_to_unicode(VK_SPACE, 0, &[0; 256], 4);
 }
 
 pub fn analyze_layout() {
@@ -113,7 +113,7 @@ pub fn analyze_layout() {
             state[VK_SHIFT.0 as usize] = 0x00;
         }
 
-        let curr = vk_to_unicode(VIRTUAL_KEY(codepoint), 0, &state, 0);
+        let curr = vk_to_unicode(VIRTUAL_KEY(codepoint), 0, &state, 4);
         to_unicode_ex_clear_buffer();
 
         let altgr_codepoint = match *has_shift {
@@ -139,5 +139,78 @@ pub fn analyze_layout() {
             }
             POSSIBLE_DEAD_KEYS.with_borrow_mut(|m| m.insert(ret, dead_codepoint));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::keyboard_layout::CURRENT_LAYOUT;
+    use windows::Win32::UI::Input::KeyboardAndMouse::{ToUnicodeEx, VK_O};
+
+    #[test]
+    fn test_no_shift_modifier() {
+        let mut buffer = [0; 1];
+        let state = [0; 256];
+        assert_eq!(
+            unsafe {
+                ToUnicodeEx(
+                    VK_O.0.into(),
+                    24,
+                    &state,
+                    &mut buffer,
+                    4,
+                    CURRENT_LAYOUT.get(),
+                )
+            },
+            1
+        );
+
+        assert_eq!(buffer[0], 111);
+    }
+
+    #[test]
+    fn test_shift_pressed_modifier() {
+        let mut buffer = [0; 1];
+        let mut state = [0; 256];
+        state[16] = 0x80;
+        state[160] = 0x80;
+        assert_eq!(
+            unsafe {
+                ToUnicodeEx(
+                    VK_O.0.into(),
+                    24,
+                    &state,
+                    &mut buffer,
+                    4,
+                    CURRENT_LAYOUT.get(),
+                )
+            },
+            1
+        );
+
+        assert_eq!(buffer[0], 79);
+    }
+
+    #[test]
+    fn test_shift_toggled_modifier() {
+        let mut buffer = [0; 1];
+        let mut state = [0; 256];
+        state[16] = 1;
+        state[160] = 1;
+        assert_eq!(
+            unsafe {
+                ToUnicodeEx(
+                    VK_O.0.into(),
+                    24,
+                    &state,
+                    &mut buffer,
+                    4,
+                    CURRENT_LAYOUT.get(),
+                )
+            },
+            1
+        );
+
+        assert_eq!(buffer[0], 79);
     }
 }
