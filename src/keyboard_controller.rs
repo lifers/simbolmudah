@@ -83,8 +83,7 @@ pub fn compose_sequence(
     };
 
     CONVERTED_SEQUENCE.with_borrow(|v| println!("{:?}", v));
-    let mut res = Err(ComposeError::Incomplete);
-    CONVERTED_SEQUENCE.with_borrow(|v| res = search(v));
+    let res = CONVERTED_SEQUENCE.with_borrow(|v| search(v));
     if res == Err(ComposeError::NotFound) || res.is_ok() {
         CONVERTED_SEQUENCE.with_borrow_mut(|v| v.clear());
     }
