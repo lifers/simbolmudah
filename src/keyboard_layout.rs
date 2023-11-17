@@ -165,7 +165,7 @@ mod tests {
             1
         );
 
-        assert_eq!(buffer[0], 111);
+        assert_eq!(buffer[0] as u32, 'o'.into());
     }
 
     #[test]
@@ -188,7 +188,7 @@ mod tests {
             1
         );
 
-        assert_eq!(buffer[0], 79);
+        assert_eq!(buffer[0] as u32, 'O'.into());
     }
 
     #[test]
@@ -211,6 +211,6 @@ mod tests {
             1
         );
 
-        assert_eq!(buffer[0], 79);
+        assert_eq!(buffer[0] as u32, 'o'.into());
     }
 }
