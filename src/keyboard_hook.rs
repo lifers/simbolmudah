@@ -15,11 +15,7 @@ use windows::Win32::{
 };
 
 use crate::{
-    character_sender::send_string,
-    composer::ComposeError,
-    keyboard_controller::{
-        abort_control, clear_input, compose_sequence, push_input, search_sequence,
-    },
+    composer::ComposeError, keyboard_controller::KeyboardController,
     keyboard_layout::analyze_layout,
 };
 
@@ -59,7 +55,7 @@ thread_local! {
 ///
 /// 255: search mode.
 /// same as 254
-/// 
+///
 /// has_shift, has_altgr, has_capslock: indicator whether the previous message was a modifier key
 pub struct KeyboardHook {
     h_hook: HHOOK,
@@ -67,6 +63,7 @@ pub struct KeyboardHook {
     has_shift: bool,
     has_altgr: bool,
     has_capslock: bool,
+    controller: KeyboardController,
 }
 
 impl KeyboardHook {
@@ -84,6 +81,7 @@ impl KeyboardHook {
         let has_shift = false;
         let has_altgr = false;
         let has_capslock = false;
+        let controller = KeyboardController::new();
 
         Self {
             h_hook,
@@ -91,11 +89,12 @@ impl KeyboardHook {
             has_shift,
             has_altgr,
             has_capslock,
+            controller,
         }
     }
 
     fn process_event(&mut self, event: KBDLLHOOKSTRUCT, message: u32) -> Option<LRESULT> {
-        push_input(&event);
+        self.controller.push_input(&event);
 
         match self.stage {
             0 => {
@@ -104,14 +103,14 @@ impl KeyboardHook {
                     return Some(LRESULT(1));
                 } else {
                     // Do nothing
-                    clear_input();
+                    self.controller.clear_input();
                 }
             }
             1 => {
                 if message == WM_KEYUP && event.vkCode == VK_RMENU.0.into() {
                     self.stage = 2;
                 } else {
-                    abort_control(0).unwrap();
+                    self.controller.abort_control(0).unwrap();
                     self.stage = 0;
                 }
                 return Some(LRESULT(1));
@@ -146,7 +145,7 @@ impl KeyboardHook {
             }
             255 => {
                 //send to search engine
-                search_sequence().unwrap();
+                self.controller.search_sequence().unwrap();
             }
             _ => {}
         }
@@ -173,13 +172,18 @@ impl KeyboardHook {
                 self.has_capslock = true;
             }
             _ => {
-                match compose_sequence(event, self.has_shift, self.has_altgr, self.has_capslock) {
+                match self.controller.compose_sequence(
+                    event,
+                    self.has_shift,
+                    self.has_altgr,
+                    self.has_capslock,
+                ) {
                     Ok(c) => {
-                        send_string(c.to_string().into()).unwrap();
+                        self.controller.send_string(c.to_string().into()).unwrap();
                         self.stage = 0;
                     }
                     Err(ComposeError::NotFound) => {
-                        abort_control(2).unwrap();
+                        self.controller.abort_control(2).unwrap();
                         self.stage = 0;
                     }
                     Err(ComposeError::Incomplete) => {}
