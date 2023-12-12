@@ -1,6 +1,6 @@
 use once_cell::unsync::Lazy;
 use regex::Regex;
-use std::{cell::RefCell, collections::HashMap};
+use std::{cell::RefCell, collections::HashMap, fs::{File, OpenOptions}, io::{BufReader, BufRead, BufWriter, Write}};
 
 thread_local! {
     static GENERAL_KEYSYM: RefCell<HashMap<String, u32>> = RefCell::new(HashMap::new());
@@ -19,12 +19,38 @@ thread_local! {
 }
 
 fn get_general_keysym(filename: &str) {
-    todo!()
+    let file = File::open(filename).unwrap();
+    let reader = BufReader::new(file);
+    let output = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open("resource/keylist.txt")
+        .unwrap();
+    let mut writer = BufWriter::new(output);
+    for line in reader.lines() {
+        let line = line.unwrap();
+        GENERAL_REGEX.with(|re| {
+            if let Some(caps) = re.captures(&line) {
+                let name = caps.get(1).unwrap().as_str();
+                let value = caps.get(2).unwrap().as_str();
+                writeln!(writer, "{} {}", name, value).unwrap();
+                GENERAL_KEYSYM.with(|map| {
+                    map.borrow_mut().insert(name.to_string(), u32::from_str_radix(value, 16).unwrap());
+                });
+            }
+        });
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::keysym_reader::{DEPRECATED_REGEX, KEYPAD_REGEX, UNICODE_REGEX, GENERAL_REGEX};
+
+    #[test]
+    fn read_keysym_file() {
+        super::get_general_keysym("resource/keysymdef.h");
+    }
 
     #[test]
     fn general_key_regex_good() {
