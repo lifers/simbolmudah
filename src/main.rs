@@ -10,7 +10,7 @@ use windows::{
     core::Result,
     Win32::{
         System::LibraryLoader::GetModuleHandleA,
-        UI::WindowsAndMessaging::{DispatchMessageA, GetMessageA, TranslateMessage, MSG},
+        UI::WindowsAndMessaging::{DispatchMessageA, GetMessageA, TranslateMessage, MSG, PostQuitMessage},
     },
 };
 
@@ -18,7 +18,16 @@ use crate::keyboard_hook::{KeyboardHook, GLOBAL_HOOK};
 
 fn run() -> Result<()> {
     let h_instance = unsafe { GetModuleHandleA(None).unwrap() };
-    GLOBAL_HOOK.set(KeyboardHook::new(h_instance));
+    GLOBAL_HOOK.set(Some(KeyboardHook::new(h_instance)));
+
+    ctrlc::set_handler(move || {
+        println!("Ctrl-C received, exiting...");
+        let _ = GLOBAL_HOOK.take();
+        unsafe { PostQuitMessage(0) }
+        std::process::exit(0);
+    })
+    .expect("Error setting Ctrl-C handler");
+
     let mut msg = MSG::default();
     unsafe {
         while GetMessageA(&mut msg, None, 0, 0).into() {

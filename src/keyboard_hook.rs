@@ -20,7 +20,7 @@ use crate::{
 };
 
 thread_local! {
-    pub static GLOBAL_HOOK: RefCell<KeyboardHook> = panic!("GLOBAL_HOOK not initialized");
+    pub static GLOBAL_HOOK: RefCell<Option<KeyboardHook>> = RefCell::new(None);
 }
 
 /// STAGE variable controls how low_level_keyboard_proc behave.
@@ -214,8 +214,10 @@ impl KeyboardHook {
 
         // TODO: might allow injected for testing purposes
         if ncode == HC_ACTION as i32 && is_key && !is_injected {
-            if let Some(result) = GLOBAL_HOOK.with_borrow_mut(|hook: &mut KeyboardHook| {
-                hook.process_event(*kb_hook, wparam.0 as u32)
+            if let Some(result) = GLOBAL_HOOK.with_borrow_mut(|hook: &mut Option<KeyboardHook>| {
+                hook.as_mut()
+                    .expect("GLOBAL_HOOK uninitialised")
+                    .process_event(*kb_hook, wparam.0 as u32)
             }) {
                 return result;
             }
