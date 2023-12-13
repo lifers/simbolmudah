@@ -1,4 +1,4 @@
-use std::{ffi::OsString, mem::size_of, os::windows::ffi::OsStrExt};
+use std::{cell::RefCell, ffi::OsString, mem::size_of, os::windows::ffi::OsStrExt, rc::Rc};
 
 use windows::Win32::{
     Foundation::GetLastError,
@@ -14,20 +14,22 @@ use windows::Win32::{
 
 use crate::{
     composer::{search, ComposeError},
-    keyboard_layout::{vk_to_unicode, ParseVKError},
+    keyboard_layout::{KeyboardLayout, ParseVKError},
     sequence::{key::Key, key_sequence::KeySequence},
 };
 
 pub struct KeyboardController {
     stored_sequence: Vec<INPUT>,
     converted_sequence: KeySequence,
+    layout: Rc<RefCell<KeyboardLayout>>,
 }
 
 impl KeyboardController {
-    pub fn new() -> Self {
+    pub fn new(layout: Rc<RefCell<KeyboardLayout>>) -> Self {
         Self {
             stored_sequence: Vec::new(),
             converted_sequence: Vec::new(),
+            layout,
         }
     }
 
@@ -79,7 +81,12 @@ impl KeyboardController {
         keystate[VK_CAPITAL.0 as usize] = if has_capslock { 1 } else { 0 };
 
         let vk = event.vkCode as u16;
-        match vk_to_unicode(VIRTUAL_KEY(vk), event.scanCode, &keystate, 4) {
+        match self.layout.as_ref().borrow().vk_to_unicode(
+            VIRTUAL_KEY(vk),
+            event.scanCode,
+            &keystate,
+            4,
+        ) {
             Ok(s) => self.converted_sequence.push(Key::Char(s)),
             Err(ParseVKError::DeadKey(s)) => {
                 self.converted_sequence.push(Key::Char(s));
