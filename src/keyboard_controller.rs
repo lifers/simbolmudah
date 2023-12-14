@@ -13,7 +13,7 @@ use windows::Win32::{
 };
 
 use crate::{
-    composer::{search, ComposeError},
+    composer::{Composer, ComposeError},
     keyboard_layout::{KeyboardLayout, ParseVKError},
     sequence::{key::Key, key_sequence::KeySequence},
 };
@@ -21,6 +21,7 @@ use crate::{
 pub struct KeyboardController {
     stored_sequence: Vec<INPUT>,
     converted_sequence: KeySequence,
+    composer: Composer,
     layout: Rc<RefCell<KeyboardLayout>>,
 }
 
@@ -29,6 +30,7 @@ impl KeyboardController {
         Self {
             stored_sequence: Vec::new(),
             converted_sequence: Vec::new(),
+            composer: Composer::new(),
             layout,
         }
     }
@@ -101,7 +103,7 @@ impl KeyboardController {
         };
 
         dbg!(&self.converted_sequence);
-        let res = search(&self.converted_sequence);
+        let res = self.composer.search(&self.converted_sequence);
         if res == Err(ComposeError::NotFound) || res.is_ok() {
             self.converted_sequence.clear();
         }
