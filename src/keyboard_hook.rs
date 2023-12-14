@@ -1,4 +1,4 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 
 use windows::Win32::{
     Foundation::{HMODULE, LPARAM, LRESULT, WPARAM},
@@ -15,11 +15,8 @@ use windows::Win32::{
 };
 
 use crate::{
-    character_sender::send_string,
     composer::ComposeError,
-    keyboard_controller::{
-        abort_control, clear_input, compose_sequence, push_input, search_sequence,
-    },
+    keyboard_controller::KeyboardController,
     keyboard_layout::analyze_layout,
 };
 
@@ -62,6 +59,7 @@ thread_local! {
     static HAS_SHIFT: Cell<bool> = Cell::new(false);
     static HAS_ALTGR: Cell<bool> = Cell::new(false);
     static HAS_CAPSLOCK: Cell<bool> = Cell::new(false);
+    static CONTROLLER: RefCell<KeyboardController> = RefCell::new(KeyboardController::new());
 }
 
 pub struct KeyboardHook {
@@ -98,67 +96,69 @@ impl KeyboardHook {
         // detect whether event is injected
         let is_injected = (*kb_hook).flags.0 & LLKHF_INJECTED.0 != 0;
 
-        // TODO: might allow injected for testing purposes
-        if ncode == HC_ACTION as i32 && is_key && !is_injected {
-            let compose_stage = STAGE.get();
-            push_input(&(*kb_hook));
+        CONTROLLER.with_borrow_mut(|controller: &mut KeyboardController| {
+            // TODO: might allow injected for testing purposes
+            if ncode == HC_ACTION as i32 && is_key && !is_injected {
+                let compose_stage = STAGE.get();
+                controller.push_input(&(*kb_hook));
 
-            match compose_stage {
-                0 => {
-                    if wparamu == WM_SYSKEYDOWN && (*kb_hook).vkCode == VK_RMENU.0.into() {
-                        STAGE.set(1);
+                match compose_stage {
+                    0 => {
+                        if wparamu == WM_SYSKEYDOWN && (*kb_hook).vkCode == VK_RMENU.0.into() {
+                            STAGE.set(1);
+                            return LRESULT(1);
+                        } else {
+                            // Do nothing
+                            controller.clear_input();
+                        }
+                    }
+                    1 => {
+                        if wparamu == WM_KEYUP && (*kb_hook).vkCode == VK_RMENU.0.into() {
+                            STAGE.set(2);
+                        } else {
+                            controller.abort_control(0).unwrap();
+                            STAGE.set(0);
+                        }
                         return LRESULT(1);
-                    } else {
-                        // Do nothing
-                        clear_input();
                     }
-                }
-                1 => {
-                    if wparamu == WM_KEYUP && (*kb_hook).vkCode == VK_RMENU.0.into() {
-                        STAGE.set(2);
-                    } else {
-                        abort_control(0).unwrap();
-                        STAGE.set(0);
+                    2 => {
+                        if wparamu == WM_SYSKEYDOWN && (*kb_hook).vkCode == VK_RMENU.0.into() {
+                            STAGE.set(3);
+                        } else {
+                            STAGE.set(254);
+                            // send to sequence tree
+                            sequence_tree(true, &(*kb_hook));
+                        }
+                        return LRESULT(1);
                     }
-                    return LRESULT(1);
-                }
-                2 => {
-                    if wparamu == WM_SYSKEYDOWN && (*kb_hook).vkCode == VK_RMENU.0.into() {
-                        STAGE.set(3);
-                    } else {
-                        STAGE.set(254);
+                    3 => {
+                        if wparamu == WM_KEYUP && (*kb_hook).vkCode == VK_RMENU.0.into() {
+                            STAGE.set(255);
+                        } else {
+                            STAGE.set(254);
+                            // send to sequence tree
+                            sequence_tree(true, &(*kb_hook));
+                        }
+                        return LRESULT(1);
+                    }
+                    254 => {
                         // send to sequence tree
-                        sequence_tree(true, &(*kb_hook));
-                    }
-                    return LRESULT(1);
-                }
-                3 => {
-                    if wparamu == WM_KEYUP && (*kb_hook).vkCode == VK_RMENU.0.into() {
-                        STAGE.set(255);
-                    } else {
-                        STAGE.set(254);
-                        // send to sequence tree
-                        sequence_tree(true, &(*kb_hook));
-                    }
-                    return LRESULT(1);
-                }
-                254 => {
-                    // send to sequence tree
-                    if wparamu == WM_KEYDOWN || wparamu == WM_SYSKEYDOWN {
-                        sequence_tree(false, &(*kb_hook));
-                    }
+                        if wparamu == WM_KEYDOWN || wparamu == WM_SYSKEYDOWN {
+                            sequence_tree(false, &(*kb_hook));
+                        }
 
-                    return LRESULT(1);
-                }
-                255 => {
-                    //send to search engine
-                    search_sequence().unwrap();
-                }
-                _ => {}
+                        return LRESULT(1);
+                    }
+                    255 => {
+                        //send to search engine
+                        controller.search_sequence().unwrap();
+                    }
+                    _ => {}
+                };
             }
-        }
 
-        CallNextHookEx(None, ncode, wparam, lparam)
+            CallNextHookEx(None, ncode, wparam, lparam)
+        })
     }
 }
 
@@ -187,23 +187,23 @@ fn sequence_tree(new: bool, event: &KBDLLHOOKSTRUCT) {
         VK_CAPITAL => {
             HAS_CAPSLOCK.replace(true);
         }
-        _ => {
-            match compose_sequence(
+        _ => CONTROLLER.with_borrow_mut(|controller: &mut KeyboardController| {
+            match controller.compose_sequence(
                 event,
                 HAS_SHIFT.take(),
                 HAS_ALTGR.take(),
                 HAS_CAPSLOCK.take(),
             ) {
                 Ok(c) => {
-                    send_string(c.to_string().into()).unwrap();
+                    controller.send_string(c.to_string().into()).unwrap();
                     STAGE.set(0);
                 }
                 Err(ComposeError::NotFound) => {
-                    abort_control(2).unwrap();
+                    controller.abort_control(2).unwrap();
                     STAGE.set(0);
                 }
                 Err(ComposeError::Incomplete) => {}
             };
-        }
+        })
     }
 }

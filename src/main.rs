@@ -1,4 +1,3 @@
-mod character_sender;
 mod composer;
 mod keyboard_controller;
 mod keyboard_hook;

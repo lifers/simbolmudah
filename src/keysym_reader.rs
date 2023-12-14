@@ -1,6 +1,11 @@
 use once_cell::unsync::Lazy;
 use regex::Regex;
-use std::{cell::RefCell, collections::HashMap, fs::{File, OpenOptions}, io::{BufReader, BufRead, BufWriter, Write}};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    fs::{File, OpenOptions},
+    io::{BufRead, BufReader, BufWriter, Write},
+};
 
 thread_local! {
     static GENERAL_KEYSYM: RefCell<HashMap<String, u32>> = RefCell::new(HashMap::new());
@@ -36,7 +41,8 @@ fn get_general_keysym(filename: &str) {
                 let value = caps.get(2).unwrap().as_str();
                 writeln!(writer, "{} {}", name, value).unwrap();
                 GENERAL_KEYSYM.with(|map| {
-                    map.borrow_mut().insert(name.to_string(), u32::from_str_radix(value, 16).unwrap());
+                    map.borrow_mut()
+                        .insert(name.to_string(), u32::from_str_radix(value, 16).unwrap());
                 });
             }
         });
@@ -45,7 +51,7 @@ fn get_general_keysym(filename: &str) {
 
 #[cfg(test)]
 mod tests {
-    use crate::keysym_reader::{DEPRECATED_REGEX, KEYPAD_REGEX, UNICODE_REGEX, GENERAL_REGEX};
+    use crate::keysym_reader::{DEPRECATED_REGEX, GENERAL_REGEX, KEYPAD_REGEX, UNICODE_REGEX};
 
     #[test]
     fn read_keysym_file() {
@@ -84,10 +90,7 @@ mod tests {
         assert_eq!("ff91", &name2[2]);
         assert_eq!("/* PF1, KP_A, ... */", &name2[3]);
 
-        assert_eq!(
-            "#define XK_F3                            0xffc0",
-            &name3[0]
-        );
+        assert_eq!("#define XK_F3                            0xffc0", &name3[0]);
         assert_eq!("F3", &name3[1]);
         assert_eq!("ffc0", &name3[2]);
         assert_eq!(None, name3.get(3));
@@ -125,10 +128,7 @@ mod tests {
         assert_eq!("ff91", &name2[2]);
         assert_eq!("/* PF1, KP_A, ... */", &name2[3]);
 
-        assert_eq!(
-            "#define XK_KP_F3                         0xff93",
-            &name3[0]
-        );
+        assert_eq!("#define XK_KP_F3                         0xff93", &name3[0]);
         assert_eq!("KP_F3", &name3[1]);
         assert_eq!("ff93", &name3[2]);
         assert_eq!(None, name3.get(3));
