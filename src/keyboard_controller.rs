@@ -1,42 +1,35 @@
-use std::{cell::RefCell, mem::size_of, ffi::OsString, os::windows::ffi::OsStrExt};
+use std::{cell::RefCell, ffi::OsString, mem::size_of, os::windows::ffi::OsStrExt, rc::Rc};
 
-use windows::Win32::{UI::{
-    Input::KeyboardAndMouse::{
-        GetKeyboardState, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY,
-        KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, VIRTUAL_KEY, VK_CAPITAL, VK_CONTROL, VK_MENU,
-        VK_SHIFT, SendInput, KEYEVENTF_UNICODE,
+use windows::Win32::{
+    Foundation::GetLastError,
+    UI::{
+        Input::KeyboardAndMouse::{
+            GetKeyboardState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
+            KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, KEYEVENTF_UNICODE,
+            VIRTUAL_KEY, VK_CAPITAL, VK_CONTROL, VK_MENU, VK_SHIFT,
+        },
+        WindowsAndMessaging::{KBDLLHOOKSTRUCT, KBDLLHOOKSTRUCT_FLAGS, LLKHF_EXTENDED, LLKHF_UP},
     },
-    WindowsAndMessaging::{KBDLLHOOKSTRUCT, KBDLLHOOKSTRUCT_FLAGS, LLKHF_EXTENDED, LLKHF_UP},
-}, Foundation::GetLastError};
+};
 
 use crate::{
-    composer::{search, ComposeError, Composer},
-    keyboard_layout::{vk_to_unicode, ParseVKError},
+    composer::{search, ComposeError},
+    keyboard_layout::{KeyboardLayout, ParseVKError},
     sequence::{key::Key, key_sequence::KeySequence},
 };
 
 pub struct KeyboardController {
     stored_sequence: Vec<INPUT>,
     converted_sequence: KeySequence,
-    composer: Composer,
+    layout: Rc<RefCell<KeyboardLayout>>,
 }
 
 impl KeyboardController {
-    pub fn new() -> Self {
+    pub fn new(layout: Rc<RefCell<KeyboardLayout>>) -> Self {
         Self {
             stored_sequence: Vec::new(),
             converted_sequence: Vec::new(),
-            composer: Composer::new(),
-        }
-    }
-
-    fn send(out: &[INPUT]) -> windows::core::Result<()> {
-        unsafe {
-            if SendInput(&out, size_of::<INPUT>() as i32) != out.len() as u32 {
-                GetLastError()
-            } else {
-                Ok(())
-            }
+            layout,
         }
     }
 
@@ -69,7 +62,6 @@ impl KeyboardController {
 
     pub fn abort_control(&mut self, skip: usize) -> windows::core::Result<()> {
         let out = self.stored_sequence.split_off(skip);
-        self.stored_sequence.clear();
         Self::send(&out)
     }
 
@@ -89,7 +81,12 @@ impl KeyboardController {
         keystate[VK_CAPITAL.0 as usize] = if has_capslock { 1 } else { 0 };
 
         let vk = event.vkCode as u16;
-        match vk_to_unicode(VIRTUAL_KEY(vk), event.scanCode, &keystate, 4) {
+        match self.layout.as_ref().borrow().vk_to_unicode(
+            VIRTUAL_KEY(vk),
+            event.scanCode,
+            &keystate,
+            4,
+        ) {
             Ok(s) => self.converted_sequence.push(Key::Char(s)),
             Err(ParseVKError::DeadKey(s)) => {
                 self.converted_sequence.push(Key::Char(s));
@@ -103,7 +100,8 @@ impl KeyboardController {
             }
         };
 
-        let res = self.composer.search(&self.converted_sequence);
+        dbg!(&self.converted_sequence);
+        let res = search(&self.converted_sequence);
         if res == Err(ComposeError::NotFound) || res.is_ok() {
             self.converted_sequence.clear();
         }
@@ -112,6 +110,16 @@ impl KeyboardController {
 
     pub fn search_sequence(&mut self) -> windows::core::Result<()> {
         Ok(())
+    }
+
+    pub fn send(out: &[INPUT]) -> windows::core::Result<()> {
+        unsafe {
+            if SendInput(&out, size_of::<INPUT>() as i32) != out.len() as u32 {
+                GetLastError()
+            } else {
+                Ok(())
+            }
+        }
     }
 
     pub fn send_string(&mut self, str: OsString) -> windows::core::Result<()> {
@@ -149,7 +157,6 @@ impl KeyboardController {
         Self::send(&out)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
