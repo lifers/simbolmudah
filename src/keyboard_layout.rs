@@ -100,6 +100,8 @@ impl KeyboardLayout {
 
     pub fn analyze_layout(&mut self) {
         self.current_layout = unsafe { GetKeyboardLayout(0) };
+        self.possible_altgr_keys.clear();
+        self.possible_dead_keys.clear();
 
         let mut no_altgr = ['\0'; 0x200];
         let mut state = [0u8; 256];
