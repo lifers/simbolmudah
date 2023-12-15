@@ -6,9 +6,6 @@ mod keysym_reader;
 mod sequence;
 mod settings;
 
-use std::{cell::RefCell, rc::Rc};
-
-use keyboard_layout::KeyboardLayout;
 use windows::{
     core::Result,
     Win32::{
@@ -23,8 +20,7 @@ use crate::keyboard_hook::{KeyboardHook, GLOBAL_HOOK};
 
 fn run() -> Result<()> {
     let h_instance = unsafe { GetModuleHandleA(None).unwrap() };
-    let layout = Rc::new(RefCell::new(KeyboardLayout::new()));
-    GLOBAL_HOOK.set(Some(KeyboardHook::new(h_instance, layout.clone())));
+    GLOBAL_HOOK.set(Some(KeyboardHook::new(h_instance)));
 
     ctrlc::set_handler(move || {
         println!("Ctrl-C received, exiting...");

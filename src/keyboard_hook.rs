@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
 
 use windows::Win32::{
     Foundation::{HMODULE, LPARAM, LRESULT, WPARAM},
@@ -64,11 +64,11 @@ pub struct KeyboardHook {
     has_altgr: bool,
     has_capslock: bool,
     controller: KeyboardController,
-    layout: Rc<RefCell<KeyboardLayout>>,
+    layout: KeyboardLayout,
 }
 
 impl KeyboardHook {
-    pub fn new(h_instance: HMODULE, layout: Rc<RefCell<KeyboardLayout>>) -> Self {
+    pub fn new(h_instance: HMODULE) -> Self {
         let h_hook = unsafe {
             SetWindowsHookExA(
                 WH_KEYBOARD_LL,
@@ -85,8 +85,8 @@ impl KeyboardHook {
             has_shift: false,
             has_altgr: false,
             has_capslock: false,
-            controller: KeyboardController::new(layout.clone()),
-            layout,
+            controller: KeyboardController::new(),
+            layout: KeyboardLayout::new(),
         }
     }
 
@@ -152,7 +152,7 @@ impl KeyboardHook {
 
     fn sequence_tree(&mut self, new: bool, event: &KBDLLHOOKSTRUCT) {
         if new {
-            self.layout.as_ref().borrow_mut().analyze_layout();
+            self.layout.analyze_layout();
         }
 
         // If current event are modifier key (e.g. shift keydown),
@@ -174,6 +174,7 @@ impl KeyboardHook {
                     self.has_shift,
                     self.has_altgr,
                     self.has_capslock,
+                    &self.layout,
                 ) {
                     Ok(c) => {
                         self.controller.send_string(c.to_string().into()).unwrap();
