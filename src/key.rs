@@ -1,4 +1,9 @@
-use std::{cell::RefCell, collections::HashMap};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    fmt,
+    hash::{Hash, Hasher},
+};
 
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     VIRTUAL_KEY, VK_BACK, VK_CONTROL, VK_DELETE, VK_DOWN, VK_END, VK_HOME, VK_LCONTROL, VK_LEFT,
@@ -26,10 +31,37 @@ thread_local! {
     });
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub enum Key {
     VirtualKey(VIRTUAL_KEY),
     Char(char),
+}
+
+impl Hash for Key {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            // Assuming VIRTUAL_KEY is a tuple struct with one field
+            Key::VirtualKey(vk) => vk.0.hash(state),
+            Key::Char(c) => c.hash(state),
+        }
+    }
+}
+
+impl fmt::Display for Key {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Key::VirtualKey(vk) => write!(f, "{}", vk.0),
+            Key::Char(c) => write!(f, "{}", c),
+        }
+    }
+}
+
+impl From<u32> for Key {
+    fn from(value: u32) -> Key {
+        Key::Char(
+            char::from_u32(value).expect(format!("Invalid Unicode value: {}", value).as_str()),
+        )
+    }
 }
 
 impl Key {
