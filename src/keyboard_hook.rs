@@ -1,3 +1,6 @@
+mod keyboard_controller;
+mod keyboard_layout;
+
 use std::cell::RefCell;
 
 use windows::Win32::{
@@ -14,10 +17,9 @@ use windows::Win32::{
     },
 };
 
-use crate::{
-    composer::ComposeError, keyboard_controller::KeyboardController,
-    keyboard_layout::KeyboardLayout,
-};
+use crate::composer::ComposeError;
+
+use self::{keyboard_controller::KeyboardController, keyboard_layout::KeyboardLayout};
 
 thread_local! {
     pub static GLOBAL_HOOK: RefCell<Option<KeyboardHook>> = RefCell::new(None);
@@ -91,6 +93,20 @@ impl KeyboardHook {
     }
 
     fn process_event(&mut self, event: KBDLLHOOKSTRUCT, message: u32) -> Option<LRESULT> {
+        // Update modifier key state
+        match VIRTUAL_KEY(event.vkCode as u16) {
+            VK_SHIFT | VK_LSHIFT | VK_RSHIFT => {
+                self.has_shift = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
+            }
+            VK_RMENU => {
+                self.has_altgr = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
+            }
+            VK_CAPITAL => {
+                self.has_capslock = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
+            }
+            _ => {}
+        };
+
         self.controller.push_input(&event);
 
         match self.stage {
@@ -155,44 +171,23 @@ impl KeyboardHook {
             self.layout.analyze_layout();
         }
 
-        // If current event are modifier key (e.g. shift keydown),
-        // take notes and do not send to composer.
-        // Otherwise send everything to composer and reset notes.
-        match VIRTUAL_KEY(event.vkCode as u16) {
-            VK_SHIFT | VK_LSHIFT | VK_RSHIFT => {
-                self.has_shift = true;
+        match self.controller.compose_sequence(
+            event,
+            self.has_shift,
+            self.has_altgr,
+            self.has_capslock,
+            &self.layout,
+        ) {
+            Ok(c) => {
+                self.controller.send_string(c).unwrap();
+                self.stage = 0;
             }
-            VK_RMENU => {
-                self.has_altgr = true;
+            Err(ComposeError::NotFound) => {
+                self.controller.abort_control(2).unwrap();
+                self.stage = 0;
             }
-            VK_CAPITAL => {
-                self.has_capslock = true;
-            }
-            _ => {
-                match self.controller.compose_sequence(
-                    event,
-                    self.has_shift,
-                    self.has_altgr,
-                    self.has_capslock,
-                    &self.layout,
-                ) {
-                    Ok(c) => {
-                        self.controller.send_string(c.to_string().into()).unwrap();
-                        self.stage = 0;
-                    }
-                    Err(ComposeError::NotFound) => {
-                        self.controller.abort_control(2).unwrap();
-                        self.stage = 0;
-                    }
-                    Err(ComposeError::Incomplete) => {}
-                };
-
-                // reset to default state
-                self.has_shift = false;
-                self.has_altgr = false;
-                self.has_capslock = false;
-            }
-        }
+            Err(ComposeError::Incomplete) => {}
+        };
     }
 
     unsafe extern "system" fn low_level_keyboard_proc(

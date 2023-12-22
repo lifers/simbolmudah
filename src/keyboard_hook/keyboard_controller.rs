@@ -14,9 +14,12 @@ use windows::Win32::{
 
 use crate::{
     composer::{ComposeError, Composer},
-    keyboard_layout::{KeyboardLayout, ParseVKError},
-    sequence::{key::Key, key_sequence::KeySequence},
+    key::Key,
+    key_sequence::KeySequence,
+    keyboard_hook::keyboard_layout::ParseVKError,
 };
+
+use super::keyboard_layout::KeyboardLayout;
 
 pub struct KeyboardController {
     stored_sequence: Vec<INPUT>,
@@ -28,7 +31,7 @@ impl KeyboardController {
     pub fn new() -> Self {
         Self {
             stored_sequence: Vec::new(),
-            converted_sequence: Vec::new(),
+            converted_sequence: KeySequence::new(),
             composer: Composer::new(),
         }
     }
@@ -72,7 +75,7 @@ impl KeyboardController {
         has_altgr: bool,
         has_capslock: bool,
         layout: &KeyboardLayout,
-    ) -> Result<char, ComposeError> {
+    ) -> Result<OsString, ComposeError> {
         let mut keystate = [0; 256];
         unsafe { GetKeyboardState(&mut keystate).unwrap() };
 
@@ -97,7 +100,9 @@ impl KeyboardController {
         };
 
         dbg!(&self.converted_sequence);
-        let res = self.composer.search(&self.converted_sequence);
+        let res = self
+            .composer
+            .search(&self.converted_sequence.clone().try_into().unwrap());
         if res == Err(ComposeError::NotFound) || res.is_ok() {
             self.converted_sequence.clear();
         }
