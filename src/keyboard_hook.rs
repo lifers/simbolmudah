@@ -7,7 +7,7 @@ use windows::Win32::{
     Foundation::{HMODULE, LPARAM, LRESULT, WPARAM},
     UI::{
         Input::KeyboardAndMouse::{
-            VIRTUAL_KEY, VK_CAPITAL, VK_LSHIFT, VK_RMENU, VK_RSHIFT, VK_SHIFT,
+            VIRTUAL_KEY, VK_CAPITAL, VK_LSHIFT, VK_RMENU, VK_RSHIFT, VK_SHIFT, GetKeyState,
         },
         WindowsAndMessaging::{
             CallNextHookEx, SetWindowsHookExA, UnhookWindowsHookEx, HC_ACTION, HHOOK,
@@ -81,12 +81,14 @@ impl KeyboardHook {
             .expect("This is the only way for the program to work")
         };
 
+        let has_capslock = unsafe { GetKeyState(VK_CAPITAL.0.into()) } & 0x0001 != 0;
+
         Self {
             h_hook,
             stage: 0,
             has_shift: false,
             has_altgr: false,
-            has_capslock: false,
+            has_capslock,
             controller: KeyboardController::new(),
             layout: KeyboardLayout::new(),
         }
@@ -102,7 +104,11 @@ impl KeyboardHook {
                 self.has_altgr = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
             }
             VK_CAPITAL => {
-                self.has_capslock = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
+                if message == WM_KEYDOWN || message == WM_SYSKEYDOWN {
+                    println!("switching to {}", !self.has_capslock);
+                    self.has_capslock = !self.has_capslock;
+                    return None;
+                }
             }
             _ => {}
         };
@@ -216,6 +222,9 @@ impl KeyboardHook {
             }
         }
 
+        if (*kb_hook).vkCode == VK_CAPITAL.0.into() && (wparamu == WM_KEYDOWN || wparamu == WM_SYSKEYDOWN) {
+            println!("Caps Lock toggled");
+        }
         CallNextHookEx(None, ncode, wparam, lparam)
     }
 }
