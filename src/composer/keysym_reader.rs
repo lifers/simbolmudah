@@ -7,13 +7,15 @@ use std::{
     io::{BufRead, BufReader, BufWriter, Write},
 };
 
+use crate::key::Key;
+
 thread_local! {
     static GENERAL_KEYSYM: RefCell<HashMap<String, u32>> = RefCell::new(HashMap::new());
     static KEYPAD_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(
         r"^#define XK_(KP_[a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*(/\*[ |<].*[ |>]\*/)?\s*$"
     ).unwrap());
     static UNICODE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(
-        r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*/\* U\+([0-9A-F]{4,6}) (.*) \*/\s*$"
+        r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*/\*.U\+([0-9A-F]{4,6}).(.*) \*/\s*$"
     ).unwrap());
     static DEPRECATED_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(
         r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*/\* (deprecated.*) \*/\s*$"
@@ -23,39 +25,62 @@ thread_local! {
     ).unwrap());
 }
 
-fn get_general_keysym(filename: &str) {
-    let file = File::open(filename).unwrap();
-    let reader = BufReader::new(file);
-    let output = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open("resource/keylist.txt")
-        .unwrap();
-    let mut writer = BufWriter::new(output);
-    for line in reader.lines() {
-        let line = line.unwrap();
-        GENERAL_REGEX.with(|re| {
-            if let Some(caps) = re.captures(&line) {
+const KEYSYMDEF: &str = "resource/keysymdef.h";
+const GENERAL_REGEX_STR: &str = r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*(/\*.*\*/)?\s*$";
+const UNICODE_REGEX_STR: &str =
+    r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*/\*[ <(]U\+([0-9A-F]{4,6}) (.*)[ >)]\*/\s*$";
+
+pub struct KeySymDef {
+    content: HashMap<String, Key>,
+}
+
+impl KeySymDef {
+    pub fn new() -> Self {
+        let content = Self::get_general_keysym();
+        Self { content }
+    }
+
+    fn get_general_keysym() -> HashMap<String, Key> {
+        let file = File::open(KEYSYMDEF).unwrap();
+        let reader = BufReader::new(file);
+        let output = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open("resource/keylist.txt")
+            .unwrap();
+        let mut writer = BufWriter::new(output);
+
+        let mut result = HashMap::new();
+        let unicode_regex = Regex::new(UNICODE_REGEX_STR).unwrap();
+
+        for line in reader.lines() {
+            let line = line.unwrap();
+            if let Some(caps) = unicode_regex.captures(&line) {
                 let name = caps.get(1).unwrap().as_str();
-                let value = caps.get(2).unwrap().as_str();
+                let value = u32::from_str_radix(caps.get(3).unwrap().as_str(), 16)
+                    .unwrap()
+                    .into();
                 writeln!(writer, "{} {}", name, value).unwrap();
-                GENERAL_KEYSYM.with(|map| {
-                    map.borrow_mut()
-                        .insert(name.to_string(), u32::from_str_radix(value, 16).unwrap());
-                });
+                result.insert(name.to_string(), value);
             }
-        });
+        }
+
+        result
+    }
+
+    pub fn get_key(&self, name: &str) -> Option<Key> {
+        self.content.get(name).copied()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::keysym_reader::{DEPRECATED_REGEX, GENERAL_REGEX, KEYPAD_REGEX, UNICODE_REGEX};
+    use super::{KeySymDef, DEPRECATED_REGEX, GENERAL_REGEX, KEYPAD_REGEX, UNICODE_REGEX};
 
     #[test]
     fn read_keysym_file() {
-        super::get_general_keysym("resource/keysymdef.h");
+        KeySymDef::new();
     }
 
     #[test]
