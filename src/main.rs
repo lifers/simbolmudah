@@ -1,9 +1,7 @@
 mod composer;
-mod keyboard_controller;
+mod key;
+mod key_sequence;
 mod keyboard_hook;
-mod keyboard_layout;
-mod keysym_reader;
-mod sequence;
 mod settings;
 
 use windows::{
