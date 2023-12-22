@@ -1,7 +1,7 @@
 use std::{ffi::OsString, fmt::Display};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum MappedString {
+pub(super) enum MappedString {
     Basic(char),
     Extra(String),
 }

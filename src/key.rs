@@ -11,8 +11,8 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
     VK_UP,
 };
 
-pub const VK_COMPOSE: VIRTUAL_KEY = VIRTUAL_KEY(0x100);
-pub const VK_NONE: VIRTUAL_KEY = VIRTUAL_KEY(0x00);
+pub(super) const VK_COMPOSE: VIRTUAL_KEY = VIRTUAL_KEY(0x100);
+pub(super) const VK_NONE: VIRTUAL_KEY = VIRTUAL_KEY(0x00);
 
 thread_local! {
     static KEY_LABELS: RefCell<HashMap<u16, &'static str>> = RefCell::new({
@@ -32,7 +32,7 @@ thread_local! {
 }
 
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
-pub enum Key {
+pub(super) enum Key {
     VirtualKey(VIRTUAL_KEY),
     Char(char),
 }
@@ -65,7 +65,7 @@ impl From<u32> for Key {
 }
 
 impl Key {
-    pub fn is_modifier(&self) -> bool {
+    pub(super) fn is_modifier(&self) -> bool {
         match self {
             Key::VirtualKey(x) => match *x {
                 VK_SHIFT | VK_CONTROL | VK_MENU | VK_LSHIFT | VK_RSHIFT | VK_LCONTROL

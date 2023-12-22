@@ -16,19 +16,18 @@ use crate::{
     composer::{ComposeError, Composer},
     key::Key,
     key_sequence::KeySequence,
-    keyboard_hook::keyboard_layout::ParseVKError,
 };
 
-use super::keyboard_layout::KeyboardLayout;
+use super::keyboard_layout::{KeyboardLayout, ParseVKError};
 
-pub struct KeyboardController {
+pub(super) struct KeyboardController {
     stored_sequence: Vec<INPUT>,
     converted_sequence: KeySequence,
     composer: Composer,
 }
 
 impl KeyboardController {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             stored_sequence: Vec::new(),
             converted_sequence: KeySequence::new(),
@@ -36,7 +35,7 @@ impl KeyboardController {
         }
     }
 
-    pub fn push_input(&mut self, event: &KBDLLHOOKSTRUCT) {
+    pub(super) fn push_input(&mut self, event: &KBDLLHOOKSTRUCT) {
         let mut dwflags = KEYEVENTF_SCANCODE;
         if event.flags & LLKHF_EXTENDED != KBDLLHOOKSTRUCT_FLAGS(0) {
             dwflags |= KEYEVENTF_EXTENDEDKEY;
@@ -59,16 +58,16 @@ impl KeyboardController {
         self.stored_sequence.push(input);
     }
 
-    pub fn clear_input(&mut self) {
+    pub(super) fn clear_input(&mut self) {
         self.stored_sequence.clear();
     }
 
-    pub fn abort_control(&mut self, skip: usize) -> windows::core::Result<()> {
+    pub(super) fn abort_control(&mut self, skip: usize) -> windows::core::Result<()> {
         let out = self.stored_sequence.split_off(skip);
         Self::send(&out)
     }
 
-    pub fn compose_sequence(
+    pub(super) fn compose_sequence(
         &mut self,
         event: &KBDLLHOOKSTRUCT,
         has_shift: bool,
@@ -109,11 +108,11 @@ impl KeyboardController {
         dbg!(res)
     }
 
-    pub fn search_sequence(&mut self) -> windows::core::Result<()> {
+    pub(super) fn search_sequence(&mut self) -> windows::core::Result<()> {
         Ok(())
     }
 
-    pub fn send(out: &[INPUT]) -> windows::core::Result<()> {
+    fn send(out: &[INPUT]) -> windows::core::Result<()> {
         unsafe {
             if SendInput(&out, size_of::<INPUT>() as i32) != out.len() as u32 {
                 GetLastError()
@@ -123,7 +122,7 @@ impl KeyboardController {
         }
     }
 
-    pub fn send_string(&mut self, str: OsString) -> windows::core::Result<()> {
+    pub(super) fn send_string(&mut self, str: OsString) -> windows::core::Result<()> {
         let out: Vec<_> = str
             .encode_wide()
             .flat_map(|c| {

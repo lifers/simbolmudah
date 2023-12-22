@@ -22,7 +22,7 @@ use crate::composer::ComposeError;
 use self::{keyboard_controller::KeyboardController, keyboard_layout::KeyboardLayout};
 
 thread_local! {
-    pub static GLOBAL_HOOK: RefCell<Option<KeyboardHook>> = RefCell::new(None);
+    pub(super) static GLOBAL_HOOK: RefCell<Option<KeyboardHook>> = RefCell::new(None);
 }
 
 /// STAGE variable controls how low_level_keyboard_proc behave.
@@ -59,7 +59,7 @@ thread_local! {
 /// same as 254
 ///
 /// has_shift, has_altgr, has_capslock: indicator whether the previous message was a modifier key
-pub struct KeyboardHook {
+pub(super) struct KeyboardHook {
     h_hook: HHOOK,
     stage: u8,
     has_shift: bool,
@@ -70,7 +70,7 @@ pub struct KeyboardHook {
 }
 
 impl KeyboardHook {
-    pub fn new(h_instance: HMODULE) -> Self {
+    pub(super) fn new(h_instance: HMODULE) -> Self {
         let h_hook = unsafe {
             SetWindowsHookExA(
                 WH_KEYBOARD_LL,

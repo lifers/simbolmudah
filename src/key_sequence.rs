@@ -1,22 +1,22 @@
 use super::key::Key;
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone)]
-pub struct KeySequence(Vec<Key>);
+pub(super) struct KeySequence(Vec<Key>);
 
 impl KeySequence {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self(Vec::new())
     }
 
-    pub fn push(&mut self, key: Key) {
+    pub(super) fn push(&mut self, key: Key) {
         self.0.push(key);
     }
 
-    pub fn clear(&mut self) {
+    pub(super) fn clear(&mut self) {
         self.0.clear();
     }
 
-    pub fn len(&self) -> usize {
+    pub(super) fn len(&self) -> usize {
         self.0.len()
     }
 }

@@ -17,12 +17,12 @@ const COMPOSE_REGEX_3_STR: &str =
     r#"^<Multi_key> <([a-zA-Z0-9_]+)> <([a-zA-Z0-9_]+)> <([a-zA-Z0-9_]+)>\s+: "(.*)".*$"#;
 const COMPOSE_REGEX_4_STR: &str = r#"^<Multi_key> <([a-zA-Z0-9_]+)> <([a-zA-Z0-9_]+)> <([a-zA-Z0-9_]+)> <([a-zA-Z0-9_]+)>\s+: "(.*)".*$"#;
 
-pub struct ComposeDef {
+pub(super) struct ComposeDef {
     content: BTreeMap<String, MappedString>,
 }
 
 impl ComposeDef {
-    pub fn build(keysym: &KeySymDef) -> Self {
+    pub(super) fn build(keysym: &KeySymDef) -> Self {
         let content = Self::get_compose_def(keysym);
         Self { content }
     }

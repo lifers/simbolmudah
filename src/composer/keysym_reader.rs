@@ -30,12 +30,12 @@ const GENERAL_REGEX_STR: &str = r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*
 const UNICODE_REGEX_STR: &str =
     r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*/\*[ <(]U\+([0-9A-F]{4,6}) (.*)[ >)]\*/\s*$";
 
-pub struct KeySymDef {
+pub(super) struct KeySymDef {
     content: HashMap<String, Key>,
 }
 
 impl KeySymDef {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         let content = Self::get_general_keysym();
         Self { content }
     }
@@ -69,7 +69,7 @@ impl KeySymDef {
         result
     }
 
-    pub fn get_key(&self, name: &str) -> Option<Key> {
+    pub(super) fn get_key(&self, name: &str) -> Option<Key> {
         self.content.get(name).copied()
     }
 }
