@@ -1,10 +1,13 @@
+mod keyboard_controller;
+mod keyboard_layout;
+
 use std::cell::RefCell;
 
 use windows::Win32::{
     Foundation::{HMODULE, LPARAM, LRESULT, WPARAM},
     UI::{
         Input::KeyboardAndMouse::{
-            VIRTUAL_KEY, VK_CAPITAL, VK_LSHIFT, VK_RMENU, VK_RSHIFT, VK_SHIFT,
+            VIRTUAL_KEY, VK_CAPITAL, VK_LSHIFT, VK_RMENU, VK_RSHIFT, VK_SHIFT, GetKeyState,
         },
         WindowsAndMessaging::{
             CallNextHookEx, SetWindowsHookExA, UnhookWindowsHookEx, HC_ACTION, HHOOK,
@@ -14,13 +17,12 @@ use windows::Win32::{
     },
 };
 
-use crate::{
-    composer::ComposeError, keyboard_controller::KeyboardController,
-    keyboard_layout::KeyboardLayout,
-};
+use crate::composer::ComposeError;
+
+use self::{keyboard_controller::KeyboardController, keyboard_layout::KeyboardLayout};
 
 thread_local! {
-    pub static GLOBAL_HOOK: RefCell<Option<KeyboardHook>> = RefCell::new(None);
+    pub(super) static GLOBAL_HOOK: RefCell<Option<KeyboardHook>> = RefCell::new(None);
 }
 
 /// STAGE variable controls how low_level_keyboard_proc behave.
@@ -57,7 +59,7 @@ thread_local! {
 /// same as 254
 ///
 /// has_shift, has_altgr, has_capslock: indicator whether the previous message was a modifier key
-pub struct KeyboardHook {
+pub(super) struct KeyboardHook {
     h_hook: HHOOK,
     stage: u8,
     has_shift: bool,
@@ -68,7 +70,7 @@ pub struct KeyboardHook {
 }
 
 impl KeyboardHook {
-    pub fn new(h_instance: HMODULE) -> Self {
+    pub(super) fn new(h_instance: HMODULE) -> Self {
         let h_hook = unsafe {
             SetWindowsHookExA(
                 WH_KEYBOARD_LL,
@@ -79,18 +81,38 @@ impl KeyboardHook {
             .expect("This is the only way for the program to work")
         };
 
+        let has_capslock = unsafe { GetKeyState(VK_CAPITAL.0.into()) } & 0x0001 != 0;
+
         Self {
             h_hook,
             stage: 0,
             has_shift: false,
             has_altgr: false,
-            has_capslock: false,
+            has_capslock,
             controller: KeyboardController::new(),
             layout: KeyboardLayout::new(),
         }
     }
 
     fn process_event(&mut self, event: KBDLLHOOKSTRUCT, message: u32) -> Option<LRESULT> {
+        // Update modifier key state
+        match VIRTUAL_KEY(event.vkCode as u16) {
+            VK_SHIFT | VK_LSHIFT | VK_RSHIFT => {
+                self.has_shift = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
+            }
+            VK_RMENU => {
+                self.has_altgr = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
+            }
+            VK_CAPITAL => {
+                if message == WM_KEYDOWN || message == WM_SYSKEYDOWN {
+                    println!("switching to {}", !self.has_capslock);
+                    self.has_capslock = !self.has_capslock;
+                    return None;
+                }
+            }
+            _ => {}
+        };
+
         self.controller.push_input(&event);
 
         match self.stage {
@@ -155,44 +177,23 @@ impl KeyboardHook {
             self.layout.analyze_layout();
         }
 
-        // If current event are modifier key (e.g. shift keydown),
-        // take notes and do not send to composer.
-        // Otherwise send everything to composer and reset notes.
-        match VIRTUAL_KEY(event.vkCode as u16) {
-            VK_SHIFT | VK_LSHIFT | VK_RSHIFT => {
-                self.has_shift = true;
+        match self.controller.compose_sequence(
+            event,
+            self.has_shift,
+            self.has_altgr,
+            self.has_capslock,
+            &self.layout,
+        ) {
+            Ok(c) => {
+                self.controller.send_string(c).unwrap();
+                self.stage = 0;
             }
-            VK_RMENU => {
-                self.has_altgr = true;
+            Err(ComposeError::NotFound) => {
+                self.controller.abort_control(2).unwrap();
+                self.stage = 0;
             }
-            VK_CAPITAL => {
-                self.has_capslock = true;
-            }
-            _ => {
-                match self.controller.compose_sequence(
-                    event,
-                    self.has_shift,
-                    self.has_altgr,
-                    self.has_capslock,
-                    &self.layout,
-                ) {
-                    Ok(c) => {
-                        self.controller.send_string(c.to_string().into()).unwrap();
-                        self.stage = 0;
-                    }
-                    Err(ComposeError::NotFound) => {
-                        self.controller.abort_control(2).unwrap();
-                        self.stage = 0;
-                    }
-                    Err(ComposeError::Incomplete) => {}
-                };
-
-                // reset to default state
-                self.has_shift = false;
-                self.has_altgr = false;
-                self.has_capslock = false;
-            }
-        }
+            Err(ComposeError::Incomplete) => {}
+        };
     }
 
     unsafe extern "system" fn low_level_keyboard_proc(
@@ -221,6 +222,9 @@ impl KeyboardHook {
             }
         }
 
+        if (*kb_hook).vkCode == VK_CAPITAL.0.into() && (wparamu == WM_KEYDOWN || wparamu == WM_SYSKEYDOWN) {
+            println!("Caps Lock toggled");
+        }
         CallNextHookEx(None, ncode, wparam, lparam)
     }
 }

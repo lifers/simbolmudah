@@ -1,1 +1,1 @@
-pub struct Settings;
+pub(super) struct Settings;
