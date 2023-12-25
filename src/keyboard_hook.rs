@@ -25,6 +25,16 @@ thread_local! {
     pub(super) static GLOBAL_HOOK: RefCell<Option<KeyboardHook>> = RefCell::new(None);
 }
 
+enum Stage {
+    Neutral,
+    ComposeKeydownFirst,
+    ComposeKeyupFirst,
+    ComposeKeydownSecond,
+    SequenceMode,
+    SearchMode,
+    UnicodeMode,
+}
+
 /// STAGE variable controls how low_level_keyboard_proc behave.
 ///
 /// 0: neutral state.
@@ -61,7 +71,7 @@ thread_local! {
 /// has_shift, has_altgr, has_capslock: indicator whether the previous message was a modifier key
 pub(super) struct KeyboardHook {
     h_hook: HHOOK,
-    stage: u8,
+    stage: Stage,
     has_shift: bool,
     has_altgr: bool,
     has_capslock: bool,
@@ -85,7 +95,7 @@ impl KeyboardHook {
 
         Self {
             h_hook,
-            stage: 0,
+            stage: Stage::Neutral,
             has_shift: false,
             has_altgr: false,
             has_capslock,
@@ -116,45 +126,45 @@ impl KeyboardHook {
         self.controller.push_input(&event);
 
         match self.stage {
-            0 => {
+            Stage::Neutral => {
                 if message == WM_SYSKEYDOWN && event.vkCode == VK_RMENU.0.into() {
-                    self.stage = 1;
+                    self.stage = Stage::ComposeKeydownFirst;
                     return Some(LRESULT(1));
                 } else {
                     // Do nothing
                     self.controller.clear_input();
                 }
             }
-            1 => {
+            Stage::ComposeKeydownFirst => {
                 if message == WM_KEYUP && event.vkCode == VK_RMENU.0.into() {
-                    self.stage = 2;
+                    self.stage = Stage::ComposeKeyupFirst;
                 } else {
                     self.controller.abort_control(0).unwrap();
-                    self.stage = 0;
+                    self.stage = Stage::Neutral;
                 }
                 return Some(LRESULT(1));
             }
-            2 => {
+            Stage::ComposeKeyupFirst => {
                 if message == WM_SYSKEYDOWN && event.vkCode == VK_RMENU.0.into() {
-                    self.stage = 3;
+                    self.stage = Stage::ComposeKeydownSecond;
                 } else {
-                    self.stage = 254;
+                    self.stage = Stage::SequenceMode;
                     // send to sequence tree
                     self.sequence_tree(true, &event);
                 }
                 return Some(LRESULT(1));
             }
-            3 => {
+            Stage::ComposeKeydownSecond => {
                 if message == WM_KEYUP && event.vkCode == VK_RMENU.0.into() {
-                    self.stage = 255;
+                    self.stage = Stage::SearchMode;
                 } else {
-                    self.stage = 254;
+                    self.stage = Stage::SequenceMode;
                     // send to sequence tree
                     self.sequence_tree(true, &event);
                 }
                 return Some(LRESULT(1));
             }
-            254 => {
+            Stage::SequenceMode => {
                 // send to sequence tree
                 if message == WM_KEYDOWN || message == WM_SYSKEYDOWN {
                     self.sequence_tree(false, &event);
@@ -162,11 +172,13 @@ impl KeyboardHook {
 
                 return Some(LRESULT(1));
             }
-            255 => {
+            Stage::SearchMode => {
                 //send to search engine
                 self.controller.search_sequence().unwrap();
             }
-            _ => {}
+            Stage::UnicodeMode => {
+                todo!()
+            }
         }
 
         None
@@ -186,11 +198,11 @@ impl KeyboardHook {
         ) {
             Ok(c) => {
                 self.controller.send_string(c).unwrap();
-                self.stage = 0;
+                self.stage = Stage::Neutral;
             }
             Err(ComposeError::NotFound) => {
                 self.controller.abort_control(2).unwrap();
-                self.stage = 0;
+                self.stage = Stage::Neutral;
             }
             Err(ComposeError::Incomplete) => {}
         };
