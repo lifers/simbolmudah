@@ -19,12 +19,13 @@ use crate::{
 
 use super::{
     keyboard_layout::{KeyboardLayout, ParseVKError},
-    sequence_state::SequenceState,
+    sequence_state::SequenceState, unicode_state::UnicodeState,
 };
 
 pub(super) struct KeyboardController {
     stored_sequence: Vec<INPUT>,
     sequence_state: SequenceState,
+    unicode_state: UnicodeState,
     composer: Composer,
 }
 
@@ -33,6 +34,7 @@ impl KeyboardController {
         Self {
             stored_sequence: Vec::new(),
             sequence_state: SequenceState::new(),
+            unicode_state: UnicodeState::new(),
             composer: Composer::new(),
         }
     }
