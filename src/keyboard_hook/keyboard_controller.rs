@@ -11,18 +11,14 @@ use windows::Win32::{
     },
 };
 
-use super::unicode_state::UnicodeState;
-
 pub(super) struct KeyboardController {
     stored_sequence: Vec<INPUT>,
-    unicode_state: UnicodeState,
 }
 
 impl KeyboardController {
     pub(super) fn new() -> Self {
         Self {
             stored_sequence: Vec::new(),
-            unicode_state: UnicodeState::new(),
         }
     }
 

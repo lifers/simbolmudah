@@ -9,8 +9,9 @@ use windows::Win32::{
     Foundation::{HMODULE, LPARAM, LRESULT, WPARAM},
     UI::{
         Input::KeyboardAndMouse::{
-            GetKeyState, GetKeyboardState, VIRTUAL_KEY, VK_0, VK_9, VK_CAPITAL, VK_CONTROL,
-            VK_LSHIFT, VK_MENU, VK_NUMPAD0, VK_NUMPAD9, VK_RMENU, VK_RSHIFT, VK_SHIFT, VK_U,
+            GetKeyState, GetKeyboardState, VIRTUAL_KEY, VK_0, VK_9, VK_A, VK_CAPITAL, VK_CONTROL,
+            VK_F, VK_LSHIFT, VK_MENU, VK_NUMPAD0, VK_NUMPAD9, VK_RETURN, VK_RMENU, VK_RSHIFT,
+            VK_SHIFT, VK_U,
         },
         WindowsAndMessaging::{
             CallNextHookEx, SetWindowsHookExA, UnhookWindowsHookEx, HC_ACTION, HHOOK,
@@ -24,7 +25,7 @@ use crate::composer::ComposeError;
 
 use self::{
     keyboard_controller::KeyboardController, keyboard_layout::KeyboardLayout,
-    sequence_state::SequenceState,
+    sequence_state::SequenceState, unicode_state::UnicodeState,
 };
 
 thread_local! {
@@ -83,6 +84,7 @@ pub(super) struct KeyboardHook {
     has_capslock: bool,
     controller: KeyboardController,
     sequence_state: SequenceState,
+    unicode_state: UnicodeState,
     layout: KeyboardLayout,
 }
 
@@ -108,6 +110,7 @@ impl KeyboardHook {
             has_capslock,
             controller: KeyboardController::new(),
             sequence_state: SequenceState::new(),
+            unicode_state: UnicodeState::new(),
             layout: KeyboardLayout::new(),
         }
     }
@@ -119,6 +122,7 @@ impl KeyboardHook {
         match VIRTUAL_KEY(event.vkCode as u16) {
             VK_SHIFT | VK_LSHIFT | VK_RSHIFT => {
                 self.has_shift = is_keydown;
+                return None;
             }
             VK_RMENU => {
                 self.has_altgr = is_keydown;
@@ -157,7 +161,7 @@ impl KeyboardHook {
             Stage::ComposeKeyupFirst => {
                 if message == WM_SYSKEYDOWN && event.vkCode == VK_RMENU.0.into() {
                     self.stage = Stage::ComposeKeydownSecond;
-                } else if message == WM_SYSKEYDOWN && event.vkCode == VK_U.0.into() {
+                } else if message == WM_KEYDOWN && event.vkCode == VK_U.0.into() {
                     self.stage = Stage::UnicodeMode;
                 } else {
                     self.stage = Stage::SequenceMode;
@@ -189,10 +193,20 @@ impl KeyboardHook {
                 self.controller.search_sequence().unwrap();
             }
             Stage::UnicodeMode => {
-                let is_number = (VK_0.0 as u32 <= event.vkCode && event.vkCode <= VK_9.0 as u32)
-                    || (VK_NUMPAD0.0 as u32 <= event.vkCode && event.vkCode <= VK_NUMPAD9.0 as u32);
-                if is_keydown && is_number {
-                    todo!()
+                if is_keydown && Self::is_hexadecimal(event.vkCode as u16) {
+                    let keystate = self.calculate_keystate();
+                    self.unicode_state.push(&event, &keystate, &self.layout);
+                } else if !is_keydown && event.vkCode == VK_RETURN.0.into() {
+                    if let Ok(s) = self.unicode_state.build_unicode() {
+                        self.controller
+                            .send_string(s)
+                            .expect("string should be sent successfully");
+                    } else {
+                        self.controller
+                            .abort_control(2)
+                            .expect("print all entered keystrokes");
+                    }
+                    self.stage = Stage::Neutral;
                 }
 
                 return Some(LRESULT(1));
@@ -235,6 +249,12 @@ impl KeyboardHook {
         keystate[VK_CAPITAL.0 as usize] = if self.has_capslock { 1 } else { 0 };
 
         keystate
+    }
+
+    fn is_hexadecimal(vkcode: u16) -> bool {
+        (VK_0.0 <= vkcode && vkcode <= VK_9.0)
+            || (VK_NUMPAD0.0 <= vkcode && vkcode <= VK_NUMPAD9.0)
+            || (VK_A.0 <= vkcode && vkcode <= VK_F.0)
     }
 
     unsafe extern "system" fn low_level_keyboard_proc(
