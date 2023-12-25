@@ -14,7 +14,7 @@ This is inspired by the Compose Key mechanism from Freedesktop's X project.
   - [x] Parse basic compose sequences from en_US.UTF-8/Compose.pre
   - [x] Connect the two and generate mappings from keysym sequence to the resulting Unicode
   - [x] Rework the compose search engine to use the mappings
-- [ ] Unicode explicit code input mode
+- [x] Unicode explicit code input mode
 - [ ] Popup window for hints
   - [ ] Display a small popup near the cursor for mode indicator (similar to Windows' autocomplete)
   - [ ] Unicode name search mode basic frontend
