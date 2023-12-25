@@ -4,38 +4,25 @@ use windows::Win32::{
     Foundation::GetLastError,
     UI::{
         Input::KeyboardAndMouse::{
-            GetKeyboardState, SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT,
-            KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, KEYEVENTF_UNICODE,
-            VIRTUAL_KEY, VK_CAPITAL, VK_CONTROL, VK_MENU, VK_SHIFT,
+            SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY,
+            KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, KEYEVENTF_UNICODE, VIRTUAL_KEY,
         },
         WindowsAndMessaging::{KBDLLHOOKSTRUCT, KBDLLHOOKSTRUCT_FLAGS, LLKHF_EXTENDED, LLKHF_UP},
     },
 };
 
-use crate::{
-    composer::{ComposeError, Composer},
-    key::Key,
-};
-
-use super::{
-    keyboard_layout::{KeyboardLayout, ParseVKError},
-    sequence_state::SequenceState, unicode_state::UnicodeState,
-};
+use super::unicode_state::UnicodeState;
 
 pub(super) struct KeyboardController {
     stored_sequence: Vec<INPUT>,
-    sequence_state: SequenceState,
     unicode_state: UnicodeState,
-    composer: Composer,
 }
 
 impl KeyboardController {
     pub(super) fn new() -> Self {
         Self {
             stored_sequence: Vec::new(),
-            sequence_state: SequenceState::new(),
             unicode_state: UnicodeState::new(),
-            composer: Composer::new(),
         }
     }
 
@@ -69,40 +56,6 @@ impl KeyboardController {
     pub(super) fn abort_control(&mut self, skip: usize) -> windows::core::Result<()> {
         let out = self.stored_sequence.split_off(skip);
         Self::send(&out)
-    }
-
-    pub(super) fn compose_sequence(
-        &mut self,
-        event: &KBDLLHOOKSTRUCT,
-        has_shift: bool,
-        has_altgr: bool,
-        has_capslock: bool,
-        layout: &KeyboardLayout,
-    ) -> Result<OsString, ComposeError> {
-        let mut keystate = [0; 256];
-        unsafe { GetKeyboardState(&mut keystate).unwrap() };
-
-        keystate[VK_SHIFT.0 as usize] = if has_shift { 0x80 } else { 0 };
-        keystate[VK_CONTROL.0 as usize] = if has_altgr { 0x80 } else { 0 };
-        keystate[VK_MENU.0 as usize] = if has_altgr { 0x80 } else { 0 };
-        keystate[VK_CAPITAL.0 as usize] = if has_capslock { 1 } else { 0 };
-
-        let vk = event.vkCode as u16;
-        match layout.vk_to_unicode(VIRTUAL_KEY(vk), event.scanCode, &keystate, 4) {
-            Ok(s) => self.sequence_state.push(Key::Char(s)),
-            Err(ParseVKError::DeadKey(s)) => {
-                self.sequence_state.push(Key::Char(s));
-            }
-            Err(ParseVKError::NoTranslation) => {
-                return Err(ComposeError::Incomplete);
-                // CONVERTED_SEQUENCE.with_borrow_mut(|v| v.push(Key::VirtualKey(VIRTUAL_KEY(vk))))
-            }
-            Err(ParseVKError::InvalidUnicode) => {
-                panic!("invalid unicode");
-            }
-        };
-
-        self.sequence_state.submit(&self.composer)
     }
 
     pub(super) fn search_sequence(&mut self) -> windows::core::Result<()> {
