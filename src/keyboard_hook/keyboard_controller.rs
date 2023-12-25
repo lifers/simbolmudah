@@ -15,14 +15,16 @@ use windows::Win32::{
 use crate::{
     composer::{ComposeError, Composer},
     key::Key,
-    key_sequence::KeySequence,
 };
 
-use super::keyboard_layout::{KeyboardLayout, ParseVKError};
+use super::{
+    keyboard_layout::{KeyboardLayout, ParseVKError},
+    sequence_state::SequenceState,
+};
 
 pub(super) struct KeyboardController {
     stored_sequence: Vec<INPUT>,
-    converted_sequence: KeySequence,
+    sequence_state: SequenceState,
     composer: Composer,
 }
 
@@ -30,7 +32,7 @@ impl KeyboardController {
     pub(super) fn new() -> Self {
         Self {
             stored_sequence: Vec::new(),
-            converted_sequence: KeySequence::new(),
+            sequence_state: SequenceState::new(),
             composer: Composer::new(),
         }
     }
@@ -85,9 +87,9 @@ impl KeyboardController {
 
         let vk = event.vkCode as u16;
         match layout.vk_to_unicode(VIRTUAL_KEY(vk), event.scanCode, &keystate, 4) {
-            Ok(s) => self.converted_sequence.push(Key::Char(s)),
+            Ok(s) => self.sequence_state.push(Key::Char(s)),
             Err(ParseVKError::DeadKey(s)) => {
-                self.converted_sequence.push(Key::Char(s));
+                self.sequence_state.push(Key::Char(s));
             }
             Err(ParseVKError::NoTranslation) => {
                 return Err(ComposeError::Incomplete);
@@ -98,14 +100,7 @@ impl KeyboardController {
             }
         };
 
-        dbg!(&self.converted_sequence);
-        let res = self
-            .composer
-            .search(&self.converted_sequence.clone().try_into().unwrap());
-        if res == Err(ComposeError::NotFound) || res.is_ok() {
-            self.converted_sequence.clear();
-        }
-        dbg!(res)
+        self.sequence_state.submit(&self.composer)
     }
 
     pub(super) fn search_sequence(&mut self) -> windows::core::Result<()> {
