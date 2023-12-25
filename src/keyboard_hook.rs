@@ -1,4 +1,4 @@
-mod keyboard_controller;
+mod input_state;
 mod keyboard_layout;
 mod sequence_state;
 mod unicode_state;
@@ -24,7 +24,7 @@ use windows::Win32::{
 use crate::composer::ComposeError;
 
 use self::{
-    keyboard_controller::KeyboardController, keyboard_layout::KeyboardLayout,
+    input_state::InputState, keyboard_layout::KeyboardLayout,
     sequence_state::SequenceState, unicode_state::UnicodeState,
 };
 
@@ -82,7 +82,7 @@ pub(super) struct KeyboardHook {
     has_shift: bool,
     has_altgr: bool,
     has_capslock: bool,
-    controller: KeyboardController,
+    input_state: InputState,
     sequence_state: SequenceState,
     unicode_state: UnicodeState,
     layout: KeyboardLayout,
@@ -108,7 +108,7 @@ impl KeyboardHook {
             has_shift: false,
             has_altgr: false,
             has_capslock,
-            controller: KeyboardController::new(),
+            input_state: InputState::new(),
             sequence_state: SequenceState::new(),
             unicode_state: UnicodeState::new(),
             layout: KeyboardLayout::new(),
@@ -137,7 +137,7 @@ impl KeyboardHook {
             _ => {}
         };
 
-        self.controller.push_input(&event);
+        self.input_state.push_input(&event);
 
         match self.stage {
             Stage::Neutral => {
@@ -146,14 +146,14 @@ impl KeyboardHook {
                     return Some(LRESULT(1));
                 } else {
                     // Do nothing
-                    self.controller.clear_input();
+                    self.input_state.clear_input();
                 }
             }
             Stage::ComposeKeydownFirst => {
                 if message == WM_KEYUP && event.vkCode == VK_RMENU.0.into() {
                     self.stage = Stage::ComposeKeyupFirst;
                 } else {
-                    self.controller.abort_control(0).unwrap();
+                    self.input_state.abort_control(0).unwrap();
                     self.stage = Stage::Neutral;
                 }
                 return Some(LRESULT(1));
@@ -190,7 +190,7 @@ impl KeyboardHook {
             }
             Stage::SearchMode => {
                 //send to search engine
-                self.controller.search_sequence().unwrap();
+                self.input_state.search_sequence().unwrap();
             }
             Stage::UnicodeMode => {
                 if is_keydown && Self::is_hexadecimal(event.vkCode as u16) {
@@ -198,11 +198,11 @@ impl KeyboardHook {
                     self.unicode_state.push(&event, &keystate, &self.layout);
                 } else if !is_keydown && event.vkCode == VK_RETURN.0.into() {
                     if let Ok(s) = self.unicode_state.build_unicode() {
-                        self.controller
+                        self.input_state
                             .send_string(s)
                             .expect("string should be sent successfully");
                     } else {
-                        self.controller
+                        self.input_state
                             .abort_control(2)
                             .expect("print all entered keystrokes");
                     }
@@ -228,11 +228,11 @@ impl KeyboardHook {
             .compose_sequence(event, &keystate, &self.layout)
         {
             Ok(c) => {
-                self.controller.send_string(c).unwrap();
+                self.input_state.send_string(c).unwrap();
                 self.stage = Stage::Neutral;
             }
             Err(ComposeError::NotFound) => {
-                self.controller.abort_control(2).unwrap();
+                self.input_state.abort_control(2).unwrap();
                 self.stage = Stage::Neutral;
             }
             Err(ComposeError::Incomplete) => {}

@@ -11,11 +11,11 @@ use windows::Win32::{
     },
 };
 
-pub(super) struct KeyboardController {
+pub(super) struct InputState {
     stored_sequence: Vec<INPUT>,
 }
 
-impl KeyboardController {
+impl InputState {
     pub(super) fn new() -> Self {
         Self {
             stored_sequence: Vec::new(),
