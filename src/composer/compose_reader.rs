@@ -56,8 +56,8 @@ impl ComposeDef {
             }
         }
 
-        result.insert(">=".into(), MappedString::Basic('≥'));
-        result.insert("oe".into(), MappedString::Basic('œ'));
+        // result.insert(">=".into(), MappedString::Basic('≥'));
+        // result.insert("oe".into(), MappedString::Basic('œ'));
         result.insert("wkwk".into(), MappedString::Basic('🤣'));
         result.insert("pr".into(), MappedString::Extra("peradaban".into()));
 
@@ -98,12 +98,7 @@ impl ComposeDef {
         if let Some(key) = keysymdef.get_key(string) {
             return Some(key);
         }
-        if !string.starts_with('U') {
-            return None;
-        }
-        let value = u32::from_str_radix(&string[1..], 16).ok()?;
-        let value = char::from_u32(value)?;
-        Some(Key::Char(value))
+        Key::from_unicode_string(string)
     }
 }
 
