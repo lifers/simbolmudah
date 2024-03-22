@@ -12,7 +12,7 @@ use windows::Win32::UI::{
 };
 
 #[derive(Debug)]
-pub enum ParseVKError {
+pub(super) enum ParseVKError {
     DeadKey(char),
     NoTranslation,
     InvalidUnicode,
@@ -30,7 +30,7 @@ impl Display for ParseVKError {
 
 impl Error for ParseVKError {}
 
-pub struct KeyboardLayout {
+pub(super) struct KeyboardLayout {
     possible_dead_keys: HashMap<char, u16>,
     possible_altgr_keys: HashMap<char, char>,
     saved_dead_key: u16,
@@ -38,7 +38,7 @@ pub struct KeyboardLayout {
 }
 
 impl KeyboardLayout {
-    pub fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             possible_dead_keys: HashMap::new(),
             possible_altgr_keys: HashMap::new(),
@@ -47,7 +47,7 @@ impl KeyboardLayout {
         }
     }
 
-    pub fn vk_to_unicode(
+    pub(super) fn vk_to_unicode(
         &self,
         virtual_key: VIRTUAL_KEY,
         scan_code: u32,
@@ -98,7 +98,7 @@ impl KeyboardLayout {
         let _ = self.vk_to_unicode(VK_SPACE, 0, &[0; 256], 4);
     }
 
-    pub fn analyze_layout(&mut self) {
+    pub(super) fn analyze_layout(&mut self) {
         self.current_layout = unsafe { GetKeyboardLayout(0) };
         self.possible_altgr_keys.clear();
         self.possible_dead_keys.clear();
