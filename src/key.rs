@@ -75,4 +75,38 @@ impl Key {
             _ => false,
         }
     }
+
+    /// Returns `Some(Key)` if it is a valid unicode number string.
+    ///
+    /// Returns `None` if it does not.
+    ///
+    /// A valid unicode string is a string that starts with capital `U` and
+    /// followed by hexadecimal numbers that represents the codepoint.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let string = "U2764";
+    ///
+    /// assert_eq!(Key::from_unicode_string(string), Key::Char('❤'));
+    /// ```
+    pub(super) fn from_unicode_string(string: &str) -> Option<Key> {
+        if string.starts_with('U') {
+            let value = u32::from_str_radix(&string[1..], 16).ok()?;
+            let value = char::from_u32(value)?;
+            Some(Key::Char(value))
+        } else {
+            None
+        }
+    }
+}
+
+mod tests {
+    use super::Key;
+
+    #[test]
+    fn test_unicode_string() {
+        assert_eq!(Key::from_unicode_string("U2764"), Some(Key::Char('❤')));
+        assert_eq!(Key::from_unicode_string("u41"), None);
+    }
 }
