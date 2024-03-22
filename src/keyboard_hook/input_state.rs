@@ -61,7 +61,7 @@ impl InputState {
     fn send(out: &[INPUT]) -> windows::core::Result<()> {
         unsafe {
             if SendInput(&out, size_of::<INPUT>() as i32) != out.len() as u32 {
-                GetLastError()
+                GetLastError().ok()
             } else {
                 Ok(())
             }

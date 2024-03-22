@@ -29,7 +29,7 @@ use self::{
 };
 
 thread_local! {
-    pub(super) static GLOBAL_HOOK: RefCell<Option<KeyboardHook>> = RefCell::new(None);
+    pub(super) static GLOBAL_HOOK: RefCell<Option<KeyboardHook>> = const { RefCell::new(None) };
 }
 
 enum Stage {
