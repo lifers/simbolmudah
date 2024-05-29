@@ -67,6 +67,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c198f91728a82281a64e1f4f9eeb25d82cb32a5de251c6bd1b5154d63a8e7bd"
 
 [[package]]
+name = "libsimbolmudah"
+version = "0.1.0"
+dependencies = [
+ "ctrlc",
+ "fst",
+ "itertools",
+ "once_cell",
+ "regex",
+ "windows",
+ "xkeysym",
+]
+
+[[package]]
 name = "memchr"
 version = "2.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -118,19 +131,6 @@ name = "regex-syntax"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
-
-[[package]]
-name = "simbolmudah"
-version = "0.1.0"
-dependencies = [
- "ctrlc",
- "fst",
- "itertools",
- "once_cell",
- "regex",
- "windows",
- "xkeysym",
-]
 
 [[package]]
 name = "windows"
