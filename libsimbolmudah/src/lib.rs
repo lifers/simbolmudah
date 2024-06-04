@@ -1,3 +1,15 @@
-pub fn add(left: usize, right: usize) -> usize {
-  left + right
+#[no_mangle]
+pub fn hello(name: &str) -> String {
+  format!("Hello, {name}!")
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn it_works() {
+    let result = hello("Robert");
+    assert_eq!(result, "Hello, Robert!")
+  }
 }
