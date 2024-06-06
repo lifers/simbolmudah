@@ -7,14 +7,16 @@ using namespace Windows::Foundation;
 export class KeyboardHook
 {
 public:
-	KeyboardHook() = default;
-	explicit KeyboardHook(const delegate<DWORD>& reporterFn) { Reporter = reporterFn; }
+	explicit KeyboardHook(const delegate<DWORD>& reporterFn) : m_handle(RunAndMonitorListeners())
+	{
+		Reporter = reporterFn;
+	}
 	~KeyboardHook();
-	IAsyncAction RunAndMonitorListeners();
 
 private:
 	static delegate<DWORD> Reporter;
-	HHOOK m_hook{ nullptr };
-	void Unregister();
 	static LRESULT CALLBACK KeyboardProcedure(int nCode, WPARAM wParam, LPARAM lParam);
+	IAsyncAction RunAndMonitorListeners();
+	const IAsyncAction m_handle;
+	HHOOK m_hook{ nullptr };
 };

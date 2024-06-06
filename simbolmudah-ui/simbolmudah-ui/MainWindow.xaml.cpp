@@ -4,8 +4,6 @@
 #include "MainWindow.g.cpp"
 #endif
 
-import KeyboardHook;
-
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
 using namespace Windows::Foundation;
@@ -17,15 +15,13 @@ namespace winrt::simbolmudah_ui::implementation
 {
 	void MainWindow::ListenKeyUpdate(const IInspectable&, const RoutedEventArgs&)
 	{
-		apartment_context ui_thread;
-		main_thread = ui_thread;
 		if (listenKeySwitch().IsOn())
 		{
-			listenerHandle = keyboardHook.RunAndMonitorListeners();
+			keyboardHook.emplace(delegate<DWORD>{ this, &MainWindow::UpdateInfoBar });
 		}
 		else
 		{
-			listenerHandle.Cancel();
+			keyboardHook.reset();
 		}
 	}
 

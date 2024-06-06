@@ -17,19 +17,12 @@ LRESULT CALLBACK KeyboardHook::KeyboardProcedure(int nCode, WPARAM wParam, LPARA
 	return CallNextHookEx(nullptr, nCode, wParam, lParam);
 }
 
-void KeyboardHook::Unregister()
+KeyboardHook::~KeyboardHook()
 {
 	MessageBoxW(nullptr, L"Unhooking", L"Info", MB_OK);
 	check_bool(UnhookWindowsHookEx(this->m_hook));
-	this->m_hook = nullptr;
-}
-
-KeyboardHook::~KeyboardHook()
-{
-	if (this->m_hook)
-	{
-		this->Unregister();
-	}
+	this->m_handle.Cancel();
+	Reporter = nullptr;
 }
 
 IAsyncAction KeyboardHook::RunAndMonitorListeners()
@@ -37,12 +30,9 @@ IAsyncAction KeyboardHook::RunAndMonitorListeners()
 	const auto token{ co_await get_cancellation_token() };
 	co_await resume_background();
 	const auto hInstance = check_bool(GetModuleHandleW(nullptr));
-	const HOOKPROC hookProc = this->KeyboardProcedure;
-	this->m_hook = check_bool(SetWindowsHookExW(WH_KEYBOARD_LL, hookProc, hInstance, 0));
 
-	// Start listening
-
-	token.callback({ this, &KeyboardHook::Unregister });
+	// Start listening to keyboard events
+	this->m_hook = check_bool(SetWindowsHookExW(WH_KEYBOARD_LL, this->KeyboardProcedure, hInstance, 0));
 
 	while (!token())
 	{
