@@ -17,7 +17,7 @@ namespace winrt::simbolmudah_ui::implementation
 	{
 		if (listenKeySwitch().IsOn())
 		{
-			keyboardHook.emplace(delegate<DWORD>{ this, &MainWindow::UpdateInfoBar });
+			keyboardHook.emplace(delegate<LowLevelKeyboardEvent>{ this, &MainWindow::UpdateInfoBar });
 		}
 		else
 		{
@@ -25,10 +25,13 @@ namespace winrt::simbolmudah_ui::implementation
 		}
 	}
 
-	fire_and_forget MainWindow::UpdateInfoBar(DWORD vkCode)
+	fire_and_forget MainWindow::UpdateInfoBar(LowLevelKeyboardEvent keyEvent)
 	{
 		co_await main_thread;
-		infoBar().Message(std::format(L"Key {} pressed.", vkCode));
+		infoBar().Message(std::format(
+			L"vkCode: {}\nscanCode: {}\nflags: {}\ntime: {}\ndwExtraInfo: {}\nwParam: {}.",
+			keyEvent.vkCode, keyEvent.scanCode, keyEvent.flags, keyEvent.time, keyEvent.dwExtraInfo, keyEvent.windowMessage
+		));
 		infoBar().IsOpen(true);
 	}
 }

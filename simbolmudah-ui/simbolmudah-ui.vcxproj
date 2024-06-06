@@ -138,6 +138,7 @@
     <Page Include="MainWindow.xaml" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Core.ixx" />
     <ClCompile Include="KeyboardHook\KeyboardHook.cpp" />
     <ClCompile Include="KeyboardHook\KeyboardHook.ixx" />
     <ClCompile Include="pch.cpp">

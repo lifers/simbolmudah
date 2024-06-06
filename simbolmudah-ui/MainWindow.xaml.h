@@ -2,6 +2,7 @@
 
 #include "MainWindow.g.h"
 import std;
+import Core;
 import KeyboardHook;
 
 namespace winrt::simbolmudah_ui::implementation
@@ -17,7 +18,7 @@ namespace winrt::simbolmudah_ui::implementation
 		void ListenKeyUpdate(const IInspectable& sender, const Microsoft::UI::Xaml::RoutedEventArgs& args);
 
 	private:
-		fire_and_forget UpdateInfoBar(DWORD vkCode);
+		fire_and_forget UpdateInfoBar(LowLevelKeyboardEvent keyEvent);
 		std::optional<KeyboardHook> keyboardHook;
 		const apartment_context main_thread;
 	};

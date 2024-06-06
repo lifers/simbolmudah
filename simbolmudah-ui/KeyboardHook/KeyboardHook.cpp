@@ -2,17 +2,33 @@ module;
 #include "pch.h"
 module KeyboardHook;
 
+import Core;
+
 using namespace winrt;
 using namespace Windows::Foundation;
 
-delegate<DWORD> KeyboardHook::Reporter{ nullptr };
+delegate<LowLevelKeyboardEvent> KeyboardHook::Reporter{ nullptr };
 
 LRESULT CALLBACK KeyboardHook::KeyboardProcedure(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	if (nCode == HC_ACTION)
 	{
-		const auto keyInfo = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
-		KeyboardHook::Reporter(keyInfo->vkCode);
+		const bool is_key = wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN || wParam == WM_KEYUP || wParam == WM_SYSKEYUP;
+		const auto keyInfo = reinterpret_cast<const KBDLLHOOKSTRUCT*>(lParam);
+		const auto keyEvent = LowLevelKeyboardEvent{
+			.vkCode = keyInfo->vkCode,
+			.scanCode = keyInfo->scanCode,
+			.flags = keyInfo->flags,
+			.time = keyInfo->time,
+			.dwExtraInfo = keyInfo->dwExtraInfo,
+			.windowMessage = wParam
+		};
+		const bool is_injected = keyInfo->flags & LLKHF_INJECTED;
+		if (is_key && !is_injected)
+		{
+			Reporter(keyEvent);
+			return 1;
+		}
 	}
 	return CallNextHookEx(nullptr, nCode, wParam, lParam);
 }
