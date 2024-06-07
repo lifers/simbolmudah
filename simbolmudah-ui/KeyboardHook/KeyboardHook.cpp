@@ -3,6 +3,7 @@ module;
 module KeyboardHook;
 
 import Core;
+import std;
 
 using namespace winrt;
 using namespace Windows::Foundation;
@@ -33,6 +34,11 @@ LRESULT CALLBACK KeyboardHook::KeyboardProcedure(int nCode, WPARAM wParam, LPARA
 	return CallNextHookEx(nullptr, nCode, wParam, lParam);
 }
 
+bool KeyboardHook::IsHexadecimal(DWORD vkCode)
+{
+	return false;
+}
+
 KeyboardHook::~KeyboardHook()
 {
 	MessageBoxW(nullptr, L"Unhooking", L"Info", MB_OK);
@@ -61,4 +67,103 @@ IAsyncAction KeyboardHook::RunAndMonitorListeners()
 	}
 
 	co_return;
+}
+
+bool KeyboardHook::ProcessEvent(KBDLLHOOKSTRUCT keyInfo, WPARAM windowMessage)
+{
+	const bool is_keydown = windowMessage == WM_KEYDOWN || windowMessage == WM_SYSKEYDOWN;
+
+	// Update modifier key states
+	switch (keyInfo.vkCode)
+	{
+	case VK_SHIFT: [[fallthrough]];
+	case VK_LSHIFT: [[fallthrough]];
+	case VK_RSHIFT:
+		m_hasShift = is_keydown;
+		return false;
+	case VK_RMENU:
+		m_hasAltGr = is_keydown;
+		break;
+	case VK_CAPITAL:
+		if (is_keydown)
+		{
+			m_hasCapsLock = !m_hasCapsLock;
+			return false;
+		}
+	}
+
+	switch (m_stage)
+	{
+	case Idle:
+		if (is_keydown && keyInfo.vkCode == VK_RMENU)
+		{
+			m_stage = ComposeKeydownFirst;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	case ComposeKeydownFirst:
+		if (!is_keydown && keyInfo.vkCode == VK_RMENU)
+		{
+			m_stage = ComposeKeyupFirst;
+		}
+		else
+		{
+			m_stage = Idle;
+		}
+		return true;
+	case ComposeKeyupFirst:
+		if (is_keydown && keyInfo.vkCode == VK_RMENU)
+		{
+			m_stage = ComposeKeydownSecond;
+		}
+		else if (is_keydown && keyInfo.vkCode == 0x55) // VK_U
+		{
+			m_stage = UnicodeMode;
+		}
+		else
+		{
+			m_stage = SequenceMode;
+			// TODO: append input to buffer
+			// TODO: send buffer content to sequencer
+		}
+		return true;
+	case ComposeKeydownSecond:
+		if (!is_keydown && keyInfo.vkCode == VK_RMENU)
+		{
+			m_stage = SearchMode;
+			// TODO: yield control to search UI
+		}
+		else
+		{
+			m_stage = SequenceMode;
+			// TODO: append input to buffer
+			// TODO: send buffer content to sequencer
+		}
+		return true;
+	case SequenceMode:
+		if (is_keydown)
+		{
+			// TODO: append input to buffer
+			// TODO: send buffer content to sequencer
+		}
+		return true;
+	case UnicodeMode:
+		if (is_keydown && IsHexadecimal(keyInfo.vkCode))
+		{
+			// TODO: append input to buffer
+		}
+		else if (is_keydown && keyInfo.vkCode == VK_RETURN)
+		{
+			// TODO: send buffer content to unicode converter
+			// TODO: if successful, send the resulting unicode to user
+			// TODO: if failed, send and empty the buffer to user
+			m_stage = Idle;
+		}
+		return true;
+	default:
+		std::unreachable();
+	}
 }
