@@ -19,7 +19,7 @@ namespace winrt::simbolmudah_ui::implementation
 		{
 			keyboardHook.emplace(
 				delegate<LowLevelKeyboardEvent>{ this, &MainWindow::UpdateInfoBar },
-				delegate<hstring>{ this, &MainWindow::UpdateStateBar }
+				delegate<std::wstring>{ this, &MainWindow::UpdateStateBar }
 			);
 		}
 		else
@@ -38,7 +38,7 @@ namespace winrt::simbolmudah_ui::implementation
 		infoBar().IsOpen(true);
 	}
 
-	fire_and_forget MainWindow::UpdateStateBar(hstring message)
+	fire_and_forget MainWindow::UpdateStateBar(std::wstring message)
 	{
 		co_await main_thread;
 		stateBar().Message(message);

@@ -39,7 +39,7 @@ namespace {
 	}
 }
 
-KeyboardHook::KeyboardHook(const delegate<LowLevelKeyboardEvent>& reporterFn, const delegate<hstring>& stateFn) :
+KeyboardHook::KeyboardHook(const delegate<LowLevelKeyboardEvent>& reporterFn, const delegate<std::wstring>& stateFn) :
 	m_reporterFn{ reporterFn }, m_inputProcessor{ stateFn }
 {
 	g_instance = this;

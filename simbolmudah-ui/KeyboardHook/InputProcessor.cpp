@@ -29,6 +29,21 @@ namespace {
 		};
 	}
 
+	constexpr std::wstring StageToString(Stage stage)
+	{
+		switch (stage)
+		{
+		case Idle: return L"Idle";
+		case ComposeKeydownFirst: return L"ComposeKeydownFirst";
+		case ComposeKeyupFirst: return L"ComposeKeyupFirst";
+		case ComposeKeydownSecond: return L"ComposeKeydownSecond";
+		case SequenceMode: return L"SequenceMode";
+		case SearchMode: return L"SearchMode";
+		case UnicodeMode: return L"UnicodeMode";
+		default: std::unreachable();
+		}
+	}
+
 	fire_and_forget SendBack(boost::container::static_vector<INPUT, 16> buffer, uint8_t start, uint8_t count)
 	{
 		co_await resume_background();
@@ -70,13 +85,13 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 		if (is_keydown && keyEvent.vkCode == VK_RMENU)
 		{
 			this->m_stage = ComposeKeydownFirst;
-			this->m_reporterFn(this->StageToString());
+			this->m_reporterFn(StageToString(this->m_stage));
 			return true;
 		}
 		else
 		{
 			this->m_inputBuffer.clear();
-			this->m_reporterFn(this->StageToString());
+			this->m_reporterFn(StageToString(this->m_stage));
 			return false;
 		}
 	case ComposeKeydownFirst:
@@ -90,7 +105,7 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 			this->m_inputBuffer.clear();
 			this->m_stage = Idle;
 		}
-		this->m_reporterFn(this->StageToString());
+		this->m_reporterFn(StageToString(this->m_stage));
 		return true;
 	case ComposeKeyupFirst:
 		if (is_keydown && keyEvent.vkCode == VK_RMENU)
@@ -107,7 +122,7 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 			this->m_stage = SequenceMode;
 			// TODO: send buffer content to sequencer
 		}
-		this->m_reporterFn(this->StageToString());
+		this->m_reporterFn(StageToString(this->m_stage));
 		return true;
 	case ComposeKeydownSecond:
 		if (!is_keydown && keyEvent.vkCode == VK_RMENU)
@@ -121,38 +136,23 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 			this->m_stage = SequenceMode;
 			// TODO: send buffer content to sequencer
 		}
-		this->m_reporterFn(this->StageToString());
+		this->m_reporterFn(StageToString(this->m_stage));
 		return true;
 	case SequenceMode:
 		if (is_keydown)
 		{
 			// TODO: send buffer content to sequencer
 		}
-		this->m_reporterFn(this->StageToString());
+		this->m_reporterFn(StageToString(this->m_stage));
 		return true;
 	case UnicodeMode:
 		if (is_keydown)
 		{
 			// TODO: send buffer content to unicode converter
 		}
-		this->m_reporterFn(this->StageToString());
+		this->m_reporterFn(StageToString(this->m_stage));
 		return true;
 	default:
 		std::unreachable();
-	}
-}
-
-winrt::hstring InputProcessor::StageToString() const
-{
-	switch (this->m_stage)
-	{
-	case Idle: return L"Idle";
-	case ComposeKeydownFirst: return L"ComposeKeydownFirst";
-	case ComposeKeyupFirst: return L"ComposeKeyupFirst";
-	case ComposeKeydownSecond: return L"ComposeKeydownSecond";
-	case SequenceMode: return L"SequenceMode";
-	case SearchMode: return L"SearchMode";
-	case UnicodeMode: return L"UnicodeMode";
-	default: std::unreachable();
 	}
 }

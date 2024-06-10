@@ -11,7 +11,7 @@ using namespace Microsoft::UI::Dispatching;
 export class KeyboardHook
 {
 public:
-	explicit KeyboardHook(const delegate<LowLevelKeyboardEvent>& reporterFn, const delegate<hstring>& stateFn);
+	explicit KeyboardHook(const delegate<LowLevelKeyboardEvent>& reporterFn, const delegate<std::wstring>& stateFn);
 	~KeyboardHook();
 	
 	InputProcessor m_inputProcessor;
