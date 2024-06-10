@@ -2,9 +2,6 @@ module;
 #include "pch.h"
 module KeyboardHook;
 
-import Core;
-import std;
-
 using namespace winrt;
 using namespace Windows::Foundation;
 
@@ -17,19 +14,11 @@ namespace {
 		{
 			const bool is_key = wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN || wParam == WM_KEYUP || wParam == WM_SYSKEYUP;
 			const auto keyInfo = reinterpret_cast<const KBDLLHOOKSTRUCT*>(lParam);
-			const auto keyEvent = LowLevelKeyboardEvent{
-				.vkCode = keyInfo->vkCode,
-				.scanCode = keyInfo->scanCode,
-				.flags = keyInfo->flags,
-				.time = keyInfo->time,
-				.dwExtraInfo = keyInfo->dwExtraInfo,
-				.windowMessage = wParam
-			};
 			const bool is_injected = keyInfo->flags & LLKHF_INJECTED;
 			if (is_key && !is_injected)
 			{
-				g_instance->m_reporterFn(keyEvent);
-				if (g_instance->m_inputProcessor.ProcessEvent(*keyInfo, wParam))
+				g_instance->m_reporterFn(*keyInfo, wParam);
+				if (g_instance->ProcessEvent(*keyInfo, wParam))
 				{
 					return 1;
 				}
@@ -39,8 +28,10 @@ namespace {
 	}
 }
 
-KeyboardHook::KeyboardHook(const delegate<LowLevelKeyboardEvent>& reporterFn, const delegate<std::wstring>& stateFn) :
-	m_reporterFn{ reporterFn }, m_inputProcessor{ stateFn }
+KeyboardHook::KeyboardHook(
+	const std::function<winrt::fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)>& reporterFn,
+	const std::function<winrt::fire_and_forget(std::wstring)>& stateFn
+) : m_reporterFn{ reporterFn }, m_inputProcessor{ stateFn }
 {
 	g_instance = this;
 
@@ -77,4 +68,9 @@ KeyboardHook::~KeyboardHook()
 		MessageBoxW(nullptr, std::format(L"Failed to unhook (Error {})", GetLastError()).c_str(), L"Error", MB_OK);
 	}
 	g_instance = nullptr;
+}
+
+bool KeyboardHook::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage)
+{
+	return this->m_inputProcessor.ProcessEvent(keyEvent, windowMessage);
 }

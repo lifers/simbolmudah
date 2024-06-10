@@ -14,7 +14,6 @@
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
     <ClCompile Include="KeyboardHook\KeyboardHook.ixx" />
     <ClCompile Include="KeyboardHook\KeyboardHook.cpp" />
-    <ClCompile Include="Core.ixx" />
     <ClCompile Include="KeyboardHook\InputProcessor.ixx" />
     <ClCompile Include="KeyboardHook\InputProcessor.cpp" />
   </ItemGroup>
