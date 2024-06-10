@@ -17,7 +17,10 @@ namespace winrt::simbolmudah_ui::implementation
 	{
 		if (listenKeySwitch().IsOn())
 		{
-			keyboardHook.emplace(delegate<LowLevelKeyboardEvent>{ this, &MainWindow::UpdateInfoBar });
+			keyboardHook.emplace(
+				delegate<LowLevelKeyboardEvent>{ this, &MainWindow::UpdateInfoBar },
+				delegate<hstring>{ this, &MainWindow::UpdateStateBar }
+			);
 		}
 		else
 		{
@@ -33,5 +36,12 @@ namespace winrt::simbolmudah_ui::implementation
 			keyEvent.vkCode, keyEvent.scanCode, keyEvent.flags, keyEvent.time, keyEvent.dwExtraInfo, keyEvent.windowMessage
 		));
 		infoBar().IsOpen(true);
+	}
+
+	fire_and_forget MainWindow::UpdateStateBar(hstring message)
+	{
+		co_await main_thread;
+		stateBar().Message(message);
+		stateBar().IsOpen(true);
 	}
 }

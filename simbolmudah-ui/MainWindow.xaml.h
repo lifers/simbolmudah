@@ -19,6 +19,7 @@ namespace winrt::simbolmudah_ui::implementation
 
 	private:
 		fire_and_forget UpdateInfoBar(LowLevelKeyboardEvent keyEvent);
+		fire_and_forget UpdateStateBar(hstring message);
 		std::optional<KeyboardHook> keyboardHook;
 		const apartment_context main_thread;
 	};
