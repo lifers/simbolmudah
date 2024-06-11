@@ -13,38 +13,35 @@ using namespace Windows::Foundation;
 
 namespace winrt::simbolmudah_ui::implementation
 {
-	MainWindow::MainWindow() :
-		main_thread{ apartment_context() },
-		infoUpdater{
-			[this](KBDLLHOOKSTRUCT keyEvent, WPARAM wParam) -> fire_and_forget
-			{
-				co_await this->main_thread;
-				infoBar().Message(std::format(
-					L"vkCode: {}\nscanCode: {}\nflags: {}\ntime: {}\ndwExtraInfo: {}\nwParam: {}.",
-					keyEvent.vkCode, keyEvent.scanCode, keyEvent.flags, keyEvent.time, keyEvent.dwExtraInfo, wParam
-				));
-				infoBar().IsOpen(true);
-			}
-		},
-		stateUpdater{
-			[this](std::wstring message) -> fire_and_forget
-			{
-				co_await this->main_thread;
-				stateBar().Message(message);
-				stateBar().IsOpen(true);
-			}
-		}
-	{}
-
 	void MainWindow::ListenKeyUpdate(const IInspectable&, const RoutedEventArgs&)
 	{	
 		if (listenKeySwitch().IsOn())
 		{
-			keyboardHook.emplace(infoUpdater, stateUpdater);
+			keyboardHook.emplace(
+				delegate<fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)>{ this, &MainWindow::InfoUpdater },
+				delegate<fire_and_forget(std::wstring)>{ this, &MainWindow::StateUpdater }
+			);
 		}
 		else
 		{
 			keyboardHook.reset();
 		}
+	}
+
+	fire_and_forget MainWindow::InfoUpdater(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage)
+	{
+		co_await this->main_thread;
+		this->infoBar().Message(std::format(
+			L"vkCode: {}\nscanCode: {}\nflags: {}\ntime: {}\ndwExtraInfo: {}\nwParam: {}.",
+			keyEvent.vkCode, keyEvent.scanCode, keyEvent.flags, keyEvent.time, keyEvent.dwExtraInfo, windowMessage
+		));
+		this->infoBar().IsOpen(true);
+	}
+
+	fire_and_forget MainWindow::StateUpdater(std::wstring message)
+	{
+		co_await this->main_thread;
+		this->stateBar().Message(message);
+		this->stateBar().IsOpen(true);
 	}
 }

@@ -18,11 +18,11 @@ enum Stage : uint8_t
 export class InputProcessor
 {
 public:
-	explicit InputProcessor(const std::function<winrt::fire_and_forget(std::wstring)>& reporterFn) : m_reporterFn(reporterFn) {}
+	explicit InputProcessor(const winrt::delegate<winrt::fire_and_forget(std::wstring)>& reporterFn) : m_reporterFn(reporterFn) {}
 	bool ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage);
 
 private:
-	const std::function<winrt::fire_and_forget(std::wstring)> m_reporterFn;
+	const winrt::delegate<winrt::fire_and_forget(std::wstring)> m_reporterFn;
 	boost::container::static_vector<INPUT, 16> m_inputBuffer;
 	bool m_hasCapsLock{ (GetKeyState(VK_CAPITAL) & 1) != 0 };
 	bool m_hasShift{ false };
