@@ -19,7 +19,8 @@ namespace winrt::simbolmudah_ui::implementation
 		{
 			this->keyboardHook.emplace(
 				delegate<fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)>{ this, &MainWindow::InfoUpdater },
-				delegate<fire_and_forget(std::wstring)>{ this, &MainWindow::StateUpdater }
+				delegate<fire_and_forget(std::wstring)>{ this, &MainWindow::StateUpdater },
+				this->keyboardTranslator
 			);
 		}
 		else

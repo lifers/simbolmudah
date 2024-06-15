@@ -1,8 +1,9 @@
 #pragma once
 
 #include "MainWindow.g.h"
-import std;
+import std.core;
 import KeyboardHook;
+import KeyboardTranslator;
 
 namespace winrt::simbolmudah_ui::implementation
 {
@@ -16,6 +17,8 @@ namespace winrt::simbolmudah_ui::implementation
 	private:
 		winrt::fire_and_forget InfoUpdater(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage);
 		winrt::fire_and_forget StateUpdater(std::wstring message);
+
+		KeyboardTranslator keyboardTranslator;
 		std::optional<KeyboardHook> keyboardHook;
 		const apartment_context main_thread;
 	};

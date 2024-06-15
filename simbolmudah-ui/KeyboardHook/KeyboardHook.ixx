@@ -1,15 +1,17 @@
 #include "pch.h"
 export module KeyboardHook;
 
-import std;
+import std.core;
 import InputProcessor;
+import KeyboardTranslator;
 
 export class KeyboardHook
 {
 public:
 	explicit KeyboardHook(
 		const winrt::delegate<winrt::fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)>& reporterFn,
-		const winrt::delegate<winrt::fire_and_forget(std::wstring)>& stateFn
+		const winrt::delegate<winrt::fire_and_forget(std::wstring)>& stateFn,
+		KeyboardTranslator& translator
 	);
 	~KeyboardHook();
 	KeyboardHook(const KeyboardHook&) = delete;

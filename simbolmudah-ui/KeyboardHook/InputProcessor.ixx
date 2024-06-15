@@ -2,7 +2,8 @@
 #include <boost/container/static_vector.hpp>
 export module InputProcessor;
 
-import std;
+import std.core;
+import KeyboardTranslator;
 
 enum Stage : uint8_t
 {
@@ -18,7 +19,10 @@ enum Stage : uint8_t
 export class InputProcessor
 {
 public:
-	explicit InputProcessor(const winrt::delegate<winrt::fire_and_forget(std::wstring)>& reporterFn) : m_reporterFn(reporterFn) {}
+	explicit InputProcessor(
+		const winrt::delegate<winrt::fire_and_forget(std::wstring)>& reporterFn,
+		KeyboardTranslator& translator
+	) : m_reporterFn(reporterFn), m_keyboardTranslator(translator) {}
 	~InputProcessor() = default;
 	InputProcessor(const InputProcessor&) = delete;
 	InputProcessor& operator=(const InputProcessor&) = delete;
@@ -26,6 +30,7 @@ public:
 
 private:
 	const winrt::delegate<winrt::fire_and_forget(std::wstring)> m_reporterFn;
+	KeyboardTranslator& m_keyboardTranslator;
 	boost::container::static_vector<INPUT, 16> m_inputBuffer;
 	bool m_hasCapsLock{ (GetKeyState(VK_CAPITAL) & 1) != 0 };
 	bool m_hasShift{ false };

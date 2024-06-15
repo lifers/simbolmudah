@@ -98,6 +98,9 @@
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</BuildStlModules>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BuildStlModules>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BuildStlModules>
+      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</EnableModules>
+      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</EnableModules>
+      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableModules>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
@@ -115,6 +118,9 @@
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</BuildStlModules>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</BuildStlModules>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</BuildStlModules>
+      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</EnableModules>
+      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</EnableModules>
+      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</EnableModules>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -142,6 +148,8 @@
     <ClCompile Include="KeyboardHook\InputProcessor.ixx" />
     <ClCompile Include="KeyboardHook\KeyboardHook.cpp" />
     <ClCompile Include="KeyboardHook\KeyboardHook.ixx" />
+    <ClCompile Include="KeyboardTranslator.cpp" />
+    <ClCompile Include="KeyboardTranslator.ixx" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>

@@ -16,6 +16,8 @@
     <ClCompile Include="KeyboardHook\KeyboardHook.cpp" />
     <ClCompile Include="KeyboardHook\InputProcessor.ixx" />
     <ClCompile Include="KeyboardHook\InputProcessor.cpp" />
+    <ClCompile Include="KeyboardTranslator.ixx" />
+    <ClCompile Include="KeyboardTranslator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

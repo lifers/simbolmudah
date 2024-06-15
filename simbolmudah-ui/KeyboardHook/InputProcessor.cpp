@@ -115,12 +115,18 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 		else if (is_keydown && keyEvent.vkCode == 0x55) // VK_U
 		{
 			this->m_stage = UnicodeMode;
-			// TODO: send buffer content to unicode converter
+			this->m_keyboardTranslator.TranslateAndForward(
+				this->m_inputBuffer, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
+				KeyboardTranslator::Destination::Unicode
+			);
 		}
 		else
 		{
 			this->m_stage = SequenceMode;
-			// TODO: send buffer content to sequencer
+			this->m_keyboardTranslator.TranslateAndForward(
+				this->m_inputBuffer, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
+				KeyboardTranslator::Destination::Sequence
+			);
 		}
 		this->m_reporterFn(StageToString(this->m_stage));
 		return true;
@@ -134,21 +140,30 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 		else
 		{
 			this->m_stage = SequenceMode;
-			// TODO: send buffer content to sequencer
+			this->m_keyboardTranslator.TranslateAndForward(
+				this->m_inputBuffer, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
+				KeyboardTranslator::Destination::Sequence
+			);
 		}
 		this->m_reporterFn(StageToString(this->m_stage));
 		return true;
 	case SequenceMode:
 		if (is_keydown)
 		{
-			// TODO: send buffer content to sequencer
+			this->m_keyboardTranslator.TranslateAndForward(
+				this->m_inputBuffer, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
+				KeyboardTranslator::Destination::Sequence
+			);
 		}
 		this->m_reporterFn(StageToString(this->m_stage));
 		return true;
 	case UnicodeMode:
 		if (is_keydown)
 		{
-			// TODO: send buffer content to unicode converter
+			this->m_keyboardTranslator.TranslateAndForward(
+				this->m_inputBuffer, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
+				KeyboardTranslator::Destination::Unicode
+			);
 		}
 		this->m_reporterFn(StageToString(this->m_stage));
 		return true;

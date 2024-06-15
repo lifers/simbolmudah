@@ -30,8 +30,9 @@ namespace {
 
 KeyboardHook::KeyboardHook(
 	const winrt::delegate<winrt::fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)>& reporterFn,
-	const winrt::delegate<winrt::fire_and_forget(std::wstring)>& stateFn
-) : m_reporterFn{ reporterFn }, m_inputProcessor{ stateFn }
+	const winrt::delegate<winrt::fire_and_forget(std::wstring)>& stateFn,
+	KeyboardTranslator& translator
+) : m_reporterFn{ reporterFn }, m_inputProcessor{ stateFn, translator }
 {
 	g_instance = this;
 
