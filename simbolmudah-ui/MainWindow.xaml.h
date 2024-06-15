@@ -9,6 +9,8 @@ namespace winrt::simbolmudah_ui::implementation
 	struct MainWindow : MainWindowT<MainWindow>
 	{
 		MainWindow() : main_thread(apartment_context()) {}
+		MainWindow(const MainWindow&) = delete;
+		MainWindow& operator=(const MainWindow&) = delete;
 		void ListenKeyUpdate(const IInspectable& sender, const Microsoft::UI::Xaml::RoutedEventArgs& args);
 
 	private:

@@ -12,6 +12,8 @@ public:
 		const winrt::delegate<winrt::fire_and_forget(std::wstring)>& stateFn
 	);
 	~KeyboardHook();
+	KeyboardHook(const KeyboardHook&) = delete;
+	KeyboardHook& operator=(const KeyboardHook&) = delete;
 	
 	const winrt::delegate<winrt::fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)> m_reporterFn;
 	bool ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage);

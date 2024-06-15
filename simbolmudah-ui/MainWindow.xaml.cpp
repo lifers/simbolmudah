@@ -15,16 +15,16 @@ namespace winrt::simbolmudah_ui::implementation
 {
 	void MainWindow::ListenKeyUpdate(const IInspectable&, const RoutedEventArgs&)
 	{	
-		if (listenKeySwitch().IsOn())
+		if (this->listenKeySwitch().IsOn())
 		{
-			keyboardHook.emplace(
+			this->keyboardHook.emplace(
 				delegate<fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)>{ this, &MainWindow::InfoUpdater },
 				delegate<fire_and_forget(std::wstring)>{ this, &MainWindow::StateUpdater }
 			);
 		}
 		else
 		{
-			keyboardHook.reset();
+			this->keyboardHook.reset();
 		}
 	}
 

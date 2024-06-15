@@ -19,6 +19,9 @@ export class InputProcessor
 {
 public:
 	explicit InputProcessor(const winrt::delegate<winrt::fire_and_forget(std::wstring)>& reporterFn) : m_reporterFn(reporterFn) {}
+	~InputProcessor() = default;
+	InputProcessor(const InputProcessor&) = delete;
+	InputProcessor& operator=(const InputProcessor&) = delete;
 	bool ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage);
 
 private:
