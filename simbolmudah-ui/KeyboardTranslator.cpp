@@ -3,7 +3,7 @@ module;
 module KeyboardTranslator;
 
 namespace {
-
+	constexpr uint8_t EMPTY_KEYSTATE[256] = {};
 }
 
 void KeyboardTranslator::TranslateAndForward(
@@ -41,9 +41,8 @@ KeyboardTranslator::StringVariant KeyboardTranslator::VKCodeToUnicode(
 
 void KeyboardTranslator::ToUnicodeExClearState() const
 {
-	uint8_t temp[256] = {};
-	this->VKCodeToUnicode(VK_SPACE, 0, temp, 0);
-	this->VKCodeToUnicode(VK_SPACE, 0, temp, 0);
+	this->VKCodeToUnicode(VK_SPACE, 0, EMPTY_KEYSTATE, 0);
+	this->VKCodeToUnicode(VK_SPACE, 0, EMPTY_KEYSTATE, 0);
 }
 
 void KeyboardTranslator::AnalyzeLayout()
