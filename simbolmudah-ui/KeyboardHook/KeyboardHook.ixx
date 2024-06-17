@@ -2,7 +2,7 @@
 export module KeyboardHook;
 
 import std.core;
-import InputProcessor;
+import :InputDispatcher;
 import KeyboardTranslator;
 
 export class KeyboardHook
@@ -21,7 +21,7 @@ public:
 	bool ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage);
 
 private:
-	InputProcessor m_inputProcessor;
+	InputDispatcher m_inputProcessor;
 	const winrt::Microsoft::UI::Dispatching::DispatcherQueueController m_controller{
 		winrt::Microsoft::UI::Dispatching::DispatcherQueueController::CreateOnDedicatedThread()
 	};

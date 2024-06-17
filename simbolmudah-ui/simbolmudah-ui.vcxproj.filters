@@ -12,12 +12,32 @@
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
-    <ClCompile Include="KeyboardHook\KeyboardHook.ixx" />
-    <ClCompile Include="KeyboardHook\KeyboardHook.cpp" />
-    <ClCompile Include="KeyboardHook\InputProcessor.ixx" />
-    <ClCompile Include="KeyboardHook\InputProcessor.cpp" />
-    <ClCompile Include="KeyboardTranslator.ixx" />
-    <ClCompile Include="KeyboardTranslator.cpp" />
+    <ClCompile Include="ResultSender.ixx" />
+    <ClCompile Include="ResultSender.cpp" />
+    <ClCompile Include="KeyboardHook\InputProcessor.cpp">
+      <Filter>KeyboardHook</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyboardHook\InputProcessor.ixx">
+      <Filter>KeyboardHook</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyboardHook\KeyboardHook.cpp">
+      <Filter>KeyboardHook</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyboardHook\KeyboardHook.ixx">
+      <Filter>KeyboardHook</Filter>
+    </ClCompile>
+    <ClCompile Include="Dictionary\SequenceDictionary.cpp">
+      <Filter>Dictionary</Filter>
+    </ClCompile>
+    <ClCompile Include="Dictionary\SequenceDictionary.ixx">
+      <Filter>Dictionary</Filter>
+    </ClCompile>
+    <ClCompile Include="Dictionary\KeyboardTranslator.cpp">
+      <Filter>Dictionary</Filter>
+    </ClCompile>
+    <ClCompile Include="Dictionary\KeyboardTranslator.ixx">
+      <Filter>Dictionary</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -25,6 +45,12 @@
   <ItemGroup>
     <Filter Include="Assets">
       <UniqueIdentifier>{e48dc53e-40b1-40cb-970a-f89935452892}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="KeyboardHook">
+      <UniqueIdentifier>{7f6f7ea1-d426-495d-8ef0-f6ab78a7aee4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dictionary">
+      <UniqueIdentifier>{72ddc37f-2cf9-4029-b60f-ca1f71fe4094}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

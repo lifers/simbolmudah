@@ -1,6 +1,8 @@
 module;
 #include "pch.h"
-module InputProcessor;
+module KeyboardHook:InputDispatcher;
+
+import ResultSender;
 
 using namespace winrt;
 
@@ -29,7 +31,7 @@ namespace {
 		};
 	}
 
-	constexpr std::wstring StageToString(Stage stage)
+	constexpr std::wstring StageToString(Stage stage) noexcept
 	{
 		switch (stage)
 		{
@@ -43,18 +45,9 @@ namespace {
 		default: std::unreachable();
 		}
 	}
-
-	fire_and_forget SendBack(boost::container::static_vector<INPUT, 16> buffer, uint8_t start, uint8_t count)
-	{
-		co_await resume_background();
-		if (SendInput(count, &buffer[start], sizeof(INPUT)) != count)
-		{
-			MessageBoxW(nullptr, L"Failed to send input properly", L"Error", MB_OK);
-		}
-	}
 }
 
-bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage)
+bool InputDispatcher::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage)
 {
 	const bool is_keydown = windowMessage == WM_KEYDOWN || windowMessage == WM_SYSKEYDOWN;
 
@@ -65,6 +58,8 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 	case VK_LSHIFT: [[fallthrough]];
 	case VK_RSHIFT:
 		this->m_hasShift = is_keydown;
+		if (!this->m_hasShift)
+			MessageBeep(MB_ICONASTERISK);
 		return false;
 	case VK_RMENU:
 		this->m_hasAltGr = is_keydown;
@@ -101,7 +96,8 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 		}
 		else
 		{
-			SendBack(this->m_inputBuffer, 0, this->m_inputBuffer.size());
+			auto bufferCopy{ this->m_inputBuffer };
+			ResultSender::Send(std::span<INPUT>(bufferCopy.data(), bufferCopy.size()));
 			this->m_inputBuffer.clear();
 			this->m_stage = Idle;
 		}
@@ -115,17 +111,19 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 		else if (is_keydown && keyEvent.vkCode == 0x55) // VK_U
 		{
 			this->m_stage = UnicodeMode;
+			this->m_keyboardTranslator.CheckLayoutAndUpdate();
 			this->m_keyboardTranslator.TranslateAndForward(
-				this->m_inputBuffer, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
-				KeyboardTranslator::Destination::Unicode
+				keyEvent, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
+				KeyboardTranslator::Destination::Unicode, { this, &InputDispatcher::ResetStage }
 			);
 		}
 		else
 		{
 			this->m_stage = SequenceMode;
+			this->m_keyboardTranslator.CheckLayoutAndUpdate();
 			this->m_keyboardTranslator.TranslateAndForward(
-				this->m_inputBuffer, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
-				KeyboardTranslator::Destination::Sequence
+				keyEvent, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
+				KeyboardTranslator::Destination::Sequence, { this, &InputDispatcher::ResetStage }
 			);
 		}
 		this->m_reporterFn(StageToString(this->m_stage));
@@ -135,14 +133,16 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 		{
 			this->m_stage = SearchMode;
 			this->m_inputBuffer.clear();
+			this->m_reporterFn(StageToString(this->m_stage));
 			// TODO: yield control to search UI
 		}
 		else
 		{
 			this->m_stage = SequenceMode;
+			this->m_keyboardTranslator.CheckLayoutAndUpdate();
 			this->m_keyboardTranslator.TranslateAndForward(
-				this->m_inputBuffer, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
-				KeyboardTranslator::Destination::Sequence
+				keyEvent, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
+				KeyboardTranslator::Destination::Sequence, { this, &InputDispatcher::ResetStage }
 			);
 		}
 		this->m_reporterFn(StageToString(this->m_stage));
@@ -151,8 +151,8 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 		if (is_keydown)
 		{
 			this->m_keyboardTranslator.TranslateAndForward(
-				this->m_inputBuffer, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
-				KeyboardTranslator::Destination::Sequence
+				keyEvent, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
+				KeyboardTranslator::Destination::Sequence, { this, &InputDispatcher::ResetStage }
 			);
 		}
 		this->m_reporterFn(StageToString(this->m_stage));
@@ -161,8 +161,8 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 		if (is_keydown)
 		{
 			this->m_keyboardTranslator.TranslateAndForward(
-				this->m_inputBuffer, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
-				KeyboardTranslator::Destination::Unicode
+				keyEvent, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
+				KeyboardTranslator::Destination::Unicode, { this, &InputDispatcher::ResetStage }
 			);
 		}
 		this->m_reporterFn(StageToString(this->m_stage));
@@ -170,4 +170,12 @@ bool InputProcessor::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage
 	default:
 		std::unreachable();
 	}
+}
+
+winrt::fire_and_forget InputDispatcher::ResetStage() noexcept
+{
+	co_await this->m_thread;
+	this->m_inputBuffer.clear();
+	this->m_stage = Idle;
+	this->m_reporterFn(StageToString(this->m_stage));
 }

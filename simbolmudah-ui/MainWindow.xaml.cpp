@@ -45,4 +45,11 @@ namespace winrt::simbolmudah_ui::implementation
 		this->stateBar().Message(message);
 		this->stateBar().IsOpen(true);
 	}
+
+	fire_and_forget MainWindow::ShowResult(std::wstring message)
+	{
+		co_await this->main_thread;
+		this->resultBar().Message(message);
+		this->resultBar().IsOpen(true);
+	}
 }

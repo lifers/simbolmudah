@@ -9,7 +9,7 @@ namespace {
 	KeyboardHook* g_instance = nullptr;
 
 	LRESULT CALLBACK KeyboardProcedure(int nCode, WPARAM wParam, LPARAM lParam) noexcept
-	{
+ 	{
 		if (nCode == HC_ACTION)
 		{
 			const bool is_key = wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN || wParam == WM_KEYUP || wParam == WM_SYSKEYUP;
@@ -36,7 +36,7 @@ KeyboardHook::KeyboardHook(
 {
 	g_instance = this;
 
-	const auto queue = m_controller.DispatcherQueue();
+	const auto queue = this->m_controller.DispatcherQueue();
 
 	const bool successEnqueue = queue.TryEnqueue([this]()
 	{

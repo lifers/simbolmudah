@@ -12,5 +12,6 @@
         <ToggleSwitch x:Name="listenKeySwitch" Toggled="ListenKeyUpdate" Header="Listen" />
         <InfoBar x:Name="infoBar" Title="Last Key" Severity="Informational" />
         <InfoBar x:Name="stateBar" Title="Current State" Severity="Informational" />
+        <InfoBar x:Name="resultBar" Title="Compose Result" Severity="Success" />
     </StackPanel>
 </Window>

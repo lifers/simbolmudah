@@ -144,12 +144,14 @@
     <Page Include="MainWindow.xaml" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Dictionary\KeyboardTranslator.cpp" />
+    <ClCompile Include="Dictionary\KeyboardTranslator.ixx" />
+    <ClCompile Include="Dictionary\SequenceDictionary.cpp" />
+    <ClCompile Include="Dictionary\SequenceDictionary.ixx" />
     <ClCompile Include="KeyboardHook\InputProcessor.cpp" />
     <ClCompile Include="KeyboardHook\InputProcessor.ixx" />
     <ClCompile Include="KeyboardHook\KeyboardHook.cpp" />
     <ClCompile Include="KeyboardHook\KeyboardHook.ixx" />
-    <ClCompile Include="KeyboardTranslator.cpp" />
-    <ClCompile Include="KeyboardTranslator.ixx" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -160,6 +162,8 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </ClCompile>
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
+    <ClCompile Include="ResultSender.cpp" />
+    <ClCompile Include="ResultSender.ixx" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl">
