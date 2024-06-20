@@ -9,14 +9,18 @@ use std::{
 
 use crate::key::Key;
 
+
+const KEYSYMDEF: &str = "../resource/keysymdef.h";
+// const GENERAL_REGEX_STR: &str = r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*(/\*.*\*/)?\s*$";
+const UNICODE_REGEX_STR: &str =
+    r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*/\*[ <(]U\+([0-9A-F]{4,6}) (.*)[ >)]\*/\s*$";
+
 thread_local! {
     static GENERAL_KEYSYM: RefCell<HashMap<String, u32>> = RefCell::new(HashMap::new());
     static KEYPAD_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(
         r"^#define XK_(KP_[a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*(/\*[ |<].*[ |>]\*/)?\s*$"
     ).unwrap());
-    static UNICODE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(
-        r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*/\*.U\+([0-9A-F]{4,6}).(.*) \*/\s*$"
-    ).unwrap());
+    static UNICODE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(UNICODE_REGEX_STR).unwrap());
     static DEPRECATED_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(
         r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*/\* (deprecated.*) \*/\s*$"
     ).unwrap());
@@ -24,11 +28,6 @@ thread_local! {
         r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*(/\*.*\*/)?\s*$"
     ).unwrap());
 }
-
-const KEYSYMDEF: &str = "resource/keysymdef.h";
-const GENERAL_REGEX_STR: &str = r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*(/\*.*\*/)?\s*$";
-const UNICODE_REGEX_STR: &str =
-    r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*/\*[ <(]U\+([0-9A-F]{4,6}) (.*)[ >)]\*/\s*$";
 
 pub(super) struct KeySymDef {
     content: HashMap<String, Key>,
@@ -47,16 +46,15 @@ impl KeySymDef {
             .write(true)
             .create(true)
             .truncate(true)
-            .open("resource/keylist.txt")
+            .open("../resource/keylist.txt")
             .unwrap();
         let mut writer = BufWriter::new(output);
 
         let mut result = HashMap::new();
-        let unicode_regex = Regex::new(UNICODE_REGEX_STR).unwrap();
 
         for line in reader.lines() {
             let line = line.unwrap();
-            if let Some(caps) = unicode_regex.captures(&line) {
+            if let Some(caps) = UNICODE_REGEX.with(|r| r.captures(&line)) {
                 let name = caps.get(1).unwrap().as_str();
                 let value = u32::from_str_radix(caps.get(3).unwrap().as_str(), 16)
                     .unwrap()
