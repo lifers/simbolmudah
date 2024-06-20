@@ -1,28 +1,38 @@
 ﻿module;
 #include "pch.h"
+#include <winrt/LibSimbolMudah.h>
 module KeyboardTranslator:SequenceDictionary;
+
+SequenceDictionary::SequenceDictionary()
+{
+	this->m_translator = winrt::LibSimbolMudah::SequenceTranslator();
+	this->m_translator.BuildDictionary();
+}
 
 SequenceDictionary::ResultVariant SequenceDictionary::AppendAndSearch(std::wstring sequence)
 {
 	this->m_sequence.append_range(sequence);
-	if (this->m_sequence == L">")
+	winrt::hstring tmp{ this->m_sequence };
+
+	try
 	{
-		return Incomplete();
+		winrt::hstring result { this->m_translator.Translate(tmp) };
+		return ValidString(result.c_str());
 	}
-	else if (this->m_sequence == L">=")
+	catch (winrt::hresult_error const& e)
 	{
-		return ValidString(L"≥");
-	}
-	else if (this->m_sequence == L"f")
-	{
-		return Incomplete();
-	}
-	else if (this->m_sequence == L"fm")
-	{
-		return ValidString(L"👨🏿‍👩🏻‍👧🏿‍👦🏼");
-	}
-	else
-	{
+		if (e.code() == E_INVALIDARG)
+		{
+			if (this->m_sequence == L">")
+			{
+				return Incomplete();
+			}
+			else if (this->m_sequence == L"f")
+			{
+				return Incomplete();
+			}
+		}
+
 		return Invalid();
 	}
 }

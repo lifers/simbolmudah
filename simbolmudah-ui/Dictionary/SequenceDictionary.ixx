@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include <winrt/LibSimbolMudah.h>
 export module KeyboardTranslator:SequenceDictionary;
 
 import std.core;
@@ -6,7 +7,7 @@ import std.core;
 export class SequenceDictionary
 {
 public:
-	SequenceDictionary() = default;
+	SequenceDictionary();
 	~SequenceDictionary() = default;
 	SequenceDictionary(const SequenceDictionary&) = delete;
 	SequenceDictionary& operator=(const SequenceDictionary&) = delete;
@@ -22,4 +23,5 @@ public:
 
 private:
 	std::wstring m_sequence;
+	winrt::LibSimbolMudah::SequenceTranslator m_translator{ nullptr };
 };
