@@ -2,28 +2,29 @@
 name = "libsimbolmudah"
 version = "0.2.0"
 edition = "2021"
+publish = false
 
 [lib]
+name = "libsimbolmudah"
 crate-type = ["cdylib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies.windows]
 version = "0.57"
 features = [
+    "implement",
     "Win32_Foundation",
-    "Win32_System_Threading",
-    "Win32_UI_WindowsAndMessaging",
-    "Win32_System_LibraryLoader",
-    "Win32_UI_Input_KeyboardAndMouse",
-    "Win32_UI_TextServices",
+    "Win32_System_WinRT",
 ]
 
 [dependencies]
+windows-core = "0.57.0"
 once_cell = "1.19.0"
 regex = "1.10.5"
 fst = "0.4.7"
 
-# [build-dependencies]
+[build-dependencies]
+windows-bindgen = "0.57"
 # libx11 = { git = "https://gitlab.freedesktop.org/xorg/lib/libx11.git", tag = "libX11-1.8.6" }
 # xcompose = { git = "https://github.com/kragen/xcompose.git", branch = "master" }
 # wincompose = { git = "https://github.com/samhocevar/wincompose.git", tag = "0.9.11" }

@@ -1,0 +1,10 @@
+namespace LibSimbolMudah
+{
+  	runtimeclass SequenceTranslator
+  	{
+    	SequenceTranslator();
+
+    	void BuildDictionary();
+    	String Translate(String input);
+  	}
+}
