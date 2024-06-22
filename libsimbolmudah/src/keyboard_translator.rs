@@ -95,11 +95,10 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
             self.thread_controller
                 .DispatcherQueue()?
                 .TryEnqueue(&DispatcherQueueHandler::new(move || -> Result<()> {
-                    delegate_storage
+                    Ok(delegate_storage
                         .write()
                         .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
-                        .insert(token, handler_ref.clone());
-                    Ok(())
+                        .insert(token, handler_ref.clone()))
                 }))?;
 
             Ok(EventRegistrationToken { Value: token })
@@ -120,11 +119,10 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
             self.thread_controller
                 .DispatcherQueue()?
                 .TryEnqueue(&DispatcherQueueHandler::new(move || -> Result<()> {
-                    delegate_storage
+                    Ok(delegate_storage
                         .write()
                         .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
-                        .insert(token, handler_ref.clone());
-                    Ok(())
+                        .insert(token, handler_ref.clone()))
                 }))?;
 
             Ok(EventRegistrationToken { Value: token })
@@ -139,11 +137,10 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
         self.thread_controller
             .DispatcherQueue()?
             .TryEnqueue(&DispatcherQueueHandler::new(move || -> Result<()> {
-                delegate_storage
+                Ok(delegate_storage
                     .write()
                     .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
-                    .remove(value);
-                Ok(())
+                    .remove(value))
             }))?;
         Ok(())
     }
@@ -154,11 +151,10 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
         self.thread_controller
             .DispatcherQueue()?
             .TryEnqueue(&DispatcherQueueHandler::new(move || -> Result<()> {
-                delegate_storage
+                Ok(delegate_storage
                     .write()
                     .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
-                    .remove(value);
-                Ok(())
+                    .remove(value))
             }))?;
         Ok(())
     }
