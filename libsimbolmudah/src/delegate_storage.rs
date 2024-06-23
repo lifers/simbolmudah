@@ -30,15 +30,14 @@ impl<T: RuntimeType + Interface + 'static, U: RuntimeType + 'static> DelegateSto
 
     pub(crate) fn invoke_all(
         &mut self,
-        sender: Arc<AgileReference<T>>,
+        sender: &T,
         args: Option<&U>,
     ) -> Result<()> {
         self.delegates
             .retain(|_, handler| handler.resolve().is_ok());
 
-        let sender_ref = sender.resolve()?;
         for (_, handler) in self.delegates.iter() {
-            handler.resolve()?.Invoke(Some(&sender_ref), args)?;
+            handler.resolve()?.Invoke(Some(sender), args)?;
         }
         Ok(())
     }

@@ -1,6 +1,7 @@
 mod bindings;
 mod keyboard_translator;
 mod delegate_storage;
+mod thread_handler;
 
 use crate::keyboard_translator::KeyboardTranslatorFactory;
 use windows::{
