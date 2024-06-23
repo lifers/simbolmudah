@@ -1,20 +1,12 @@
 namespace LibSimbolMudah
 {
-  	runtimeclass SequenceTranslator
-  	{
-    	SequenceTranslator();
-
-    	void BuildDictionary();
-    	String Translate(String input);
-  	}
-
 	runtimeclass KeyboardTranslator
 	{
 		KeyboardTranslator();
 
 		void TranslateAndForward(UInt32 vkCode, UInt32 scanCode, Boolean hasCapsLock, Boolean hasShift, Boolean hasAltGr, UInt8 destination);
 		void CheckLayoutAndUpdate();
-		event Windows.Foundation.EventHandler<String> OnTranslated;
-		event Windows.Foundation.EventHandler<String> OnInvalid;
+		event Windows.Foundation.TypedEventHandler<KeyboardTranslator, String> OnTranslated;
+		event Windows.Foundation.TypedEventHandler<KeyboardTranslator, String> OnInvalid;
 	}
 }

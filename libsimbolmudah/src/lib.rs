@@ -1,9 +1,8 @@
 mod bindings;
-mod sequence_translator;
 mod keyboard_translator;
 mod delegate_storage;
 
-use crate::sequence_translator::SequenceTranslatorFactory;
+use crate::keyboard_translator::KeyboardTranslatorFactory;
 use windows::{
     core::{Interface, Ref, HRESULT, HSTRING},
     Win32::{
@@ -23,7 +22,7 @@ unsafe extern "system" fn DllGetActivationFactory(
 
     let mut factory: Option<IActivationFactory> = None;
     if *name == "LibSimbolMudah.SequenceTranslator" {
-        factory = Some(SequenceTranslatorFactory.into());
+        factory = Some(KeyboardTranslatorFactory.into());
     }
 
     unsafe {
