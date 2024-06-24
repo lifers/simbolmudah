@@ -1,9 +1,30 @@
-use std::{ffi::OsString, fmt::Display};
+use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(super) enum MappedString {
     Basic(char),
     Extra(String),
+}
+
+impl From<char> for MappedString {
+    fn from(value: char) -> Self {
+        MappedString::Basic(value)
+    }
+}
+
+impl From<String> for MappedString {
+    fn from(value: String) -> Self {
+        MappedString::Extra(value)
+    }
+}
+
+impl Into<String> for MappedString {
+    fn into(self) -> String {
+        match self {
+            MappedString::Basic(c) => c.to_string(),
+            MappedString::Extra(s) => s,
+        }
+    }
 }
 
 impl Into<u64> for MappedString {
@@ -21,15 +42,6 @@ impl From<u64> for MappedString {
             MappedString::Basic(char::from_u32(value as u32).unwrap())
         } else {
             MappedString::Extra("peradaban".into())
-        }
-    }
-}
-
-impl Into<OsString> for MappedString {
-    fn into(self) -> OsString {
-        match self {
-            MappedString::Basic(c) => OsString::from(c.to_string()),
-            MappedString::Extra(s) => OsString::from(s),
         }
     }
 }

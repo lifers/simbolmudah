@@ -10,7 +10,7 @@
 windows_core::imp::define_interface!(
     IKeyboardTranslator,
     IKeyboardTranslator_Vtbl,
-    0x459f4272_0cb3_5e0f_b071_9ab3f095737d
+    0x30b37850_7ffb_54e1_a40e_fa6cbcaba2ed
 );
 impl windows_core::RuntimeType for IKeyboardTranslator {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -30,6 +30,7 @@ pub struct IKeyboardTranslator_Vtbl {
     ) -> windows_core::HRESULT,
     pub CheckLayoutAndUpdate:
         unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+    pub BuildTranslator: unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
     pub OnTranslated: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut core::ffi::c_void,
@@ -100,6 +101,15 @@ impl KeyboardTranslator {
         let this = self;
         unsafe {
             (windows_core::Interface::vtable(this).CheckLayoutAndUpdate)(
+                windows_core::Interface::as_raw(this),
+            )
+            .ok()
+        }
+    }
+    pub fn BuildTranslator(&self) -> windows_core::Result<()> {
+        let this = self;
+        unsafe {
+            (windows_core::Interface::vtable(this).BuildTranslator)(
                 windows_core::Interface::as_raw(this),
             )
             .ok()
@@ -196,6 +206,7 @@ pub trait IKeyboardTranslator_Impl: Sized {
         destination: u8,
     ) -> windows_core::Result<()>;
     fn CheckLayoutAndUpdate(&self) -> windows_core::Result<()>;
+    fn BuildTranslator(&self) -> windows_core::Result<()>;
     fn OnTranslated(
         &self,
         handler: Option<
@@ -262,6 +273,17 @@ impl IKeyboardTranslator_Vtbl {
             let this = (this as *const *const ()).offset(OFFSET) as *const Identity;
             let this = (*this).get_impl();
             IKeyboardTranslator_Impl::CheckLayoutAndUpdate(this).into()
+        }
+        unsafe extern "system" fn BuildTranslator<
+            Identity: windows_core::IUnknownImpl<Impl = Impl>,
+            Impl: IKeyboardTranslator_Impl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+        ) -> windows_core::HRESULT {
+            let this = (this as *const *const ()).offset(OFFSET) as *const Identity;
+            let this = (*this).get_impl();
+            IKeyboardTranslator_Impl::BuildTranslator(this).into()
         }
         unsafe extern "system" fn OnTranslated<
             Identity: windows_core::IUnknownImpl<Impl = Impl>,
@@ -335,6 +357,7 @@ impl IKeyboardTranslator_Vtbl {
             base__: windows_core::IInspectable_Vtbl::new::<Identity, IKeyboardTranslator, OFFSET>(),
             TranslateAndForward: TranslateAndForward::<Identity, Impl, OFFSET>,
             CheckLayoutAndUpdate: CheckLayoutAndUpdate::<Identity, Impl, OFFSET>,
+            BuildTranslator: BuildTranslator::<Identity, Impl, OFFSET>,
             OnTranslated: OnTranslated::<Identity, Impl, OFFSET>,
             RemoveOnTranslated: RemoveOnTranslated::<Identity, Impl, OFFSET>,
             OnInvalid: OnInvalid::<Identity, Impl, OFFSET>,

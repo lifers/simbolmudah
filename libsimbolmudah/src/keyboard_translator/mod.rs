@@ -1,7 +1,7 @@
 mod sequence_translator;
 
 use crate::{bindings, delegate_storage::DelegateStorage, thread_handler::ThreadHandler};
-use sequence_translator::SequenceTranslator;
+use sequence_translator::{SequenceTranslator, SequenceTranslatorError};
 use std::{
     ffi::c_void,
     hash::{DefaultHasher, Hash, Hasher},
@@ -167,6 +167,19 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
         Err(E_NOTIMPL.into())
     }
 
+    fn BuildTranslator(&self) -> Result<()> {
+        let sequence_translator = self.sequence_translator.clone();
+
+        self.thread_controller.try_enqueue(move || -> Result<()> {
+            sequence_translator
+                .write()
+                .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
+                .build()
+                .map_err(|e| <SequenceTranslatorError as Into<Error>>::into(e))
+        })?;
+        Ok(())
+    }
+
     fn OnInvalid(
         &self,
         handler: Option<&TypedEventHandler<bindings::KeyboardTranslator, HSTRING>>,
@@ -245,7 +258,7 @@ fn forward(
         0 => {
             // Forward to SequenceTranslator
             sequence_translator
-                .read()
+                .write()
                 .map_err(|_| TranslateError::DeadTranslator)?
                 .translate(&value)
         }
@@ -307,7 +320,7 @@ impl IActivationFactory_Impl for KeyboardTranslatorFactory {
             keyboard_layout: Arc::new(AtomicIsize::new(0)),
             report_invalid: Arc::new(RwLock::new(DelegateStorage::new())),
             report_translated: Arc::new(RwLock::new(DelegateStorage::new())),
-            sequence_translator: Arc::new(RwLock::new(SequenceTranslator::new())),
+            sequence_translator: Arc::new(RwLock::new(SequenceTranslator::default())),
         };
         let instance: bindings::KeyboardTranslator = instance.into();
         Ok(instance.into())

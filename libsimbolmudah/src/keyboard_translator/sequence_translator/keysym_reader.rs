@@ -1,3 +1,4 @@
+use super::SequenceTranslatorError;
 use once_cell::unsync::Lazy;
 use regex::Regex;
 use std::{
@@ -6,9 +7,6 @@ use std::{
     fs::{File, OpenOptions},
     io::{BufRead, BufReader, BufWriter, Write},
 };
-
-use crate::key::Key;
-
 
 const KEYSYMDEF: &str = "../resource/keysymdef.h";
 // const GENERAL_REGEX_STR: &str = r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*(/\*.*\*/)?\s*$";
@@ -20,7 +18,7 @@ thread_local! {
     static KEYPAD_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(
         r"^#define XK_(KP_[a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*(/\*[ |<].*[ |>]\*/)?\s*$"
     ).unwrap());
-    static UNICODE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(UNICODE_REGEX_STR).unwrap());
+    // static UNICODE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(UNICODE_REGEX_STR).unwrap());
     static DEPRECATED_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(
         r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*/\* (deprecated.*) \*/\s*$"
     ).unwrap());
@@ -30,55 +28,74 @@ thread_local! {
 }
 
 pub(super) struct KeySymDef {
-    content: HashMap<String, Key>,
+    content: HashMap<String, char>,
 }
 
 impl KeySymDef {
-    pub(super) fn new() -> Self {
-        let content = Self::get_general_keysym();
-        Self { content }
+    pub(super) fn new() -> Result<Self, SequenceTranslatorError> {
+        let unicode_regex =
+            Regex::new(UNICODE_REGEX_STR).map_err(|_| SequenceTranslatorError::RegexBuild)?;
+        let content = get_general_keysym(&unicode_regex)?;
+        Ok(Self { content })
     }
 
-    fn get_general_keysym() -> HashMap<String, Key> {
-        let file = File::open(KEYSYMDEF).unwrap();
-        let reader = BufReader::new(file);
-        let output = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open("../resource/keylist.txt")
-            .unwrap();
-        let mut writer = BufWriter::new(output);
+    pub(super) fn get_key(&self, name: &str) -> Result<&char, SequenceTranslatorError> {
+        self.content
+            .get(name)
+            .ok_or_else(|| SequenceTranslatorError::InvalidKeyname)
+    }
+}
 
-        let mut result = HashMap::new();
+fn get_general_keysym(
+    unicode_regex: &Regex,
+) -> Result<HashMap<String, char>, SequenceTranslatorError> {
+    let file = File::open(KEYSYMDEF).map_err(|_| SequenceTranslatorError::FileRead)?;
+    let reader = BufReader::new(file);
+    let output = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open("../resource/keylist.txt")
+        .map_err(|_| SequenceTranslatorError::FileWrite)?;
+    let mut writer = BufWriter::new(output);
 
-        for line in reader.lines() {
-            let line = line.unwrap();
-            if let Some(caps) = UNICODE_REGEX.with(|r| r.captures(&line)) {
-                let name = caps.get(1).unwrap().as_str();
-                let value = u32::from_str_radix(caps.get(3).unwrap().as_str(), 16)
-                    .unwrap()
-                    .into();
-                writeln!(writer, "{} {}", name, value).unwrap();
-                result.insert(name.to_string(), value);
-            }
+    let mut result = HashMap::new();
+
+    for line in reader.lines() {
+        let line = line.map_err(|_| SequenceTranslatorError::ReadLine)?;
+        if let Some(caps) = unicode_regex.captures(&line) {
+            let name = caps
+                .get(1)
+                .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+                .as_str();
+            let value = char::from_u32(
+                u32::from_str_radix(
+                    caps.get(3)
+                        .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+                        .as_str(),
+                    16,
+                )
+                .map_err(|_| SequenceTranslatorError::ParseInt)?,
+            )
+            .ok_or_else(|| SequenceTranslatorError::InvalidChar)?;
+
+            writeln!(writer, "{} {}", name, value)
+                .map_err(|_| SequenceTranslatorError::WriteLine)?;
+            result.insert(name.to_string(), value);
         }
-
-        result
     }
 
-    pub(super) fn get_key(&self, name: &str) -> Option<Key> {
-        self.content.get(name).copied()
-    }
+    Ok(result)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{KeySymDef, DEPRECATED_REGEX, GENERAL_REGEX, KEYPAD_REGEX, UNICODE_REGEX};
+    use super::{KeySymDef, DEPRECATED_REGEX, GENERAL_REGEX, KEYPAD_REGEX, UNICODE_REGEX_STR};
+    use regex::Regex;
 
     #[test]
     fn read_keysym_file() {
-        KeySymDef::new();
+        assert!(KeySymDef::new().is_ok());
     }
 
     #[test]
@@ -165,8 +182,9 @@ mod tests {
 
     #[test]
     fn unicode_key_regex_good() {
+        let unicode_regex = Regex::new(UNICODE_REGEX_STR).unwrap();
         let hay = "#define XK_Return                        0xff0d  /* U+000D CARRIAGE RETURN */";
-        let Some(name) = UNICODE_REGEX.with(|re| re.captures(hay)) else {
+        let Some(name) = unicode_regex.captures(hay) else {
             panic!()
         };
         assert_eq!(
