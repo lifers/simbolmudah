@@ -1,5 +1,6 @@
 module;
 #include "pch.h"
+#include <winrt/Microsoft.UI.Dispatching.h>
 module KeyboardHook;
 
 using namespace winrt;
@@ -29,9 +30,9 @@ namespace {
 }
 
 KeyboardHook::KeyboardHook(
-	const winrt::delegate<winrt::fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)>& reporterFn,
-	const winrt::delegate<winrt::fire_and_forget(std::wstring)>& stateFn,
-	KeyboardTranslator& translator
+	winrt::delegate<winrt::fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)> const& reporterFn,
+	winrt::delegate<winrt::fire_and_forget(std::wstring)> const& stateFn,
+	LibSimbolMudah::KeyboardTranslator const& translator
 ) : m_reporterFn{ reporterFn }, m_inputProcessor{ stateFn, translator }
 {
 	g_instance = this;

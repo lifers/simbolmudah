@@ -19,6 +19,7 @@ features = [
     "Win32_System_WinRT",
     "Win32_UI_Input_KeyboardAndMouse",
     "Win32_UI_TextServices",
+    "Win32_UI_WindowsAndMessaging",
 ]
 
 [dependencies]

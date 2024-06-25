@@ -1,17 +1,19 @@
 #include "pch.h"
+#include <winrt/LibSimbolMudah.h>
+#include <winrt/Microsoft.UI.Dispatching.h>
 export module KeyboardHook;
 
 import std.core;
 import :InputDispatcher;
-import KeyboardTranslator;
+//import KeyboardTranslator;
 
 export class KeyboardHook
 {
 public:
 	explicit KeyboardHook(
-		const winrt::delegate<winrt::fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)>& reporterFn,
-		const winrt::delegate<winrt::fire_and_forget(std::wstring)>& stateFn,
-		KeyboardTranslator& translator
+		winrt::delegate<winrt::fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)> const& reporterFn,
+		winrt::delegate<winrt::fire_and_forget(std::wstring)> const& stateFn,
+		winrt::LibSimbolMudah::KeyboardTranslator const& translator
 	);
 	~KeyboardHook();
 	KeyboardHook(const KeyboardHook&) = delete;

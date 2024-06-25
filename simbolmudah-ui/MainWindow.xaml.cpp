@@ -5,6 +5,7 @@
 #endif
 
 using namespace winrt;
+using namespace LibSimbolMudah;
 using namespace Microsoft::UI::Xaml;
 using namespace Windows::Foundation;
 
@@ -13,6 +14,18 @@ using namespace Windows::Foundation;
 
 namespace winrt::simbolmudah_ui::implementation
 {
+	MainWindow::MainWindow() : main_thread(apartment_context())
+	{
+		this->showResultsToken = this->keyboardTranslator.OnTranslated(
+			TypedEventHandler<KeyboardTranslator, hstring>::TypedEventHandler(this, &MainWindow::ShowResult)
+		);
+	}
+
+	MainWindow::~MainWindow()
+	{
+		this->keyboardTranslator.OnTranslated(this->showResultsToken);
+	}
+	
 	void MainWindow::ListenKeyUpdate(const IInspectable&, const RoutedEventArgs&)
 	{	
 		if (this->listenKeySwitch().IsOn())
@@ -46,7 +59,7 @@ namespace winrt::simbolmudah_ui::implementation
 		this->stateBar().IsOpen(true);
 	}
 
-	fire_and_forget MainWindow::ShowResult(std::wstring message)
+	fire_and_forget MainWindow::ShowResult(KeyboardTranslator const&, hstring const& message)
 	{
 		co_await this->main_thread;
 		this->resultBar().Message(message);

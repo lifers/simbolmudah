@@ -107,7 +107,8 @@
       <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy.exe /y "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsimbolmudah.dll" "$(OutDir)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy.exe /y "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsimbolmudah.dll" "$(OutDir)"
+xcopy.exe /y "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsimbolmudah.pdb" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
@@ -151,10 +152,6 @@
     <Page Include="MainWindow.xaml" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Dictionary\KeyboardTranslator.cpp" />
-    <ClCompile Include="Dictionary\KeyboardTranslator.ixx" />
-    <ClCompile Include="Dictionary\SequenceDictionary.cpp" />
-    <ClCompile Include="Dictionary\SequenceDictionary.ixx" />
     <ClCompile Include="KeyboardHook\InputProcessor.cpp" />
     <ClCompile Include="KeyboardHook\InputProcessor.ixx" />
     <ClCompile Include="KeyboardHook\KeyboardHook.cpp" />

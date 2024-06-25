@@ -26,18 +26,6 @@
     <ClCompile Include="KeyboardHook\KeyboardHook.ixx">
       <Filter>KeyboardHook</Filter>
     </ClCompile>
-    <ClCompile Include="Dictionary\SequenceDictionary.cpp">
-      <Filter>Dictionary</Filter>
-    </ClCompile>
-    <ClCompile Include="Dictionary\SequenceDictionary.ixx">
-      <Filter>Dictionary</Filter>
-    </ClCompile>
-    <ClCompile Include="Dictionary\KeyboardTranslator.cpp">
-      <Filter>Dictionary</Filter>
-    </ClCompile>
-    <ClCompile Include="Dictionary\KeyboardTranslator.ixx">
-      <Filter>Dictionary</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -48,9 +36,6 @@
     </Filter>
     <Filter Include="KeyboardHook">
       <UniqueIdentifier>{7f6f7ea1-d426-495d-8ef0-f6ab78a7aee4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Dictionary">
-      <UniqueIdentifier>{72ddc37f-2cf9-4029-b60f-ca1f71fe4094}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

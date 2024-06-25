@@ -3,10 +3,14 @@ mod sequence_translator;
 use crate::{bindings, delegate_storage::DelegateStorage, thread_handler::ThreadHandler};
 use sequence_translator::{SequenceTranslator, SequenceTranslatorError};
 use std::{
+    collections::HashMap,
     ffi::c_void,
     hash::{DefaultHasher, Hash, Hasher},
     sync::{
-        atomic::{AtomicIsize, Ordering::Acquire},
+        atomic::{
+            AtomicIsize,
+            Ordering::{Acquire, Release},
+        },
         Arc, RwLock,
     },
 };
@@ -14,15 +18,19 @@ use windows::{
     core::{implement, AgileReference, Error, IInspectable, Interface, Result, HRESULT, HSTRING},
     Foundation::{EventRegistrationToken, TypedEventHandler},
     Win32::{
-        Foundation::{ERROR_NO_UNICODE_TRANSLATION, E_ACCESSDENIED, E_INVALIDARG, E_NOTIMPL},
+        Foundation::{ERROR_NO_UNICODE_TRANSLATION, E_ACCESSDENIED, E_FAIL, E_INVALIDARG},
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
         UI::{
-            Input::KeyboardAndMouse::{ToUnicodeEx, VK_CAPITAL, VK_CONTROL, VK_MENU, VK_SHIFT},
+            Input::KeyboardAndMouse::{
+                GetKeyboardLayout, ToUnicodeEx, VK_CAPITAL, VK_CONTROL, VK_MENU, VK_SHIFT, VK_SPACE,
+            },
             TextServices::HKL,
+            WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId},
         },
     },
 };
 
+#[derive(Clone)]
 enum StringVariant {
     LiveString(String),
     DeadString(String),
@@ -57,6 +65,8 @@ struct KeyboardTranslator {
     report_invalid: Arc<RwLock<DelegateStorage<bindings::KeyboardTranslator, HSTRING>>>,
     report_translated: Arc<RwLock<DelegateStorage<bindings::KeyboardTranslator, HSTRING>>>,
     sequence_translator: Arc<RwLock<SequenceTranslator>>,
+    possible_altgr: Arc<RwLock<HashMap<String, String>>>,
+    possible_dead: Arc<RwLock<HashMap<String, u16>>>,
 }
 
 impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
@@ -71,7 +81,7 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
     ) -> Result<()> {
         let self_clone = (*self).clone();
 
-        self.thread_controller.try_enqueue(move || -> Result<()> {
+        let success = self.thread_controller.try_enqueue(move || -> Result<()> {
             let mut keystate = [0; 256];
             if hascapslock {
                 keystate[VK_CAPITAL.0 as usize] = 1;
@@ -122,7 +132,7 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
                         .report_translated
                         .write()
                         .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
-                        .invoke_all(&self_clone.clone().into(), Some(&HSTRING::from(s)))?;
+                        .invoke_all(&self_clone.clone().into(), Some(&HSTRING::from(s)))
                 }
                 Err(TranslateError::ValueNotFound) => {
                     self_clone
@@ -132,7 +142,7 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
                         .invoke_all(
                             &self_clone.clone().into(),
                             Some(&HSTRING::from("Value not found")),
-                        )?;
+                        )
                 }
                 Err(TranslateError::InvalidDestination) => {
                     self_clone
@@ -142,7 +152,7 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
                         .invoke_all(
                             &self_clone.clone().into(),
                             Some(&HSTRING::from("Invalid destination")),
-                        )?;
+                        )
                 }
                 Err(TranslateError::DeadTranslator) => {
                     self_clone
@@ -152,32 +162,66 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
                         .invoke_all(
                             &self_clone.clone().into(),
                             Some(&HSTRING::from("Dead translator")),
-                        )?;
+                        )
                 }
                 Err(TranslateError::Incomplete) => {
                     // Do nothing
+                    Ok(())
                 }
             }
-            Err(E_NOTIMPL.into())
         })?;
-        Ok(())
+
+        if success {
+            Ok(())
+        } else {
+            Err(Error::new(E_FAIL, "Failed to enqueue task"))
+        }
     }
 
     fn CheckLayoutAndUpdate(&self) -> Result<()> {
-        Err(E_NOTIMPL.into())
+        let self_clone = (*self).clone();
+
+        let success = self.thread_controller.try_enqueue(move || -> Result<()> {
+            let foreground_window = unsafe { GetForegroundWindow() };
+            let tid = unsafe { GetWindowThreadProcessId(foreground_window, None) };
+            let active_layout = unsafe { GetKeyboardLayout(tid) };
+
+            if active_layout.0 != self_clone.keyboard_layout.load(Acquire) {
+                self_clone
+                    .keyboard_layout
+                    .store(active_layout.0 as isize, Release);
+                analyze_layout(
+                    self_clone.possible_altgr.clone(),
+                    self_clone.possible_dead.clone(),
+                    active_layout,
+                )?;
+            }
+            Ok(())
+        })?;
+
+        if success {
+            Ok(())
+        } else {
+            Err(Error::new(E_FAIL, "Failed to enqueue task"))
+        }
     }
 
     fn BuildTranslator(&self) -> Result<()> {
         let sequence_translator = self.sequence_translator.clone();
 
-        self.thread_controller.try_enqueue(move || -> Result<()> {
+        let success = self.thread_controller.try_enqueue(move || -> Result<()> {
             sequence_translator
                 .write()
                 .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
                 .build()
                 .map_err(|e| <SequenceTranslatorError as Into<Error>>::into(e))
         })?;
-        Ok(())
+
+        if success {
+            Ok(())
+        } else {
+            Err(Error::new(E_FAIL, "Failed to enqueue task"))
+        }
     }
 
     fn OnInvalid(
@@ -189,14 +233,18 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
             let delegate_storage = self.report_invalid.clone();
             let handler_ref = Arc::new(AgileReference::new(handler)?);
 
-            self.thread_controller.try_enqueue(move || -> Result<()> {
+            let success = self.thread_controller.try_enqueue(move || -> Result<()> {
                 Ok(delegate_storage
                     .write()
                     .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
                     .insert(token, handler_ref.clone()))
             })?;
 
-            Ok(EventRegistrationToken { Value: token })
+            if success {
+                Ok(EventRegistrationToken { Value: token })
+            } else {
+                Err(Error::new(E_FAIL, "Failed to enqueue task"))
+            }
         } else {
             Err(E_INVALIDARG.into())
         }
@@ -211,14 +259,18 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
             let delegate_storage = self.report_translated.clone();
             let handler_ref = Arc::new(AgileReference::new(handler)?);
 
-            self.thread_controller.try_enqueue(move || -> Result<()> {
+            let success = self.thread_controller.try_enqueue(move || -> Result<()> {
                 Ok(delegate_storage
                     .write()
                     .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
                     .insert(token, handler_ref.clone()))
             })?;
 
-            Ok(EventRegistrationToken { Value: token })
+            if success {
+                Ok(EventRegistrationToken { Value: token })
+            } else {
+                Err(Error::new(E_FAIL, "Failed to enqueue task"))
+            }
         } else {
             Err(E_INVALIDARG.into())
         }
@@ -227,25 +279,35 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
     fn RemoveOnInvalid(&self, token: &EventRegistrationToken) -> Result<()> {
         let delegate_storage = self.report_invalid.clone();
         let value = token.Value;
-        self.thread_controller.try_enqueue(move || -> Result<()> {
+        let success = self.thread_controller.try_enqueue(move || -> Result<()> {
             Ok(delegate_storage
                 .write()
                 .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
                 .remove(value))
         })?;
-        Ok(())
+
+        if success {
+            Ok(())
+        } else {
+            Err(Error::new(E_FAIL, "Failed to enqueue task"))
+        }
     }
 
     fn RemoveOnTranslated(&self, token: &EventRegistrationToken) -> Result<()> {
         let delegate_storage = self.report_translated.clone();
         let value = token.Value;
-        self.thread_controller.try_enqueue(move || -> Result<()> {
+        let success = self.thread_controller.try_enqueue(move || -> Result<()> {
             Ok(delegate_storage
                 .write()
                 .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
                 .remove(value))
         })?;
-        Ok(())
+
+        if success {
+            Ok(())
+        } else {
+            Err(Error::new(E_FAIL, "Failed to enqueue task"))
+        }
     }
 }
 
@@ -309,6 +371,82 @@ fn vk_to_unicode(
     }
 }
 
+const EMPTY_KEYSTATE: [u8; 256] = [0; 256];
+
+fn to_unicode_ex_clear_state() {
+    let mut buffer = [0; 8];
+    unsafe {
+        ToUnicodeEx(
+            VK_SPACE.0.into(),
+            0,
+            &EMPTY_KEYSTATE,
+            &mut buffer,
+            0,
+            HKL(0),
+        );
+        ToUnicodeEx(
+            VK_SPACE.0.into(),
+            0,
+            &EMPTY_KEYSTATE,
+            &mut buffer,
+            0,
+            HKL(0),
+        );
+    }
+}
+
+fn analyze_layout(
+    possible_altgr: Arc<RwLock<HashMap<String, String>>>,
+    possible_dead: Arc<RwLock<HashMap<String, u16>>>,
+    keyboard_layout: HKL,
+) -> Result<()> {
+    let mut possible_altgr = possible_altgr
+        .write()
+        .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?;
+    let mut possible_dead = possible_dead
+        .write()
+        .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?;
+
+    let mut no_altgr = vec![String::new(); 512];
+    let mut keystate = [0; 256];
+
+    for i in 0..0x400 {
+        let vk_code = i & 0xFF;
+        let has_shift = (i & 0x100) != 0;
+        let has_altgr = (i & 0x200) != 0;
+
+        if has_shift {
+            keystate[VK_SHIFT.0 as usize] = 0x80;
+        } else {
+            keystate[VK_SHIFT.0 as usize] = 0;
+        }
+
+        if has_altgr {
+            keystate[VK_CONTROL.0 as usize] = 0x80;
+            keystate[VK_MENU.0 as usize] = 0x80;
+        } else {
+            keystate[VK_CONTROL.0 as usize] = 0;
+            keystate[VK_MENU.0 as usize] = 0;
+        }
+
+        if let Ok(s) = vk_to_unicode(vk_code, 0, &keystate, keyboard_layout) {
+            if has_altgr {
+                possible_altgr.insert(s.clone().into(), no_altgr[i as usize - 0x200].clone());
+            } else {
+                no_altgr[i as usize] = s.clone().into();
+            }
+
+            if let StringVariant::DeadString(s) = s {
+                possible_dead.insert(s, i as u16);
+            }
+        }
+
+        to_unicode_ex_clear_state();
+    }
+
+    Ok(())
+}
+
 #[implement(IActivationFactory)]
 pub(super) struct KeyboardTranslatorFactory;
 
@@ -321,6 +459,8 @@ impl IActivationFactory_Impl for KeyboardTranslatorFactory {
             report_invalid: Arc::new(RwLock::new(DelegateStorage::new())),
             report_translated: Arc::new(RwLock::new(DelegateStorage::new())),
             sequence_translator: Arc::new(RwLock::new(SequenceTranslator::default())),
+            possible_altgr: Arc::new(RwLock::new(HashMap::new())),
+            possible_dead: Arc::new(RwLock::new(HashMap::new())),
         };
         let instance: bindings::KeyboardTranslator = instance.into();
         Ok(instance.into())

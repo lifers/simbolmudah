@@ -1,9 +1,10 @@
 #include "pch.h"
 #include <boost/container/static_vector.hpp>
+#include <winrt/LibSimbolMudah.h>
 export module KeyboardHook:InputDispatcher;
 
 import std.core;
-import KeyboardTranslator;
+//import KeyboardTranslator;
 
 enum Stage : uint8_t
 {
@@ -20,18 +21,19 @@ export class InputDispatcher
 {
 public:
 	explicit InputDispatcher(
-		const winrt::delegate<winrt::fire_and_forget(std::wstring)>& reporterFn,
-		KeyboardTranslator& translator
-	) : m_reporterFn(reporterFn), m_keyboardTranslator(translator), m_thread(winrt::apartment_context()) {}
-	~InputDispatcher() = default;
+		winrt::delegate<winrt::fire_and_forget(std::wstring)> const& reporterFn,
+		winrt::LibSimbolMudah::KeyboardTranslator const& translator
+	);
+	~InputDispatcher();
 	InputDispatcher(const InputDispatcher&) = delete;
 	InputDispatcher& operator=(const InputDispatcher&) = delete;
 	bool ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage);
-	winrt::fire_and_forget ResetStage() noexcept;
+	winrt::fire_and_forget ResetStage(winrt::LibSimbolMudah::KeyboardTranslator const&, winrt::hstring const&);
 
 private:
 	const winrt::delegate<winrt::fire_and_forget(std::wstring)> m_reporterFn;
-	KeyboardTranslator& m_keyboardTranslator;
+	const winrt::LibSimbolMudah::KeyboardTranslator& m_keyboardTranslator;
+	winrt::event_token m_invalidToken;
 	const winrt::apartment_context m_thread;
 	boost::container::static_vector<INPUT, 16> m_inputBuffer;
 	bool m_hasCapsLock{ (GetKeyState(VK_CAPITAL) & 1) != 0 };

@@ -22,7 +22,7 @@ unsafe extern "system" fn DllGetActivationFactory(
     }
 
     let mut factory: Option<IActivationFactory> = None;
-    if *name == "LibSimbolMudah.SequenceTranslator" {
+    if *name == "LibSimbolMudah.KeyboardTranslator" {
         factory = Some(KeyboardTranslatorFactory.into());
     }
 

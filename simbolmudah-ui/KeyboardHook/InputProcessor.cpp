@@ -1,10 +1,14 @@
 module;
 #include "pch.h"
+#include <boost/container/vector.hpp>
+#include <winrt/LibSimbolMudah.h>
 module KeyboardHook:InputDispatcher;
 
 import ResultSender;
 
 using namespace winrt;
+using namespace LibSimbolMudah;
+using namespace Windows::Foundation;
 
 namespace {
 	constexpr INPUT KeyEventToInput(KBDLLHOOKSTRUCT keyEvent) noexcept
@@ -18,7 +22,7 @@ namespace {
 		{
 			dwFlags |= KEYEVENTF_KEYUP;
 		}
-		
+
 		return INPUT{
 			.type = INPUT_KEYBOARD,
 			.ki = KEYBDINPUT{
@@ -47,12 +51,29 @@ namespace {
 	}
 }
 
+InputDispatcher::InputDispatcher(
+	const winrt::delegate<winrt::fire_and_forget(std::wstring)>& reporterFn,
+	winrt::LibSimbolMudah::KeyboardTranslator const& translator
+) : m_reporterFn{ reporterFn }, m_keyboardTranslator{ translator }, m_thread{ apartment_context() }
+{
+	this->m_invalidToken = this->m_keyboardTranslator.OnInvalid(
+		TypedEventHandler<KeyboardTranslator, hstring>::TypedEventHandler(this, &InputDispatcher::ResetStage)
+	);
+}
+
+InputDispatcher::~InputDispatcher()
+{
+	this->m_keyboardTranslator.OnInvalid(this->m_invalidToken);
+}
+
 bool InputDispatcher::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage)
 {
 	const bool is_keydown = windowMessage == WM_KEYDOWN || windowMessage == WM_SYSKEYDOWN;
+	const uint32_t vkCode = keyEvent.vkCode;
+	const uint32_t scanCode = keyEvent.scanCode;
 
 	// Update modifier key states
-	switch (keyEvent.vkCode)
+	switch (vkCode)
 	{
 	case VK_SHIFT: [[fallthrough]];
 	case VK_LSHIFT: [[fallthrough]];
@@ -77,7 +98,7 @@ bool InputDispatcher::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessag
 	switch (this->m_stage)
 	{
 	case Idle:
-		if (is_keydown && keyEvent.vkCode == VK_RMENU)
+		if (is_keydown && vkCode == VK_RMENU)
 		{
 			this->m_stage = ComposeKeydownFirst;
 			this->m_reporterFn(StageToString(this->m_stage));
@@ -90,7 +111,7 @@ bool InputDispatcher::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessag
 			return false;
 		}
 	case ComposeKeydownFirst:
-		if (!is_keydown && keyEvent.vkCode == VK_RMENU)
+		if (!is_keydown && vkCode == VK_RMENU)
 		{
 			this->m_stage = ComposeKeyupFirst;
 		}
@@ -104,17 +125,17 @@ bool InputDispatcher::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessag
 		this->m_reporterFn(StageToString(this->m_stage));
 		return true;
 	case ComposeKeyupFirst:
-		if (is_keydown && keyEvent.vkCode == VK_RMENU)
+		if (is_keydown && vkCode == VK_RMENU)
 		{
 			this->m_stage = ComposeKeydownSecond;
 		}
-		else if (is_keydown && keyEvent.vkCode == 0x55) // VK_U
+		else if (is_keydown && vkCode == 0x55) // VK_U
 		{
 			this->m_stage = UnicodeMode;
 			this->m_keyboardTranslator.CheckLayoutAndUpdate();
 			this->m_keyboardTranslator.TranslateAndForward(
-				keyEvent, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
-				KeyboardTranslator::Destination::Unicode, { this, &InputDispatcher::ResetStage }
+				vkCode, scanCode, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
+				1
 			);
 		}
 		else
@@ -122,14 +143,13 @@ bool InputDispatcher::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessag
 			this->m_stage = SequenceMode;
 			this->m_keyboardTranslator.CheckLayoutAndUpdate();
 			this->m_keyboardTranslator.TranslateAndForward(
-				keyEvent, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
-				KeyboardTranslator::Destination::Sequence, { this, &InputDispatcher::ResetStage }
+				vkCode, scanCode, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr, 0
 			);
 		}
 		this->m_reporterFn(StageToString(this->m_stage));
 		return true;
 	case ComposeKeydownSecond:
-		if (!is_keydown && keyEvent.vkCode == VK_RMENU)
+		if (!is_keydown && vkCode == VK_RMENU)
 		{
 			this->m_stage = SearchMode;
 			this->m_inputBuffer.clear();
@@ -141,8 +161,7 @@ bool InputDispatcher::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessag
 			this->m_stage = SequenceMode;
 			this->m_keyboardTranslator.CheckLayoutAndUpdate();
 			this->m_keyboardTranslator.TranslateAndForward(
-				keyEvent, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
-				KeyboardTranslator::Destination::Sequence, { this, &InputDispatcher::ResetStage }
+				vkCode, scanCode, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr, 0
 			);
 		}
 		this->m_reporterFn(StageToString(this->m_stage));
@@ -151,8 +170,7 @@ bool InputDispatcher::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessag
 		if (is_keydown)
 		{
 			this->m_keyboardTranslator.TranslateAndForward(
-				keyEvent, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
-				KeyboardTranslator::Destination::Sequence, { this, &InputDispatcher::ResetStage }
+				vkCode, scanCode, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr, 0
 			);
 		}
 		this->m_reporterFn(StageToString(this->m_stage));
@@ -161,8 +179,7 @@ bool InputDispatcher::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessag
 		if (is_keydown)
 		{
 			this->m_keyboardTranslator.TranslateAndForward(
-				keyEvent, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr,
-				KeyboardTranslator::Destination::Unicode, { this, &InputDispatcher::ResetStage }
+				vkCode, scanCode, this->m_hasCapsLock, this->m_hasShift, this->m_hasAltGr, 1
 			);
 		}
 		this->m_reporterFn(StageToString(this->m_stage));
@@ -172,7 +189,7 @@ bool InputDispatcher::ProcessEvent(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessag
 	}
 }
 
-winrt::fire_and_forget InputDispatcher::ResetStage() noexcept
+winrt::fire_and_forget InputDispatcher::ResetStage(KeyboardTranslator const&, hstring const&)
 {
 	co_await this->m_thread;
 	this->m_inputBuffer.clear();

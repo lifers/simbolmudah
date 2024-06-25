@@ -1,15 +1,17 @@
 #pragma once
 
 #include "MainWindow.g.h"
+#include <winrt/LibSimbolMudah.h>
 import std.core;
 import KeyboardHook;
-import KeyboardTranslator;
+//import KeyboardTranslator;
 
 namespace winrt::simbolmudah_ui::implementation
 {
 	struct MainWindow : MainWindowT<MainWindow>
 	{
-		MainWindow() : main_thread(apartment_context()) {}
+		MainWindow();
+		~MainWindow();
 		MainWindow(const MainWindow&) = delete;
 		MainWindow& operator=(const MainWindow&) = delete;
 		void ListenKeyUpdate(const IInspectable& sender, const Microsoft::UI::Xaml::RoutedEventArgs& args);
@@ -17,11 +19,12 @@ namespace winrt::simbolmudah_ui::implementation
 	private:
 		winrt::fire_and_forget InfoUpdater(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage);
 		winrt::fire_and_forget StateUpdater(std::wstring message);
-		winrt::fire_and_forget ShowResult(std::wstring message);
+		winrt::fire_and_forget ShowResult(winrt::LibSimbolMudah::KeyboardTranslator const&, hstring const& message);
 
-		KeyboardTranslator keyboardTranslator{ winrt::delegate<fire_and_forget(std::wstring)>{ this, &MainWindow::ShowResult } };
+		winrt::LibSimbolMudah::KeyboardTranslator keyboardTranslator;
 		std::optional<KeyboardHook> keyboardHook;
 		const apartment_context main_thread;
+		winrt::event_token showResultsToken;
 	};
 }
 
