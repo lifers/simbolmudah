@@ -11,9 +11,9 @@ export class KeyboardHook
 {
 public:
 	explicit KeyboardHook(
-		winrt::delegate<winrt::fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)> const& reporterFn,
-		winrt::delegate<winrt::fire_and_forget(std::wstring)> const& stateFn,
-		winrt::LibSimbolMudah::KeyboardTranslator const& translator
+		const winrt::delegate<winrt::fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)> const& reporterFn,
+		const winrt::delegate<winrt::fire_and_forget(std::wstring)> const& stateFn,
+		const winrt::LibSimbolMudah::KeyboardTranslator const& translator
 	);
 	~KeyboardHook();
 	KeyboardHook(const KeyboardHook&) = delete;

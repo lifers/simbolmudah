@@ -8,7 +8,7 @@ use regex::Regex;
 
 use super::{keysym_reader::KeySymDef, mapped_string::MappedString, SequenceTranslatorError};
 
-const COMPOSEDEF: &str = "3rd-party/libx11/nls/en_US.UTF-8/Compose.pre";
+const COMPOSEDEF: &str = "../resource/Compose.pre";
 const COMPOSE_REGEX_2_STR: &str =
     r#"^<Multi_key> <([a-zA-Z0-9_]+)> <([a-zA-Z0-9_]+)>\s+: "(.*)".*$"#;
 const COMPOSE_REGEX_3_STR: &str =
@@ -58,9 +58,15 @@ fn get_compose_def(
 
     for line in reader.lines() {
         let line = line.map_err(|_| SequenceTranslatorError::ReadLine)?;
-        let (key, value) = decode_entry(&line, &regex2, &regex3, &regex4, keysym)?;
-        writeln!(writer, "{:?} {}", key, value).map_err(|_| SequenceTranslatorError::WriteLine)?;
-        result.insert(key, value);
+        match decode_entry(&line, &regex2, &regex3, &regex4, keysym) {
+            Ok((key, value)) => {
+                writeln!(writer, "{} {}", key, value).map_err(|_| SequenceTranslatorError::WriteLine)?;
+                result.insert(key, value);
+            }
+            Err(_) => {
+                writeln!(writer, "// {:?}", line).map_err(|_| SequenceTranslatorError::WriteLine)?;
+            }
+        }
     }
 
     // result.insert(">=".into(), MappedString::Basic('≥'));
@@ -171,5 +177,58 @@ mod tests {
         assert_eq!(caps.get(1).unwrap().as_str(), "y");
         assert_eq!(caps.get(2).unwrap().as_str(), "quote_dbl");
         assert_eq!(caps.get(3).unwrap().as_str(), "ÿ");
+    }
+
+    #[test]
+    fn test_decode_entry_two_keys() {
+        let regex2 = Regex::new(COMPOSE_REGEX_2_STR).unwrap();
+        let regex3 = Regex::new(COMPOSE_REGEX_3_STR).unwrap();
+        let regex4 = Regex::new(COMPOSE_REGEX_4_STR).unwrap();
+        let keysymdef = KeySymDef::new().unwrap(); // Assuming a constructor for simplicity
+
+        let line = "<Multi_key> <A> <B> : \"C\".";
+        let expected = Ok(("AB".to_string(), MappedString::Basic('C')));
+        let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_decode_entry_three_keys() {
+        let regex2 = Regex::new(COMPOSE_REGEX_2_STR).unwrap();
+        let regex3 = Regex::new(COMPOSE_REGEX_3_STR).unwrap();
+        let regex4 = Regex::new(COMPOSE_REGEX_4_STR).unwrap();
+        let keysymdef = KeySymDef::new().unwrap(); // Assuming a constructor for simplicity
+
+        let line = "<Multi_key> <A> <B> <C> : \"D\".";
+        let expected = Ok(("ABC".to_string(), MappedString::Basic('D')));
+        let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_decode_entry_four_keys() {
+        let regex2 = Regex::new(COMPOSE_REGEX_2_STR).unwrap();
+        let regex3 = Regex::new(COMPOSE_REGEX_3_STR).unwrap();
+        let regex4 = Regex::new(COMPOSE_REGEX_4_STR).unwrap();
+        let keysymdef = KeySymDef::new().unwrap(); // Assuming a constructor for simplicity
+
+        let line = "<Multi_key> <A> <B> <C> <D> : \"E\".";
+        let expected = Ok(("ABCD".to_string(), MappedString::Basic('E')));
+        let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_get_compose_def() {
+        let keysymdef = KeySymDef::new().unwrap(); // Assuming a constructor for simplicity
+        let map = get_compose_def(&keysymdef).unwrap();
+
+        assert!(map.contains_key("wkwk"));
+        assert_eq!(map.get("wkwk").unwrap(), &MappedString::Basic('🤣'));
+        assert!(map.contains_key("pr"));
+        assert_eq!(map.get("pr").unwrap(), &MappedString::Extra("peradaban".to_string()));
     }
 }

@@ -16,9 +16,14 @@ namespace winrt::simbolmudah_ui::implementation
 {
 	MainWindow::MainWindow() : main_thread(apartment_context())
 	{
+		wchar_t buffer[1024];
+		GetCurrentDirectoryW(1024, buffer);
+		MessageBoxW(nullptr, buffer, L"Current Directory", MB_OK);
+
 		this->showResultsToken = this->keyboardTranslator.OnTranslated(
 			TypedEventHandler<KeyboardTranslator, hstring>::TypedEventHandler(this, &MainWindow::ShowResult)
 		);
+		this->keyboardTranslator.BuildTranslator();
 	}
 
 	MainWindow::~MainWindow()
@@ -30,15 +35,23 @@ namespace winrt::simbolmudah_ui::implementation
 	{	
 		if (this->listenKeySwitch().IsOn())
 		{
+			const delegate<fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)> infoUpdater{
+				this, &MainWindow::InfoUpdater
+			};
+			const delegate<fire_and_forget(std::wstring)> stateUpdater{
+				this, &MainWindow::StateUpdater
+			};
+
 			this->keyboardHook.emplace(
-				delegate<fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)>{ this, &MainWindow::InfoUpdater },
-				delegate<fire_and_forget(std::wstring)>{ this, &MainWindow::StateUpdater },
+				infoUpdater,
+				stateUpdater,
 				this->keyboardTranslator
 			);
 		}
 		else
 		{
 			this->keyboardHook.reset();
+			//this->keyboardTranslator.Flush();
 		}
 	}
 

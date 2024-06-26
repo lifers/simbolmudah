@@ -21,7 +21,7 @@ namespace winrt::simbolmudah_ui::implementation
 		winrt::fire_and_forget StateUpdater(std::wstring message);
 		winrt::fire_and_forget ShowResult(winrt::LibSimbolMudah::KeyboardTranslator const&, hstring const& message);
 
-		winrt::LibSimbolMudah::KeyboardTranslator keyboardTranslator;
+		const winrt::LibSimbolMudah::KeyboardTranslator keyboardTranslator;
 		std::optional<KeyboardHook> keyboardHook;
 		const apartment_context main_thread;
 		winrt::event_token showResultsToken;

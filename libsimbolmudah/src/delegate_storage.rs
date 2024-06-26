@@ -5,6 +5,7 @@ use windows::{
     Foundation::TypedEventHandler,
 };
 
+#[derive(Debug)]
 pub(crate) struct DelegateStorage<T: RuntimeType + Interface + 'static, U: RuntimeType + 'static> {
     delegates: HashMap<i64, AgileReference<TypedEventHandler<T, U>>>,
 }
