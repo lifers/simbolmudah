@@ -13,7 +13,9 @@ crate-type = ["cdylib"]
 version = "0.57"
 features = [
     "implement",
+    "ApplicationModel_Resources_Core",
     "Foundation",
+    "Storage",
     "System",
     "Win32_Foundation",
     "Win32_System_Diagnostics_Debug",

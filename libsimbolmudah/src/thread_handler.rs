@@ -53,7 +53,7 @@ impl ThreadHandler {
     }
 
     pub(crate) fn disable(&self) -> Result<()> {
-        self.thread.ShutdownQueueAsync()?.GetResults()
+        self.thread.ShutdownQueueAsync()?.get()
     }
 }
 

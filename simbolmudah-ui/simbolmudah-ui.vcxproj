@@ -139,6 +139,9 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     <Manifest Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Assets\Resources\keysymdef.h">
+      <DeploymentContent>true</DeploymentContent>
+    </ClInclude>
     <ClInclude Include="pch.h" />
     <ClInclude Include="App.xaml.h">
       <DependentUpon>App.xaml</DependentUpon>
@@ -176,11 +179,16 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     </Midl>
   </ItemGroup>
   <ItemGroup>
+    <Text Include="Assets\Resources\composelist.txt" />
+    <Text Include="Assets\Resources\keylist.txt" />
     <Text Include="readme.txt">
       <DeploymentContent>false</DeploymentContent>
     </Text>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Resources\Compose.pre">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

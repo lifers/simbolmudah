@@ -1,7 +1,7 @@
 mod sequence_translator;
 
 use crate::{bindings, delegate_storage::DelegateStorage, thread_handler::ThreadHandler};
-use sequence_translator::{SequenceTranslator, SequenceTranslatorError};
+use sequence_translator::SequenceTranslator;
 use std::{
     collections::HashMap,
     ffi::c_void,
@@ -19,7 +19,10 @@ use windows::{
     Foundation::{EventRegistrationToken, TypedEventHandler},
     Win32::{
         Foundation::{ERROR_NO_UNICODE_TRANSLATION, E_ACCESSDENIED, E_INVALIDARG},
-        System::{Diagnostics::Debug::MessageBeep, WinRT::{IActivationFactory, IActivationFactory_Impl}},
+        System::{
+            Diagnostics::Debug::MessageBeep,
+            WinRT::{IActivationFactory, IActivationFactory_Impl},
+        },
         UI::{
             Input::KeyboardAndMouse::{
                 GetKeyboardLayout, ToUnicodeEx, VK_CAPITAL, VK_CONTROL, VK_MENU, VK_SHIFT, VK_SPACE,
@@ -224,17 +227,14 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
         let internal = self.internal.clone();
         self.thread_controller.try_enqueue(move || {
             // panic!();
-            let mut internal = internal
-                .write()
-                .unwrap();
-                // .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?;
+            let mut internal = internal.write().unwrap();
+            // .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?;
 
             let keystate = calculate_bg_keystate(hascapslock, hasshift, hasaltgr);
-            let value = internal.translate(vkcode, scancode, &keystate).unwrap();
+            let value = internal.translate(vkcode, scancode, &keystate)?;
             let result = internal.forward(destination, value);
             internal.report(result)
-        }).unwrap();
-        Ok(())
+        })
     }
 
     fn CheckLayoutAndUpdate(&self) -> Result<()> {
@@ -242,8 +242,7 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
         self.thread_controller.try_enqueue(move || {
             let lock = internal
                 .read()
-                .unwrap();
-                // .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?;
+                .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?;
 
             let foreground_window = unsafe { GetForegroundWindow() };
             let tid = unsafe { GetWindowThreadProcessId(foreground_window, None) };
@@ -255,30 +254,35 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
 
                 let mut lock = internal
                     .write()
-                    .unwrap();
-                    // .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?;
+                    .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?;
 
-                lock.analyze_layout().unwrap();
-                Ok(())
+                lock.analyze_layout()
             } else {
                 Ok(())
             }
-        }).unwrap();
-        Ok(())
+        })
     }
 
-    fn BuildTranslator(&self) -> Result<()> {
+    fn BuildTranslator(&self, keysymdef_path: &HSTRING, composedef_path: &HSTRING) -> Result<()> {
         let internal = self.internal.clone();
+        let keysymdef_path = keysymdef_path.to_string();
+        let composedef_path = composedef_path.to_string();
         self.thread_controller.try_enqueue(move || {
-            internal
+            let mut lock = internal
                 .write()
-                .unwrap()
-                // .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
-                .sequence_translator
-                .build()
-                .map_err(|e| <SequenceTranslatorError as Into<Error>>::into(e))
-        }).unwrap();
-        Ok(())
+                .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?;
+
+            lock.sequence_translator
+                .build(&keysymdef_path, &composedef_path)?;
+
+            let parent_ref = lock
+                .parent
+                .as_ref()
+                .expect("Parent should be set")
+                .resolve()?;
+            lock.report_translated
+                .invoke_all(&parent_ref, Some(&HSTRING::from("Build Successful! 🎉")))
+        })
     }
 
     fn Flush(&self) -> Result<()> {
