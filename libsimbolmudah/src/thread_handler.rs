@@ -89,8 +89,23 @@ mod tests {
     #[test]
     fn test_try_enqueue_success() {
         let thread_handler = ThreadHandler::new().unwrap();
+
         let num = Arc::new(AtomicU64::new(5));
         let clone = num.clone();
+
+        // Check flag on ShutdownCompleted event
+        let complete_handler =
+            TypedEventHandler::new(move |sender: &Option<DispatcherQueue>, _| {
+                assert!(sender.is_some());
+                assert_eq!(num.load(Acquire), 41242);
+                Ok(())
+            });
+
+        // Register the event handler
+        let complete_token = thread_handler
+            .register_shutdown_complete_callback(Some(&complete_handler))
+            .expect("Event handler should be registered");
+
         let result = thread_handler.try_enqueue(move || {
             // Perform some operation here
             assert_eq!(clone.swap(41242, AcqRel), 5);
@@ -99,15 +114,15 @@ mod tests {
             };
             Ok(())
         });
+
         // Assert that the enqueue operation is successful
         assert!(result.is_ok());
+        thread_handler.disable().expect("Thread should be disabled");
+
+        // Unregister the event handler
         thread_handler
-            .thread
-            .ShutdownQueueAsync()
-            .unwrap()
-            .GetResults()
-            .unwrap();
-        assert_eq!(num.load(Acquire), 41242);
+            .unregister_shutdown_complete_callback(complete_token)
+            .expect("Event handler should be unregistered");
     }
 
     #[test]

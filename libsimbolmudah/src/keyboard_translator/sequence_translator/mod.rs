@@ -90,8 +90,8 @@ impl SequenceTranslator {
 mod tests {
     use super::*;
 
-    const KEYSYMDEF: &str = "../resources/keysymdef.h";
-    const COMPOSEDEF: &str = "../resources/Compose.pre";
+    const KEYSYMDEF: &str = "../resource/keysymdef.h";
+    const COMPOSEDEF: &str = "../resource/Compose.pre";
 
     #[test]
     fn test_translate_incomplete_sequence() {
@@ -123,8 +123,7 @@ mod tests {
     #[test]
     fn test_build_success() {
         let mut translator = SequenceTranslator::default();
-        let result = translator.build(KEYSYMDEF, COMPOSEDEF);
-        assert!(result.is_ok());
+        translator.build(KEYSYMDEF, COMPOSEDEF).unwrap();
     }
 
     #[test]

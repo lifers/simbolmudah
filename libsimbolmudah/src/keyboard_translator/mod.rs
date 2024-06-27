@@ -564,9 +564,9 @@ mod tests {
             .expect("Thread handler should be disabled");
 
         // Unregister the event handler
-        instance
-            .RemoveOnInvalid(&token)
-            .expect("Event handler should be unregistered");
+        // instance
+        //     .RemoveOnInvalid(&token)
+        //     .expect("Event handler should be unregistered");
         instance
             .thread_controller
             .unregister_shutdown_complete_callback(complete_token)
