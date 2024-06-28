@@ -10,7 +10,7 @@
 windows_core::imp::define_interface!(
     IKeyboardTranslator,
     IKeyboardTranslator_Vtbl,
-    0x30b37850_7ffb_54e1_a40e_fa6cbcaba2ed
+    0x16876440_eae1_5a07_af1a_e431dfc140c8
 );
 impl windows_core::RuntimeType for IKeyboardTranslator {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -30,7 +30,12 @@ pub struct IKeyboardTranslator_Vtbl {
     ) -> windows_core::HRESULT,
     pub CheckLayoutAndUpdate:
         unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
-    pub BuildTranslator: unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+    pub BuildTranslator: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
+    ) -> windows_core::HRESULT,
+    pub Flush: unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
     pub OnTranslated: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut core::ffi::c_void,
@@ -106,13 +111,26 @@ impl KeyboardTranslator {
             .ok()
         }
     }
-    pub fn BuildTranslator(&self) -> windows_core::Result<()> {
+    pub fn BuildTranslator(
+        &self,
+        keysymdef: &windows_core::HSTRING,
+        composedef: &windows_core::HSTRING,
+    ) -> windows_core::Result<()> {
         let this = self;
         unsafe {
             (windows_core::Interface::vtable(this).BuildTranslator)(
                 windows_core::Interface::as_raw(this),
+                core::mem::transmute_copy(keysymdef),
+                core::mem::transmute_copy(composedef),
             )
             .ok()
+        }
+    }
+    pub fn Flush(&self) -> windows_core::Result<()> {
+        let this = self;
+        unsafe {
+            (windows_core::Interface::vtable(this).Flush)(windows_core::Interface::as_raw(this))
+                .ok()
         }
     }
     pub fn OnTranslated<P0>(
@@ -206,7 +224,12 @@ pub trait IKeyboardTranslator_Impl: Sized {
         destination: u8,
     ) -> windows_core::Result<()>;
     fn CheckLayoutAndUpdate(&self) -> windows_core::Result<()>;
-    fn BuildTranslator(&self) -> windows_core::Result<()>;
+    fn BuildTranslator(
+        &self,
+        keysymdef: &windows_core::HSTRING,
+        composedef: &windows_core::HSTRING,
+    ) -> windows_core::Result<()>;
+    fn Flush(&self) -> windows_core::Result<()>;
     fn OnTranslated(
         &self,
         handler: Option<
@@ -280,10 +303,28 @@ impl IKeyboardTranslator_Vtbl {
             const OFFSET: isize,
         >(
             this: *mut core::ffi::c_void,
+            keysymdef: core::mem::MaybeUninit<windows_core::HSTRING>,
+            composedef: core::mem::MaybeUninit<windows_core::HSTRING>,
         ) -> windows_core::HRESULT {
             let this = (this as *const *const ()).offset(OFFSET) as *const Identity;
             let this = (*this).get_impl();
-            IKeyboardTranslator_Impl::BuildTranslator(this).into()
+            IKeyboardTranslator_Impl::BuildTranslator(
+                this,
+                core::mem::transmute(&keysymdef),
+                core::mem::transmute(&composedef),
+            )
+            .into()
+        }
+        unsafe extern "system" fn Flush<
+            Identity: windows_core::IUnknownImpl<Impl = Impl>,
+            Impl: IKeyboardTranslator_Impl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+        ) -> windows_core::HRESULT {
+            let this = (this as *const *const ()).offset(OFFSET) as *const Identity;
+            let this = (*this).get_impl();
+            IKeyboardTranslator_Impl::Flush(this).into()
         }
         unsafe extern "system" fn OnTranslated<
             Identity: windows_core::IUnknownImpl<Impl = Impl>,
@@ -358,6 +399,7 @@ impl IKeyboardTranslator_Vtbl {
             TranslateAndForward: TranslateAndForward::<Identity, Impl, OFFSET>,
             CheckLayoutAndUpdate: CheckLayoutAndUpdate::<Identity, Impl, OFFSET>,
             BuildTranslator: BuildTranslator::<Identity, Impl, OFFSET>,
+            Flush: Flush::<Identity, Impl, OFFSET>,
             OnTranslated: OnTranslated::<Identity, Impl, OFFSET>,
             RemoveOnTranslated: RemoveOnTranslated::<Identity, Impl, OFFSET>,
             OnInvalid: OnInvalid::<Identity, Impl, OFFSET>,

@@ -1,14 +1,12 @@
+use super::{fail, fail_message, keysym_reader::KeySymDef, mapped_string::MappedString};
+use regex::Regex;
 use std::{
     collections::BTreeMap,
-    fs::{File, OpenOptions},
-    io::{BufRead, BufReader, BufWriter, Write},
+    fs::File,
+    io::{BufRead, BufReader},
 };
+use windows::core::Result;
 
-use regex::Regex;
-
-use super::{keysym_reader::KeySymDef, mapped_string::MappedString, SequenceTranslatorError};
-
-const COMPOSEDEF: &str = "3rd-party/libx11/nls/en_US.UTF-8/Compose.pre";
 const COMPOSE_REGEX_2_STR: &str =
     r#"^<Multi_key> <([a-zA-Z0-9_]+)> <([a-zA-Z0-9_]+)>\s+: "(.*)".*$"#;
 const COMPOSE_REGEX_3_STR: &str =
@@ -20,8 +18,8 @@ pub(super) struct ComposeDef {
 }
 
 impl ComposeDef {
-    pub(super) fn build(keysym: &KeySymDef) -> Result<Self, SequenceTranslatorError> {
-        let content = get_compose_def(keysym)?;
+    pub(super) fn build(keysym: &KeySymDef, path: &str) -> Result<Self> {
+        let content = get_compose_def(keysym, path)?;
         Ok(Self { content })
     }
 }
@@ -35,32 +33,20 @@ impl IntoIterator for ComposeDef {
     }
 }
 
-fn get_compose_def(
-    keysym: &KeySymDef,
-) -> Result<BTreeMap<String, MappedString>, SequenceTranslatorError> {
-    let file = File::open(COMPOSEDEF).map_err(|_| SequenceTranslatorError::FileRead)?;
+fn get_compose_def(keysym: &KeySymDef, path: &str) -> Result<BTreeMap<String, MappedString>> {
+    let file = File::open(path).map_err(fail)?;
     let reader = BufReader::new(file);
-    let output = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open("../resource/composelist.txt")
-        .map_err(|_| SequenceTranslatorError::FileWrite)?;
-    let mut writer = BufWriter::new(output);
 
     let mut result = BTreeMap::new();
-    let regex2 =
-        Regex::new(COMPOSE_REGEX_2_STR).map_err(|_| SequenceTranslatorError::RegexBuild)?;
-    let regex3 =
-        Regex::new(COMPOSE_REGEX_3_STR).map_err(|_| SequenceTranslatorError::RegexBuild)?;
-    let regex4 =
-        Regex::new(COMPOSE_REGEX_4_STR).map_err(|_| SequenceTranslatorError::RegexBuild)?;
+    let regex2 = Regex::new(COMPOSE_REGEX_2_STR).map_err(fail)?;
+    let regex3 = Regex::new(COMPOSE_REGEX_3_STR).map_err(fail)?;
+    let regex4 = Regex::new(COMPOSE_REGEX_4_STR).map_err(fail)?;
 
     for line in reader.lines() {
-        let line = line.map_err(|_| SequenceTranslatorError::ReadLine)?;
-        let (key, value) = decode_entry(&line, &regex2, &regex3, &regex4, keysym)?;
-        writeln!(writer, "{:?} {}", key, value).map_err(|_| SequenceTranslatorError::WriteLine)?;
-        result.insert(key, value);
+        let line = line.map_err(fail)?;
+        if let Ok((key, value)) = decode_entry(&line, &regex2, &regex3, &regex4, keysym) {
+            result.insert(key, value);
+        }
     }
 
     // result.insert(">=".into(), MappedString::Basic('≥'));
@@ -77,21 +63,21 @@ fn decode_entry(
     regex3: &Regex,
     regex4: &Regex,
     keysymdef: &KeySymDef,
-) -> Result<(String, MappedString), SequenceTranslatorError> {
+) -> Result<(String, MappedString)> {
     if let Some(caps) = regex2.captures(line) {
         let key1 = keysymdef.get_key(
             caps.get(1)
-                .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+                .ok_or_else(|| fail_message("Regex parse"))?
                 .as_str(),
         )?;
         let key2 = keysymdef.get_key(
             caps.get(2)
-                .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+                .ok_or_else(|| fail_message("Regex parse"))?
                 .as_str(),
         )?;
         let value = caps
             .get(3)
-            .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+            .ok_or_else(|| fail_message("Regex parse"))?
             .as_str();
 
         Ok((
@@ -101,22 +87,22 @@ fn decode_entry(
     } else if let Some(caps) = regex3.captures(line) {
         let key1 = keysymdef.get_key(
             caps.get(1)
-                .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+                .ok_or_else(|| fail_message("Regex parse"))?
                 .as_str(),
         )?;
         let key2 = keysymdef.get_key(
             caps.get(2)
-                .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+                .ok_or_else(|| fail_message("Regex parse"))?
                 .as_str(),
         )?;
         let key3 = keysymdef.get_key(
             caps.get(3)
-                .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+                .ok_or_else(|| fail_message("Regex parse"))?
                 .as_str(),
         )?;
         let value = caps
             .get(4)
-            .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+            .ok_or_else(|| fail_message("Regex parse"))?
             .as_str();
 
         Ok((
@@ -126,27 +112,27 @@ fn decode_entry(
     } else if let Some(caps) = regex4.captures(line) {
         let key1 = keysymdef.get_key(
             caps.get(1)
-                .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+                .ok_or_else(|| fail_message("Regex parse"))?
                 .as_str(),
         )?;
         let key2 = keysymdef.get_key(
             caps.get(2)
-                .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+                .ok_or_else(|| fail_message("Regex parse"))?
                 .as_str(),
         )?;
         let key3 = keysymdef.get_key(
             caps.get(3)
-                .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+                .ok_or_else(|| fail_message("Regex parse"))?
                 .as_str(),
         )?;
         let key4 = keysymdef.get_key(
             caps.get(4)
-                .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+                .ok_or_else(|| fail_message("Regex parse"))?
                 .as_str(),
         )?;
         let value = caps
             .get(5)
-            .ok_or_else(|| SequenceTranslatorError::RegexParse)?
+            .ok_or_else(|| fail_message("Regex parse"))?
             .as_str();
 
         Ok((
@@ -154,13 +140,16 @@ fn decode_entry(
             value.chars().next().unwrap().into(),
         ))
     } else {
-        Err(SequenceTranslatorError::RegexParse)
+        Err(fail_message("Regex parse"))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const KEYSYMDEF: &str = "tests/keysymdef.h";
+    const COMPOSEDEF: &str = "tests/Compose.pre";
 
     #[test]
     fn test_compose_regex() {
@@ -171,5 +160,61 @@ mod tests {
         assert_eq!(caps.get(1).unwrap().as_str(), "y");
         assert_eq!(caps.get(2).unwrap().as_str(), "quote_dbl");
         assert_eq!(caps.get(3).unwrap().as_str(), "ÿ");
+    }
+
+    #[test]
+    fn test_decode_entry_two_keys() {
+        let regex2 = Regex::new(COMPOSE_REGEX_2_STR).unwrap();
+        let regex3 = Regex::new(COMPOSE_REGEX_3_STR).unwrap();
+        let regex4 = Regex::new(COMPOSE_REGEX_4_STR).unwrap();
+        let keysymdef = KeySymDef::new(KEYSYMDEF).unwrap(); // Assuming a constructor for simplicity
+
+        let line = "<Multi_key> <A> <B> : \"C\".";
+        let expected = Ok(("AB".to_string(), MappedString::Basic('C')));
+        let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_decode_entry_three_keys() {
+        let regex2 = Regex::new(COMPOSE_REGEX_2_STR).unwrap();
+        let regex3 = Regex::new(COMPOSE_REGEX_3_STR).unwrap();
+        let regex4 = Regex::new(COMPOSE_REGEX_4_STR).unwrap();
+        let keysymdef = KeySymDef::new(KEYSYMDEF).unwrap(); // Assuming a constructor for simplicity
+
+        let line = "<Multi_key> <A> <B> <C> : \"D\".";
+        let expected = Ok(("ABC".to_string(), MappedString::Basic('D')));
+        let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_decode_entry_four_keys() {
+        let regex2 = Regex::new(COMPOSE_REGEX_2_STR).unwrap();
+        let regex3 = Regex::new(COMPOSE_REGEX_3_STR).unwrap();
+        let regex4 = Regex::new(COMPOSE_REGEX_4_STR).unwrap();
+        let keysymdef = KeySymDef::new(KEYSYMDEF).unwrap(); // Assuming a constructor for simplicity
+
+        let line = "<Multi_key> <A> <B> <C> <D> : \"E\".";
+        let expected = Ok(("ABCD".to_string(), MappedString::Basic('E')));
+        let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_get_compose_def() {
+        let keysymdef = KeySymDef::new(KEYSYMDEF).unwrap(); // Assuming a constructor for simplicity
+        let map = get_compose_def(&keysymdef, COMPOSEDEF).unwrap();
+
+        assert!(map.contains_key("wkwk"));
+        assert_eq!(map.get("wkwk").unwrap(), &MappedString::Basic('🤣'));
+        assert!(map.contains_key("pr"));
+        assert_eq!(
+            map.get("pr").unwrap(),
+            &MappedString::Extra("peradaban".to_string())
+        );
     }
 }

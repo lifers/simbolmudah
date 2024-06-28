@@ -45,6 +45,7 @@ KeyboardHook::KeyboardHook(
 		if (hook)
 		{
 			this->m_hook = hook;
+			MessageBeep(MB_OK);
 		}
 		else
 		{

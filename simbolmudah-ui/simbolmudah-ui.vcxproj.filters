@@ -29,6 +29,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Assets\Resources\keysymdef.h">
+      <Filter>Assets\Resources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Assets">
@@ -36,6 +39,9 @@
     </Filter>
     <Filter Include="KeyboardHook">
       <UniqueIdentifier>{7f6f7ea1-d426-495d-8ef0-f6ab78a7aee4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets\Resources">
+      <UniqueIdentifier>{727390d1-6787-4add-834b-540001af7a85}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -46,6 +52,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Assets\Resources\Compose.pre">
+      <Filter>Assets\Resources</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
