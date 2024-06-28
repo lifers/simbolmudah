@@ -179,8 +179,6 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     </Midl>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Assets\Resources\composelist.txt" />
-    <Text Include="Assets\Resources\keylist.txt" />
     <Text Include="readme.txt">
       <DeploymentContent>false</DeploymentContent>
     </Text>
