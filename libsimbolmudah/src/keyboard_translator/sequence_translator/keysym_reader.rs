@@ -4,12 +4,11 @@ use regex::Regex;
 use std::{
     cell::RefCell,
     collections::HashMap,
-    fs::{File, OpenOptions},
-    io::{BufRead, BufReader, BufWriter, Write},
+    fs::File,
+    io::{BufRead, BufReader},
 };
 use windows::{
-    core::{Error, Result, HSTRING},
-    Storage::{ApplicationData, CreationCollisionOption},
+    core::{Error, Result},
     Win32::Foundation::E_FAIL,
 };
 
@@ -54,21 +53,6 @@ fn get_general_keysym(unicode_regex: &Regex, path: &str) -> Result<HashMap<Strin
     let file = File::open(path).map_err(fail)?;
     let reader = BufReader::new(file);
 
-    let out_file = ApplicationData::Current()?
-        .LocalCacheFolder()?
-        .CreateFileAsync(
-            &HSTRING::from("keylist.txt"),
-            CreationCollisionOption::ReplaceExisting,
-        )?
-        .get()?;
-    let output = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(&out_file.Path().unwrap().to_string())
-        .map_err(fail)?;
-    let mut writer = BufWriter::new(output);
-
     let mut result = HashMap::new();
 
     for line in reader.lines() {
@@ -89,7 +73,6 @@ fn get_general_keysym(unicode_regex: &Regex, path: &str) -> Result<HashMap<Strin
             )
             .ok_or_else(|| fail_message("Invalid char"))?;
 
-            writeln!(writer, "{} {}", name, value).map_err(fail)?;
             result.insert(name.to_string(), value);
         }
     }

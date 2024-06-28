@@ -534,7 +534,7 @@ mod tests {
         );
 
         // Register the event handler
-        let token = instance
+        let _token = instance
             .OnInvalid(Some(&handler))
             .expect("Event handler should be registered");
 

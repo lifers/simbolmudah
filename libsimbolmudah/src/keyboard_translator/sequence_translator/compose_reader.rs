@@ -2,13 +2,10 @@ use super::{fail, fail_message, keysym_reader::KeySymDef, mapped_string::MappedS
 use regex::Regex;
 use std::{
     collections::BTreeMap,
-    fs::{File, OpenOptions},
-    io::{BufRead, BufReader, BufWriter, Write},
+    fs::File,
+    io::{BufRead, BufReader},
 };
-use windows::{
-    core::{Result, HSTRING},
-    Storage::{ApplicationData, CreationCollisionOption},
-};
+use windows::core::Result;
 
 const COMPOSE_REGEX_2_STR: &str =
     r#"^<Multi_key> <([a-zA-Z0-9_]+)> <([a-zA-Z0-9_]+)>\s+: "(.*)".*$"#;
@@ -40,21 +37,6 @@ fn get_compose_def(keysym: &KeySymDef, path: &str) -> Result<BTreeMap<String, Ma
     let file = File::open(path).map_err(fail)?;
     let reader = BufReader::new(file);
 
-    let out_file = ApplicationData::Current()?
-        .LocalCacheFolder()?
-        .CreateFileAsync(
-            &HSTRING::from("composelist.txt"),
-            CreationCollisionOption::ReplaceExisting,
-        )?
-        .get()?;
-    let output = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(out_file.Path().unwrap().to_string())
-        .map_err(fail)?;
-    let mut writer = BufWriter::new(output);
-
     let mut result = BTreeMap::new();
     let regex2 = Regex::new(COMPOSE_REGEX_2_STR).map_err(fail)?;
     let regex3 = Regex::new(COMPOSE_REGEX_3_STR).map_err(fail)?;
@@ -62,14 +44,8 @@ fn get_compose_def(keysym: &KeySymDef, path: &str) -> Result<BTreeMap<String, Ma
 
     for line in reader.lines() {
         let line = line.map_err(fail)?;
-        match decode_entry(&line, &regex2, &regex3, &regex4, keysym) {
-            Ok((key, value)) => {
-                writeln!(writer, "{} {}", key, value).map_err(fail)?;
-                result.insert(key, value);
-            }
-            Err(_) => {
-                writeln!(writer, "// {:?}", line).map_err(fail)?;
-            }
+        if let Ok((key, value)) = decode_entry(&line, &regex2, &regex3, &regex4, keysym) {
+            result.insert(key, value);
         }
     }
 
