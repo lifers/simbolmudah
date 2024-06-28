@@ -148,8 +148,8 @@ fn decode_entry(
 mod tests {
     use super::*;
 
-    const KEYSYMDEF: &str = "../resource/keysymdef.h";
-    const COMPOSEDEF: &str = "../resource/Compose.pre";
+    const KEYSYMDEF: &str = "tests/keysymdef.h";
+    const COMPOSEDEF: &str = "tests/Compose.pre";
 
     #[test]
     fn test_compose_regex() {
