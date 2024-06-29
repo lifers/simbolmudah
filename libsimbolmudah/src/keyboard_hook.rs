@@ -436,7 +436,7 @@ fn keybdinput_to_hstring(input: KEYBDINPUT) -> HSTRING {
 }
 
 #[implement(IActivationFactory, bindings::IKeyboardHookFactory)]
-struct KeyboardHookFactory;
+pub(super) struct KeyboardHookFactory;
 
 impl IActivationFactory_Impl for KeyboardHookFactory {
     fn ActivateInstance(&self) -> Result<IInspectable> {

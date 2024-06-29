@@ -5,7 +5,7 @@ mod keyboard_translator;
 mod sender;
 mod thread_handler;
 
-use crate::keyboard_translator::KeyboardTranslatorFactory;
+use crate::{keyboard_translator::KeyboardTranslatorFactory, keyboard_hook::KeyboardHookFactory};
 use windows::{
     core::{Interface, Ref, HRESULT, HSTRING},
     Win32::{
@@ -26,8 +26,7 @@ unsafe extern "system" fn DllGetActivationFactory(
     let factory: Option<IActivationFactory> = if *name == "LibSimbolMudah.KeyboardTranslator" {
         Some(KeyboardTranslatorFactory.into())
     } else if *name == "LibSimbolMudah.KeyboardHook" {
-        // Some(KeyboardHookFactory.into())
-        None
+        Some(KeyboardHookFactory.into())
     } else {
         None
     };
