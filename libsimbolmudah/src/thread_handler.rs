@@ -1,6 +1,6 @@
 use windows::{
     core::{Error, InterfaceType, Param, Result},
-    Foundation::{EventRegistrationToken, TypedEventHandler},
+    Foundation::{EventRegistrationToken, IAsyncAction, TypedEventHandler},
     System::{DispatcherQueue, DispatcherQueueController, DispatcherQueueHandler},
     Win32::Foundation::E_FAIL,
 };
@@ -52,8 +52,8 @@ impl ThreadHandler {
             .RemoveShutdownCompleted(token)
     }
 
-    pub(crate) fn disable(&self) -> Result<()> {
-        self.thread.ShutdownQueueAsync()?.get()
+    pub(crate) fn disable(&self) -> Result<IAsyncAction> {
+        self.thread.ShutdownQueueAsync()
     }
 }
 
@@ -117,7 +117,7 @@ mod tests {
 
         // Assert that the enqueue operation is successful
         assert!(result.is_ok());
-        thread_handler.disable().expect("Thread should be disabled");
+        thread_handler.disable().unwrap().get().unwrap();
 
         // Unregister the event handler
         thread_handler

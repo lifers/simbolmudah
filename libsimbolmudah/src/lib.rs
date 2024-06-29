@@ -1,6 +1,8 @@
 mod bindings;
-mod keyboard_translator;
 mod delegate_storage;
+mod keyboard_hook;
+mod keyboard_translator;
+mod sender;
 mod thread_handler;
 
 use crate::keyboard_translator::KeyboardTranslatorFactory;
@@ -21,10 +23,14 @@ unsafe extern "system" fn DllGetActivationFactory(
         return E_POINTER;
     }
 
-    let mut factory: Option<IActivationFactory> = None;
-    if *name == "LibSimbolMudah.KeyboardTranslator" {
-        factory = Some(KeyboardTranslatorFactory.into());
-    }
+    let factory: Option<IActivationFactory> = if *name == "LibSimbolMudah.KeyboardTranslator" {
+        Some(KeyboardTranslatorFactory.into())
+    } else if *name == "LibSimbolMudah.KeyboardHook" {
+        // Some(KeyboardHookFactory.into())
+        None
+    } else {
+        None
+    };
 
     unsafe {
         if let Some(factory) = factory {
