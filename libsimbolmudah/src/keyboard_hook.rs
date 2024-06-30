@@ -1,5 +1,3 @@
-// mod input_dispatcher;
-
 use crate::{
     bindings::{self, IKeyboardTranslator_Impl},
     delegate_storage::{get_token, DelegateStorage},
@@ -9,7 +7,7 @@ use crate::{
 };
 use std::{
     fmt::Debug,
-    sync::{mpsc::sync_channel, OnceLock, RwLock, RwLockWriteGuard},
+    sync::{mpsc::sync_channel, Arc, OnceLock, RwLock, RwLockWriteGuard},
     usize,
 };
 use windows::{
@@ -46,7 +44,7 @@ enum Reporter {
 #[implement(bindings::KeyboardHook)]
 #[derive(Debug)]
 struct KeyboardHook {
-    thread_controller: ThreadHandler,
+    thread_controller: Arc<ThreadHandler>,
 }
 
 impl KeyboardHook {
@@ -58,6 +56,7 @@ impl KeyboardHook {
         let (tx, rx) = sync_channel(16);
         tx.send((keyboard_translator, parent))
             .expect("message should be sent before enqueue");
+        let controller_clone = self.thread_controller.clone();
 
         self.thread_controller.try_enqueue_high(move || {
             let (keyboard_translator, parent) =
@@ -72,14 +71,18 @@ impl KeyboardHook {
             write_lock.set(internal).expect(
                 "GLOBAL_INSTANCE has to be empty or emptied by the previous deactivate call",
             );
-            let event_handler = TypedEventHandler::new(|_, _| {
-                let mut lock = Self::global_write()?;
-                let internal = lock.get_mut().expect("GLOBAL_INSTANCE should be set");
 
-                internal.stage = Stage::Idle;
-                internal.input_buffer.clear();
-                internal.report_state();
-                Ok(())
+            let another_clone = controller_clone.clone();
+            let event_handler = TypedEventHandler::new(move |_, _| {
+                another_clone.try_enqueue_high(|| {
+                    let mut lock = Self::global_write()?;
+                    let internal = lock.get_mut().expect("GLOBAL_INSTANCE should be set");
+
+                    internal.stage = Stage::Idle;
+                    internal.input_buffer.clear();
+                    internal.report_state();
+                    Ok(())
+                })
             });
             let write_lock = write_lock.get_mut().expect("GLOBAL_INSTANCE should be set");
 
@@ -206,7 +209,9 @@ impl KeyboardHookInternal {
                 self.has_altgr = is_keydown;
             }
             VK_CAPITAL => {
-                self.has_capslock = !self.has_capslock;
+                if is_keydown {
+                    self.has_capslock = !self.has_capslock;
+                }
                 return false;
             }
             _ => {}
@@ -471,7 +476,9 @@ impl bindings::IKeyboardHookFactory_Impl for KeyboardHookFactory {
             .ok_or_else(|| Error::new(E_INVALIDARG, "No KeyboardTranslator passed"))?
             .cast_object::<KeyboardTranslator>()?;
         let instance = KeyboardHook {
-            thread_controller: ThreadHandler::new().expect("Thread handler should be created"),
+            thread_controller: Arc::new(
+                ThreadHandler::new().expect("Thread handler should be created"),
+            ),
         };
         let binding: bindings::KeyboardHook = instance.into();
         binding
