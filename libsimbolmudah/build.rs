@@ -1,4 +1,4 @@
-fn main() {
+fn generate_bindgen() {
     println!("cargo:rerun-if-changed=src/libsimbolmudah.idl");
     let metadata_dir = format!("{}\\System32\\WinMetadata", env!("windir"));
     let mut command = std::process::Command::new("midlrt.exe");
@@ -33,5 +33,14 @@ fn main() {
         "implement",
     ]) {
         panic!("failed to run windows_bindgen: {}", error);
+    }
+}
+
+fn main() {
+    let headers_enabled = std::env::var("CARGO_FEATURE_HEADERS").is_ok();
+    if headers_enabled {
+        generate_bindgen();
+    } else {
+        println!("cargo:warning=The 'headers' feature is not enabled. The generated bindings will not be available.");
     }
 }
