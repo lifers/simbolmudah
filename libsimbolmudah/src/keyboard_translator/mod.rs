@@ -1,11 +1,13 @@
 mod sequence_translator;
 
-use crate::{bindings, delegate_storage::DelegateStorage, thread_handler::ThreadHandler};
+use crate::{
+    bindings,
+    delegate_storage::{get_token, DelegateStorage},
+    thread_handler::ThreadHandler,
+};
 use sequence_translator::SequenceTranslator;
 use std::{
     collections::HashMap,
-    ffi::c_void,
-    hash::{DefaultHasher, Hash, Hasher},
     sync::{
         atomic::{
             AtomicIsize,
@@ -19,16 +21,13 @@ use windows::{
     Foundation::{EventRegistrationToken, TypedEventHandler},
     Win32::{
         Foundation::{ERROR_NO_UNICODE_TRANSLATION, E_ACCESSDENIED, E_INVALIDARG},
-        System::{
-            Diagnostics::Debug::MessageBeep,
-            WinRT::{IActivationFactory, IActivationFactory_Impl},
-        },
+        System::WinRT::{IActivationFactory, IActivationFactory_Impl},
         UI::{
             Input::KeyboardAndMouse::{
                 GetKeyboardLayout, ToUnicodeEx, VK_CAPITAL, VK_CONTROL, VK_MENU, VK_SHIFT, VK_SPACE,
             },
             TextServices::HKL,
-            WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId, MB_ICONASTERISK},
+            WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId},
         },
     },
 };
@@ -62,7 +61,7 @@ enum TranslateError {
 
 #[implement(bindings::KeyboardTranslator)]
 #[derive(Clone, Debug)]
-struct KeyboardTranslator {
+pub(crate) struct KeyboardTranslator {
     internal: Arc<RwLock<KeyboardTranslatorInternal>>,
     thread_controller: Arc<ThreadHandler>,
 }
@@ -285,11 +284,6 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
         })
     }
 
-    fn Flush(&self) -> Result<()> {
-        unsafe { MessageBeep(MB_ICONASTERISK).unwrap() };
-        self.thread_controller.disable()
-    }
-
     fn OnInvalid(
         &self,
         handler: Option<&TypedEventHandler<bindings::KeyboardTranslator, HSTRING>>,
@@ -297,7 +291,7 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
         if let Some(handler) = handler {
             let token = get_token(handler.as_raw());
             let internal = self.internal.clone();
-            let handler_ref = Arc::new(AgileReference::new(handler)?);
+            let handler_ref = AgileReference::new(handler)?;
 
             self.thread_controller.try_enqueue(move || -> Result<()> {
                 Ok(internal
@@ -320,7 +314,7 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
         if let Some(handler) = handler {
             let token = get_token(handler.as_raw());
             let internal = self.internal.clone();
-            let handler_ref = Arc::new(AgileReference::new(handler)?);
+            let handler_ref = AgileReference::new(handler)?;
 
             self.thread_controller.try_enqueue(move || -> Result<()> {
                 Ok(internal
@@ -375,13 +369,6 @@ const fn calculate_bg_keystate(has_capslock: bool, has_shift: bool, has_altgr: b
     }
 
     keystate
-}
-
-fn get_token(handler: *mut c_void) -> i64 {
-    // Generate a unique token
-    let mut hasher = DefaultHasher::new();
-    handler.hash(&mut hasher);
-    hasher.finish() as i64
 }
 
 fn vk_to_unicode(

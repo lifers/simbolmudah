@@ -2,9 +2,7 @@
 
 #include "MainWindow.g.h"
 #include <winrt/LibSimbolMudah.h>
-import std.core;
-import KeyboardHook;
-//import KeyboardTranslator;
+#include <optional>
 
 namespace winrt::simbolmudah_ui::implementation
 {
@@ -17,15 +15,17 @@ namespace winrt::simbolmudah_ui::implementation
 		void ListenKeyUpdate(const IInspectable& sender, const Microsoft::UI::Xaml::RoutedEventArgs& args);
 
 	private:
-		winrt::fire_and_forget InfoUpdater(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage);
-		winrt::fire_and_forget StateUpdater(std::wstring message);
-		winrt::fire_and_forget ShowResult(winrt::LibSimbolMudah::KeyboardTranslator const&, hstring const& message);
-		winrt::fire_and_forget BuildTranslator() const;
+		fire_and_forget InfoUpdater(const LibSimbolMudah::KeyboardHook&, const hstring& message);
+		fire_and_forget StateUpdater(const LibSimbolMudah::KeyboardHook&, const hstring& message);
+		fire_and_forget ShowResult(const LibSimbolMudah::KeyboardTranslator&, const hstring& message);
+		fire_and_forget BuildTranslator() const;
 
-		const winrt::LibSimbolMudah::KeyboardTranslator keyboardTranslator;
-		std::optional<KeyboardHook> keyboardHook;
+		const LibSimbolMudah::KeyboardTranslator keyboardTranslator;
+		std::optional<LibSimbolMudah::KeyboardHook> keyboardHook;
 		const apartment_context main_thread;
-		winrt::event_token showResultsToken;
+		event_token showResultsToken;
+		event_token infoUpdaterToken;
+		event_token stateUpdaterToken;
 	};
 }
 

@@ -7,8 +7,15 @@ namespace LibSimbolMudah
 		void TranslateAndForward(UInt32 vkCode, UInt32 scanCode, Boolean hasCapsLock, Boolean hasShift, Boolean hasAltGr, UInt8 destination);
 		void CheckLayoutAndUpdate();
 		void BuildTranslator(String keysymdef, String composedef);
-		void Flush();
 		event Windows.Foundation.TypedEventHandler<KeyboardTranslator, String> OnTranslated;
 		event Windows.Foundation.TypedEventHandler<KeyboardTranslator, String> OnInvalid;
+	}
+
+	runtimeclass KeyboardHook
+	{
+		KeyboardHook(KeyboardTranslator translator);
+
+		event Windows.Foundation.TypedEventHandler<KeyboardHook, String> DebugStateChanged;
+		event Windows.Foundation.TypedEventHandler<KeyboardHook, String> DebugKeyEvent;
 	}
 }

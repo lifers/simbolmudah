@@ -1,7 +1,7 @@
 use windows::{
     core::{Error, InterfaceType, Param, Result},
-    Foundation::{EventRegistrationToken, TypedEventHandler},
-    System::{DispatcherQueue, DispatcherQueueController, DispatcherQueueHandler},
+    Foundation::{EventRegistrationToken, IAsyncAction, TypedEventHandler},
+    System::{DispatcherQueue, DispatcherQueueController, DispatcherQueueHandler, DispatcherQueuePriority},
     Win32::Foundation::E_FAIL,
 };
 use windows_core::IInspectable;
@@ -33,6 +33,21 @@ impl ThreadHandler {
         }
     }
 
+    pub(crate) fn try_enqueue_high<F>(&self, callback: F) -> Result<()>
+    where
+        F: FnMut() -> Result<()> + Send + 'static,
+    {
+        if self
+            .thread
+            .DispatcherQueue()?
+            .TryEnqueueWithPriority(DispatcherQueuePriority::High, &DispatcherQueueHandler::new(callback))?
+        {
+            Ok(())
+        } else {
+            Err(Error::new(E_FAIL, "Failed to enqueue"))
+        }
+    }
+
     pub(crate) fn register_shutdown_complete_callback<F>(
         &self,
         callback: F,
@@ -52,8 +67,8 @@ impl ThreadHandler {
             .RemoveShutdownCompleted(token)
     }
 
-    pub(crate) fn disable(&self) -> Result<()> {
-        self.thread.ShutdownQueueAsync()?.get()
+    pub(crate) fn disable(&self) -> Result<IAsyncAction> {
+        self.thread.ShutdownQueueAsync()
     }
 }
 
@@ -117,7 +132,7 @@ mod tests {
 
         // Assert that the enqueue operation is successful
         assert!(result.is_ok());
-        thread_handler.disable().expect("Thread should be disabled");
+        thread_handler.disable().unwrap().get().unwrap();
 
         // Unregister the event handler
         thread_handler
