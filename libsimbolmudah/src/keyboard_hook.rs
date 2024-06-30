@@ -13,9 +13,10 @@ use std::{
     usize,
 };
 use windows::{
-    core::{implement, AgileReference, Error, IInspectable, Result, HSTRING},
+    core::{
+        implement, AgileReference, ComObject, Error, IInspectable, Interface, Result, Weak, HSTRING,
+    },
     Foundation::{EventRegistrationToken, TypedEventHandler},
-    System::Threading::{ThreadPool, WorkItemHandler},
     Win32::{
         Foundation::{E_ACCESSDENIED, E_INVALIDARG, E_NOTIMPL, E_POINTER, LPARAM, LRESULT, WPARAM},
         System::{
@@ -36,7 +37,6 @@ use windows::{
         },
     },
 };
-use windows_core::{ComObject, Interface};
 
 static GLOBAL_INSTANCE: RwLock<OnceLock<KeyboardHookInternal>> = RwLock::new(OnceLock::new());
 
@@ -44,6 +44,10 @@ enum Reporter {
     StateChanged,
     KeyEvent,
 }
+
+struct WeakWrapper(pub Weak<bindings::KeyboardHook>);
+unsafe impl Send for WeakWrapper {}
+unsafe impl Sync for WeakWrapper {}
 
 #[implement(bindings::KeyboardHook)]
 #[derive(Clone, Debug)]
@@ -55,20 +59,20 @@ impl KeyboardHook {
     fn activate(
         &self,
         keyboard_translator: ComObject<KeyboardTranslator>,
-        parent: AgileReference<bindings::KeyboardHook>,
+        parent: WeakWrapper,
     ) -> Result<()> {
         let (tx, rx) = sync_channel(16);
         tx.send((keyboard_translator, parent))
             .expect("message should be sent before enqueue");
 
-        self.thread_controller.try_enqueue(move || {
+        self.thread_controller.try_enqueue_high(move || {
             let (keyboard_translator, parent) =
                 rx.recv().expect("message should be sent before enqueue");
             let hmod = unsafe { GetModuleHandleW(None) }?;
             let h_hook =
                 unsafe { SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_procedure), hmod, 0) }?;
 
-            let internal = KeyboardHookInternal::new(keyboard_translator, parent, h_hook);
+            let internal = KeyboardHookInternal::new(keyboard_translator, parent.0, h_hook);
             let mut write_lock = Self::global_write()?;
 
             write_lock.set(internal).expect(
@@ -103,7 +107,8 @@ impl KeyboardHook {
             let token = get_token(handler.as_raw());
             let handler_ref = AgileReference::new(handler)?;
 
-            ThreadPool::RunAsync(&WorkItemHandler::new(move |_| {
+            // making sure this callback runs after the hook is activated
+            self.thread_controller.try_enqueue_high(move || {
                 let mut write_lock = Self::global_write()?;
                 let internal = write_lock.get_mut().expect("GLOBAL_INSTANCE should be set");
 
@@ -115,7 +120,7 @@ impl KeyboardHook {
                         internal.debug_key_event.insert(token, handler_ref.clone())
                     }
                 })
-            }))?;
+            })?;
 
             Ok(EventRegistrationToken { Value: token })
         } else {
@@ -123,12 +128,9 @@ impl KeyboardHook {
         }
     }
 
-    fn unregister_reporter(
-        &self,
-        reporter: Reporter,
-        token: i64,
-    ) -> Result<()> {
-        ThreadPool::RunAsync(&WorkItemHandler::new(move |_| {
+    fn unregister_reporter(&self, reporter: Reporter, token: i64) -> Result<()> {
+        // making sure this callback runs after the reporter is registered
+        self.thread_controller.try_enqueue_high(move || {
             let mut write_lock = Self::global_write()?;
             let internal = write_lock.get_mut().expect("GLOBAL_INSTANCE should be set");
 
@@ -136,25 +138,30 @@ impl KeyboardHook {
                 Reporter::StateChanged => internal.debug_state_changed.remove(token),
                 Reporter::KeyEvent => internal.debug_key_event.remove(token),
             })
-        }))?;
+        })?;
         Ok(())
     }
 }
 
 impl Drop for KeyboardHook {
     fn drop(&mut self) {
-        let mut write_lock = GLOBAL_INSTANCE.write().unwrap();
-        let instance_ref = write_lock.get_mut().expect("GLOBAL_INSTANCE should be set");
-        instance_ref
-            .keyboard_translator
-            .RemoveOnInvalid(&instance_ref.on_invalid_token)
+        self.thread_controller
+            .try_enqueue_high(|| {
+                let mut write_lock = Self::global_write()?;
+                let instance_ref = write_lock.get_mut().expect("GLOBAL_INSTANCE should be set");
+                instance_ref
+                    .keyboard_translator
+                    .RemoveOnInvalid(&instance_ref.on_invalid_token)
+                    .unwrap();
+                unsafe { UnhookWindowsHookEx(instance_ref.h_hook) }
+                    .expect("Unhooking must succeed");
+                let _ = write_lock.take().expect("GLOBAL_INSTANCE should be set");
+                Ok(())
+            })
             .unwrap();
-        unsafe { UnhookWindowsHookEx(instance_ref.h_hook) }.expect("Unhooking must succeed");
-        let _ = write_lock.take().expect("GLOBAL_INSTANCE should be set");
     }
 }
 
-#[derive(Debug)]
 struct KeyboardHookInternal {
     debug_state_changed: DelegateStorage<bindings::KeyboardHook, HSTRING>,
     debug_key_event: DelegateStorage<bindings::KeyboardHook, HSTRING>,
@@ -166,13 +173,28 @@ struct KeyboardHookInternal {
     has_shift: bool,
     has_altgr: bool,
     stage: Stage,
-    parent: AgileReference<bindings::KeyboardHook>,
+    parent: Weak<bindings::KeyboardHook>,
+}
+
+unsafe impl Send for KeyboardHookInternal {}
+unsafe impl Sync for KeyboardHookInternal {}
+
+impl Debug for KeyboardHookInternal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("KeyboardHookInternal")
+            .field("h_hook", &self.h_hook)
+            .field("has_capslock", &self.has_capslock)
+            .field("has_shift", &self.has_shift)
+            .field("has_altgr", &self.has_altgr)
+            .field("stage", &self.stage)
+            .finish()
+    }
 }
 
 impl KeyboardHookInternal {
     fn new(
         keyboard_translator: ComObject<KeyboardTranslator>,
-        parent: AgileReference<bindings::KeyboardHook>,
+        parent: Weak<bindings::KeyboardHook>,
         h_hook: HHOOK,
     ) -> Self {
         Self {
@@ -276,19 +298,20 @@ impl KeyboardHookInternal {
     }
 
     fn report_state(&mut self) {
-        let parent_ref = self.parent.resolve().unwrap();
         self.debug_state_changed
             .invoke_all(
-                &parent_ref,
+                &self.parent.upgrade().unwrap(),
                 Some(&HSTRING::from(format!("{:?}", self.stage))),
             )
             .unwrap();
     }
 
     fn report_key_event(&mut self, input: KEYBDINPUT) {
-        let parent_ref = self.parent.resolve().unwrap();
         self.debug_key_event
-            .invoke_all(&parent_ref, Some(&keybdinput_to_hstring(input)))
+            .invoke_all(
+                &self.parent.upgrade().unwrap(),
+                Some(&keybdinput_to_hstring(input)),
+            )
             .unwrap();
     }
 
@@ -392,14 +415,8 @@ unsafe extern "system" fn keyboard_procedure(
                 // Ignore input if the global instance is not set. This means the hook is not
                 // activated.
                 if let Some(instance) = lock.get_mut() {
-                    let parent_ref = instance.parent.resolve().unwrap();
                     let input = kbdllhookstruct_to_keybdinput(*kb_hook);
                     instance.report_key_event(input);
-
-                    instance
-                        .debug_key_event
-                        .invoke_all(&parent_ref, None)
-                        .unwrap();
 
                     if instance.process_input(input) {
                         return LRESULT(1);
@@ -450,7 +467,7 @@ impl bindings::IKeyboardHookFactory_Impl for KeyboardHookFactory {
         translator: Option<&bindings::KeyboardTranslator>,
     ) -> Result<bindings::KeyboardHook> {
         let translator = translator
-            .ok_or(Error::new(E_INVALIDARG, "No KeyboardTranslator passed"))?
+            .ok_or_else(|| Error::new(E_INVALIDARG, "No KeyboardTranslator passed"))?
             .cast_object::<KeyboardTranslator>()?;
         let instance = KeyboardHook {
             thread_controller: Arc::new(
@@ -458,12 +475,11 @@ impl bindings::IKeyboardHookFactory_Impl for KeyboardHookFactory {
             ),
         };
         let binding: bindings::KeyboardHook = instance.into();
-
-        // Activate the hook and store it in the thread_controller's thread-local storage
+        let binding_ref = binding.downgrade()?;
         binding
             .cast_object::<KeyboardHook>()?
-            .activate(translator, AgileReference::new(&binding)?)?;
+            .activate(translator, WeakWrapper(binding_ref))?;
 
-        Ok(binding.into())
+        Ok(binding)
     }
 }

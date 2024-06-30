@@ -86,21 +86,21 @@
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">stdcpplatest</LanguageStandard>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">stdcpp20</LanguageStandard>
       <LanguageStandard_C Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">stdc17</LanguageStandard_C>
       <ConformanceMode Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</ConformanceMode>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">stdcpplatest</LanguageStandard>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">stdcpp20</LanguageStandard>
       <LanguageStandard_C Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">stdc17</LanguageStandard_C>
       <ConformanceMode Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ConformanceMode>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdcpplatest</LanguageStandard>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdcpp20</LanguageStandard>
       <LanguageStandard_C Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdc17</LanguageStandard_C>
       <ConformanceMode Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ConformanceMode>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">false</BuildStlModules>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</BuildStlModules>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</BuildStlModules>
-      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</EnableModules>
-      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</EnableModules>
-      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</EnableModules>
+      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">false</EnableModules>
+      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</EnableModules>
+      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</EnableModules>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -114,21 +114,21 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">stdcpplatest</LanguageStandard>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">stdcpp20</LanguageStandard>
       <LanguageStandard_C Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">stdc17</LanguageStandard_C>
       <ConformanceMode Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</ConformanceMode>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">stdcpplatest</LanguageStandard>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">stdcpp20</LanguageStandard>
       <LanguageStandard_C Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">stdc17</LanguageStandard_C>
       <ConformanceMode Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ConformanceMode>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpplatest</LanguageStandard>
+      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpp20</LanguageStandard>
       <LanguageStandard_C Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdc17</LanguageStandard_C>
       <ConformanceMode Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ConformanceMode>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">false</BuildStlModules>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</BuildStlModules>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</BuildStlModules>
-      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</EnableModules>
-      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</EnableModules>
-      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</EnableModules>
+      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">false</EnableModules>
+      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</EnableModules>
+      <EnableModules Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</EnableModules>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -155,10 +155,6 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     <Page Include="MainWindow.xaml" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="KeyboardHook\InputProcessor.cpp" />
-    <ClCompile Include="KeyboardHook\InputProcessor.ixx" />
-    <ClCompile Include="KeyboardHook\KeyboardHook.cpp" />
-    <ClCompile Include="KeyboardHook\KeyboardHook.ixx" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -169,8 +165,6 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
       <DependentUpon>MainWindow.xaml</DependentUpon>
     </ClCompile>
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
-    <ClCompile Include="ResultSender.cpp" />
-    <ClCompile Include="ResultSender.ixx" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl">

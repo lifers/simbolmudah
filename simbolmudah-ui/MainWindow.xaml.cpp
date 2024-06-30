@@ -32,27 +32,23 @@ namespace winrt::simbolmudah_ui::implementation
 	{	
 		if (this->listenKeySwitch().IsOn())
 		{
-			const delegate<fire_and_forget(KBDLLHOOKSTRUCT, WPARAM)> infoUpdater{
-				this, &MainWindow::InfoUpdater
-			};
-			const delegate<fire_and_forget(std::wstring)> stateUpdater{
-				this, &MainWindow::StateUpdater
-			};
-
-			this->keyboardHook.emplace(
-				infoUpdater,
-				stateUpdater,
-				this->keyboardTranslator
+			this->keyboardHook.emplace(this->keyboardTranslator);
+			this->infoUpdaterToken = this->keyboardHook->DebugKeyEvent(
+				TypedEventHandler<KeyboardHook, hstring>::TypedEventHandler(this, &MainWindow::InfoUpdater)
+			);
+			this->stateUpdaterToken = this->keyboardHook->DebugStateChanged(
+				TypedEventHandler<KeyboardHook, hstring>::TypedEventHandler(this, &MainWindow::StateUpdater)
 			);
 		}
 		else
 		{
+			this->keyboardHook->DebugKeyEvent(this->infoUpdaterToken);
+			this->keyboardHook->DebugStateChanged(this->stateUpdaterToken);
 			this->keyboardHook.reset(); 
-			//this->keyboardTranslator.Flush();
 		}
 	}
 
-	winrt::fire_and_forget MainWindow::BuildTranslator() const
+	fire_and_forget MainWindow::BuildTranslator() const
 	{
 		co_await resume_background();
 		const auto keysymdef_path = StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.h"));
@@ -60,19 +56,15 @@ namespace winrt::simbolmudah_ui::implementation
 		this->keyboardTranslator.BuildTranslator(keysymdef_path.get().Path(), composedef_path.get().Path());
 	}
 
-	fire_and_forget MainWindow::InfoUpdater(KBDLLHOOKSTRUCT keyEvent, WPARAM windowMessage)
+	fire_and_forget MainWindow::InfoUpdater(const KeyboardHook&, const hstring& message)
 	{
-		const auto keyEventCopy{ keyEvent };
-		const auto windowMessageCopy{ windowMessage };
+		const hstring result{ message };
 		co_await this->main_thread;
-		this->infoBar().Message(std::format(
-			L"vkCode: {}\nscanCode: {}\nflags: {}\ntime: {}\ndwExtraInfo: {}\nwParam: {}.",
-			keyEventCopy.vkCode, keyEventCopy.scanCode, keyEventCopy.flags, keyEventCopy.time, keyEventCopy.dwExtraInfo, windowMessageCopy
-		));
+		this->infoBar().Message(result);
 		this->infoBar().IsOpen(true);
 	}
 
-	fire_and_forget MainWindow::StateUpdater(std::wstring message)
+	fire_and_forget MainWindow::StateUpdater(const KeyboardHook&, const hstring& message)
 	{
 		const hstring result{ message };
 		co_await this->main_thread;
@@ -80,7 +72,7 @@ namespace winrt::simbolmudah_ui::implementation
 		this->stateBar().IsOpen(true);
 	}
 
-	fire_and_forget MainWindow::ShowResult(KeyboardTranslator const&, hstring const& message)
+	fire_and_forget MainWindow::ShowResult(const KeyboardTranslator&, const hstring& message)
 	{
 		const hstring result{ message };
 		co_await this->main_thread;

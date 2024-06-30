@@ -1,7 +1,7 @@
 use windows::{
     core::{Error, InterfaceType, Param, Result},
     Foundation::{EventRegistrationToken, IAsyncAction, TypedEventHandler},
-    System::{DispatcherQueue, DispatcherQueueController, DispatcherQueueHandler},
+    System::{DispatcherQueue, DispatcherQueueController, DispatcherQueueHandler, DispatcherQueuePriority},
     Win32::Foundation::E_FAIL,
 };
 use windows_core::IInspectable;
@@ -26,6 +26,21 @@ impl ThreadHandler {
             .thread
             .DispatcherQueue()?
             .TryEnqueue(&DispatcherQueueHandler::new(callback))?
+        {
+            Ok(())
+        } else {
+            Err(Error::new(E_FAIL, "Failed to enqueue"))
+        }
+    }
+
+    pub(crate) fn try_enqueue_high<F>(&self, callback: F) -> Result<()>
+    where
+        F: FnMut() -> Result<()> + Send + 'static,
+    {
+        if self
+            .thread
+            .DispatcherQueue()?
+            .TryEnqueueWithPriority(DispatcherQueuePriority::High, &DispatcherQueueHandler::new(callback))?
         {
             Ok(())
         } else {
