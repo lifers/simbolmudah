@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.34928.147
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "simbolmudah-ui (Package)", "simbolmudah-ui (Package)\simbolmudah-ui (Package).wapproj", "{A1AC50B1-111D-4C9D-856E-672D7EBE4335}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "simbolmudah-ui", "simbolmudah-ui\simbolmudah-ui.vcxproj", "{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Debug|ARM64.Build.0 = Debug|ARM64
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Debug|ARM64.Deploy.0 = Debug|ARM64
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Debug|x64.ActiveCfg = Debug|x64
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Debug|x64.Build.0 = Debug|x64
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Debug|x64.Deploy.0 = Debug|x64
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Debug|x86.ActiveCfg = Debug|x86
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Debug|x86.Build.0 = Debug|x86
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Debug|x86.Deploy.0 = Debug|x86
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Release|ARM64.ActiveCfg = Release|ARM64
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Release|ARM64.Build.0 = Release|ARM64
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Release|ARM64.Deploy.0 = Release|ARM64
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Release|x64.ActiveCfg = Release|x64
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Release|x64.Build.0 = Release|x64
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Release|x64.Deploy.0 = Release|x64
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Release|x86.ActiveCfg = Release|x86
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Release|x86.Build.0 = Release|x86
+		{A1AC50B1-111D-4C9D-856E-672D7EBE4335}.Release|x86.Deploy.0 = Release|x86
+		{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}.Debug|ARM64.Build.0 = Debug|ARM64
+		{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}.Debug|x64.ActiveCfg = Debug|x64
+		{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}.Debug|x64.Build.0 = Debug|x64
+		{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}.Debug|x86.ActiveCfg = Debug|Win32
+		{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}.Debug|x86.Build.0 = Debug|Win32
+		{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}.Release|ARM64.ActiveCfg = Release|ARM64
+		{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}.Release|ARM64.Build.0 = Release|ARM64
+		{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}.Release|x64.ActiveCfg = Release|x64
+		{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}.Release|x64.Build.0 = Release|x64
+		{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}.Release|x86.ActiveCfg = Release|Win32
+		{9AF5DB2A-FD43-419C-AEE5-AE8D93B1F3F8}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4B0B6F8D-3148-4500-A689-8E815308D3AD}
+	EndGlobalSection
+EndGlobal
