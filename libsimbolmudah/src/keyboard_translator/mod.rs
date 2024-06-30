@@ -60,10 +60,10 @@ enum TranslateError {
 }
 
 #[implement(bindings::KeyboardTranslator)]
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub(crate) struct KeyboardTranslator {
     internal: Arc<RwLock<KeyboardTranslatorInternal>>,
-    thread_controller: Arc<ThreadHandler>,
+    thread_controller: ThreadHandler,
 }
 
 #[derive(Debug)]
@@ -74,7 +74,7 @@ struct KeyboardTranslatorInternal {
     sequence_translator: SequenceTranslator,
     possible_altgr: HashMap<String, String>,
     possible_dead: HashMap<String, u16>,
-    parent: Option<AgileReference<bindings::KeyboardTranslator>>,
+    parent: Option<bindings::KeyboardTranslator>,
 }
 
 impl KeyboardTranslatorInternal {
@@ -90,10 +90,6 @@ impl KeyboardTranslatorInternal {
         }
     }
 
-    fn set_parent(&mut self, parent: AgileReference<bindings::KeyboardTranslator>) {
-        self.parent = Some(parent);
-    }
-
     fn translate(&mut self, vkcode: u32, scancode: u32, keystate: &[u8; 256]) -> Result<String> {
         match vk_to_unicode(
             vkcode,
@@ -103,14 +99,10 @@ impl KeyboardTranslatorInternal {
         ) {
             Ok(s) => Ok(s.into()),
             Err(e) => {
-                let parent_ref = self
-                    .parent
-                    .as_ref()
-                    .expect("Parent should be set")
-                    .resolve()?;
-
-                self.report_invalid
-                    .invoke_all(&parent_ref, Some(&HSTRING::from("Invalid VK code")))?;
+                self.report_invalid.invoke_all(
+                    &self.parent.as_ref().unwrap(),
+                    Some(&HSTRING::from("Invalid VK code")),
+                )?;
 
                 match e {
                     VKToUnicodeError::NoTranslation => Err(E_INVALIDARG.into()),
@@ -142,22 +134,18 @@ impl KeyboardTranslatorInternal {
     }
 
     fn report(&mut self, result: std::result::Result<String, TranslateError>) -> Result<()> {
-        let parent_ref = self
-            .parent
-            .as_ref()
-            .expect("Parent should be set")
-            .resolve()?;
-
         match result {
             Ok(s) => self
                 .report_translated
-                .invoke_all(&parent_ref, Some(&HSTRING::from(s))),
-            Err(TranslateError::ValueNotFound) => self
-                .report_invalid
-                .invoke_all(&parent_ref, Some(&HSTRING::from("Value not found"))),
-            Err(TranslateError::InvalidDestination) => self
-                .report_invalid
-                .invoke_all(&parent_ref, Some(&HSTRING::from("Invalid destination"))),
+                .invoke_all(&self.parent.as_ref().unwrap(), Some(&HSTRING::from(s))),
+            Err(TranslateError::ValueNotFound) => self.report_invalid.invoke_all(
+                &self.parent.as_ref().unwrap(),
+                Some(&HSTRING::from("Value not found")),
+            ),
+            Err(TranslateError::InvalidDestination) => self.report_invalid.invoke_all(
+                &self.parent.as_ref().unwrap(),
+                Some(&HSTRING::from("Invalid destination")),
+            ),
             Err(TranslateError::Incomplete) => {
                 // Do nothing
                 Ok(())
@@ -225,9 +213,9 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
     ) -> Result<()> {
         let internal = self.internal.clone();
         self.thread_controller.try_enqueue(move || {
-            // panic!();
-            let mut internal = internal.write().unwrap();
-            // .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?;
+            let mut internal = internal
+                .try_write()
+                .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?;
 
             let keystate = calculate_bg_keystate(hascapslock, hasshift, hasaltgr);
             let value = internal.translate(vkcode, scancode, &keystate)?;
@@ -238,27 +226,28 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
 
     fn CheckLayoutAndUpdate(&self) -> Result<()> {
         let internal = self.internal.clone();
-        self.thread_controller.try_enqueue(move || {
-            let lock = internal
-                .read()
-                .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?;
+        self.thread_controller.try_enqueue_high(move || {
+            {
+                let lock = internal
+                    .try_read()
+                    .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?;
 
-            let foreground_window = unsafe { GetForegroundWindow() };
-            let tid = unsafe { GetWindowThreadProcessId(foreground_window, None) };
-            let active_layout = unsafe { GetKeyboardLayout(tid) };
+                let foreground_window = unsafe { GetForegroundWindow() };
+                let tid = unsafe { GetWindowThreadProcessId(foreground_window, None) };
+                let active_layout = unsafe { GetKeyboardLayout(tid) };
 
-            if active_layout.0 != lock.keyboard_layout.load(Acquire) {
+                if active_layout.0 == lock.keyboard_layout.load(Acquire) {
+                    return Ok(());
+                }
+
                 lock.keyboard_layout
                     .store(active_layout.0 as isize, Release);
-
-                let mut lock = internal
-                    .write()
-                    .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?;
-
-                lock.analyze_layout()
-            } else {
-                Ok(())
             }
+
+            internal
+                .try_write()
+                .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?
+                .analyze_layout()
         })
     }
 
@@ -268,19 +257,17 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
         let composedef_path = composedef_path.to_string();
         self.thread_controller.try_enqueue(move || {
             let mut lock = internal
-                .write()
+                .try_write()
                 .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?;
 
             lock.sequence_translator
                 .build(&keysymdef_path, &composedef_path)?;
 
-            let parent_ref = lock
-                .parent
-                .as_ref()
-                .expect("Parent should be set")
-                .resolve()?;
-            lock.report_translated
-                .invoke_all(&parent_ref, Some(&HSTRING::from("Build Successful! 🎉")))
+            let parent = lock.parent.clone();
+            lock.report_translated.invoke_all(
+                &parent.as_ref().unwrap(),
+                Some(&HSTRING::from("Build Successful! 🎉")),
+            )
         })
     }
 
@@ -295,8 +282,8 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
 
             self.thread_controller.try_enqueue(move || -> Result<()> {
                 Ok(internal
-                    .write()
-                    .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
+                    .try_write()
+                    .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?
                     .report_invalid
                     .insert(token, handler_ref.clone()))
             })?;
@@ -318,8 +305,8 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
 
             self.thread_controller.try_enqueue(move || -> Result<()> {
                 Ok(internal
-                    .write()
-                    .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
+                    .try_write()
+                    .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?
                     .report_translated
                     .insert(token, handler_ref.clone()))
             })?;
@@ -335,8 +322,8 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
         let value = token.Value;
         self.thread_controller.try_enqueue(move || -> Result<()> {
             Ok(internal
-                .write()
-                .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
+                .try_write()
+                .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?
                 .report_invalid
                 .remove(value))
         })
@@ -347,8 +334,8 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
         let value = token.Value;
         self.thread_controller.try_enqueue(move || -> Result<()> {
             Ok(internal
-                .write()
-                .map_err(|_| Error::new(E_ACCESSDENIED, "poisoned lock"))?
+                .try_write()
+                .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?
                 .report_translated
                 .remove(value))
         })
@@ -435,17 +422,11 @@ impl IActivationFactory_Impl for KeyboardTranslatorFactory {
     fn ActivateInstance(&self) -> Result<IInspectable> {
         let instance = KeyboardTranslator {
             internal: Arc::new(RwLock::new(KeyboardTranslatorInternal::new())),
-            thread_controller: Arc::new(
-                ThreadHandler::new().expect("Thread controller should be created"),
-            ),
+            thread_controller: ThreadHandler::new().expect("Thread controller should be created"),
         };
         let binding: bindings::KeyboardTranslator = instance.into();
         let casted_binding = binding.cast_object::<KeyboardTranslator>()?;
-        casted_binding
-            .internal
-            .write()
-            .unwrap()
-            .set_parent(AgileReference::new(&binding)?);
+        casted_binding.internal.try_write().unwrap().parent = Some(binding.clone());
         Ok(binding.into())
     }
 }

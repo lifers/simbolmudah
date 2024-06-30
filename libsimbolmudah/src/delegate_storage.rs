@@ -20,11 +20,7 @@ impl<T: RuntimeType + Interface + 'static, U: RuntimeType + 'static> DelegateSto
         }
     }
 
-    pub(crate) fn insert(
-        &mut self,
-        token: i64,
-        handler: AgileReference<TypedEventHandler<T, U>>,
-    ) {
+    pub(crate) fn insert(&mut self, token: i64, handler: AgileReference<TypedEventHandler<T, U>>) {
         self.delegates.insert(token, handler);
     }
 
@@ -37,7 +33,7 @@ impl<T: RuntimeType + Interface + 'static, U: RuntimeType + 'static> DelegateSto
             .retain(|_, handler| handler.resolve().is_ok());
 
         for (_, handler) in self.delegates.iter() {
-            handler.resolve()?.Invoke(Some(sender), args)?;
+            handler.resolve().unwrap().Invoke(Some(sender), args)?;
         }
         Ok(())
     }

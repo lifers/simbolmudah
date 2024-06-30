@@ -40,7 +40,7 @@ impl SequenceTranslator {
             let value: MappedString = value.into();
             Ok(value.into())
         } else {
-            let prefix = Str::new(seq).starts_with();
+            let prefix = Str::new(&self.state).starts_with();
             if self
                 .key_to_value
                 .search(&prefix)

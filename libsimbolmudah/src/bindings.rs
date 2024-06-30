@@ -10,7 +10,7 @@
 windows_core::imp::define_interface!(
     IKeyboardHook,
     IKeyboardHook_Vtbl,
-    0xa36838bf_852a_5d0f_a772_76cada53be3f
+    0x380ae0fa_0662_53ed_a3c8_c172a834a97a
 );
 impl windows_core::RuntimeType for IKeyboardHook {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -19,6 +19,7 @@ impl windows_core::RuntimeType for IKeyboardHook {
 #[repr(C)]
 pub struct IKeyboardHook_Vtbl {
     pub base__: windows_core::IInspectable_Vtbl,
+    pub Deactivate: unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
     pub DebugStateChanged: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut core::ffi::c_void,
@@ -112,6 +113,15 @@ windows_core::imp::interface_hierarchy!(
     windows_core::IInspectable
 );
 impl KeyboardHook {
+    pub fn Deactivate(&self) -> windows_core::Result<()> {
+        let this = self;
+        unsafe {
+            (windows_core::Interface::vtable(this).Deactivate)(windows_core::Interface::as_raw(
+                this,
+            ))
+            .ok()
+        }
+    }
     pub fn DebugStateChanged<P0>(
         &self,
         handler: P0,
@@ -366,6 +376,7 @@ impl windows_core::RuntimeName for KeyboardTranslator {
 unsafe impl Send for KeyboardTranslator {}
 unsafe impl Sync for KeyboardTranslator {}
 pub trait IKeyboardHook_Impl: Sized {
+    fn Deactivate(&self) -> windows_core::Result<()>;
     fn DebugStateChanged(
         &self,
         handler: Option<
@@ -396,6 +407,17 @@ impl IKeyboardHook_Vtbl {
         Impl: IKeyboardHook_Impl,
         const OFFSET: isize,
     >() -> IKeyboardHook_Vtbl {
+        unsafe extern "system" fn Deactivate<
+            Identity: windows_core::IUnknownImpl<Impl = Impl>,
+            Impl: IKeyboardHook_Impl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+        ) -> windows_core::HRESULT {
+            let this = (this as *const *const ()).offset(OFFSET) as *const Identity;
+            let this = (*this).get_impl();
+            IKeyboardHook_Impl::Deactivate(this).into()
+        }
         unsafe extern "system" fn DebugStateChanged<
             Identity: windows_core::IUnknownImpl<Impl = Impl>,
             Impl: IKeyboardHook_Impl,
@@ -464,6 +486,7 @@ impl IKeyboardHook_Vtbl {
         }
         Self {
             base__: windows_core::IInspectable_Vtbl::new::<Identity, IKeyboardHook, OFFSET>(),
+            Deactivate: Deactivate::<Identity, Impl, OFFSET>,
             DebugStateChanged: DebugStateChanged::<Identity, Impl, OFFSET>,
             RemoveDebugStateChanged: RemoveDebugStateChanged::<Identity, Impl, OFFSET>,
             DebugKeyEvent: DebugKeyEvent::<Identity, Impl, OFFSET>,

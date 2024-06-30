@@ -44,6 +44,7 @@ namespace winrt::simbolmudah_ui::implementation
 		{
 			this->keyboardHook->DebugKeyEvent(this->infoUpdaterToken);
 			this->keyboardHook->DebugStateChanged(this->stateUpdaterToken);
+			this->keyboardHook->Deactivate();
 			this->keyboardHook.reset(); 
 		}
 	}
