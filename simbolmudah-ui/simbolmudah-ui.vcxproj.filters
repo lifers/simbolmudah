@@ -5,6 +5,9 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="MainWindow.xaml" />
+    <Page Include="SearchPage.xaml" />
+    <Page Include="HomePage.xaml" />
+    <Page Include="SettingsPage.xaml" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />

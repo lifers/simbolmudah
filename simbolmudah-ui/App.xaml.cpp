@@ -38,6 +38,7 @@ namespace winrt::simbolmudah_ui::implementation
     void App::OnLaunched([[maybe_unused]] LaunchActivatedEventArgs const& e)
     {
         window = make<MainWindow>();
+        window.ExtendsContentIntoTitleBar(true);
         window.Activate();
     }
 }
