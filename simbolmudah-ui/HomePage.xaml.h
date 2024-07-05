@@ -1,31 +1,31 @@
 #pragma once
 
 #include "HomePage.g.h"
-#include <optional>
+#include "App.xaml.h"
 
 namespace winrt::simbolmudah_ui::implementation
 {
    struct HomePage : HomePageT<HomePage>
 	{
 		HomePage();
-		~HomePage();
 		HomePage(const HomePage&) = delete;
 		HomePage& operator=(const HomePage&) = delete;
-		void ListenKeyUpdate(const IInspectable& sender, const Microsoft::UI::Xaml::RoutedEventArgs& args);
+		void OnNavigatedTo(const Microsoft::UI::Xaml::Navigation::NavigationEventArgs&);
+		void OnNavigatingFrom(const Microsoft::UI::Xaml::Navigation::NavigatingCancelEventArgs&);
+		void OnUnloaded(const IInspectable&, const Microsoft::UI::Xaml::RoutedEventArgs&);
+		void HookEnabled(bool value);
+		bool HookEnabled() const;
 
 	private:
 		fire_and_forget InfoUpdater(const LibSimbolMudah::KeyboardHook&, const hstring& message);
 		fire_and_forget StateUpdater(const LibSimbolMudah::KeyboardHook&, const hstring& message);
 		fire_and_forget ShowResult(const LibSimbolMudah::KeyboardTranslator&, const hstring& message);
-		fire_and_forget BuildTranslator() const;
 
-		const LibSimbolMudah::KeyboardTranslator keyboardTranslator;
-		std::optional<LibSimbolMudah::KeyboardHook> keyboardHook;
-		const apartment_context main_thread;
+		const com_ptr<App> app;
 		event_token showResultsToken;
 		event_token infoUpdaterToken;
 		event_token stateUpdaterToken;
-	};
+   };
 }
 
 namespace winrt::simbolmudah_ui::factory_implementation
