@@ -8,9 +8,11 @@ use crate::{
 use sequence_translator::SequenceTranslator;
 use std::{
     collections::HashMap,
+    ffi::c_void,
+    ptr::null_mut,
     sync::{
         atomic::{
-            AtomicIsize,
+            AtomicPtr,
             Ordering::{Acquire, Release},
         },
         Arc, RwLock,
@@ -24,9 +26,9 @@ use windows::{
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
         UI::{
             Input::KeyboardAndMouse::{
-                GetKeyboardLayout, ToUnicodeEx, VK_CAPITAL, VK_CONTROL, VK_MENU, VK_SHIFT, VK_SPACE,
+                GetKeyboardLayout, ToUnicodeEx, HKL, VK_CAPITAL, VK_CONTROL, VK_MENU, VK_SHIFT,
+                VK_SPACE,
             },
-            TextServices::HKL,
             WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId},
         },
     },
@@ -68,7 +70,7 @@ pub(crate) struct KeyboardTranslator {
 
 #[derive(Debug)]
 struct KeyboardTranslatorInternal {
-    keyboard_layout: AtomicIsize,
+    keyboard_layout: AtomicPtr<c_void>,
     report_invalid: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
     report_translated: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
     sequence_translator: SequenceTranslator,
@@ -80,7 +82,7 @@ struct KeyboardTranslatorInternal {
 impl KeyboardTranslatorInternal {
     fn new() -> Self {
         Self {
-            keyboard_layout: AtomicIsize::new(0),
+            keyboard_layout: AtomicPtr::new(null_mut()),
             report_invalid: DelegateStorage::new(),
             report_translated: DelegateStorage::new(),
             sequence_translator: SequenceTranslator::default(),
@@ -201,7 +203,7 @@ impl KeyboardTranslatorInternal {
     }
 }
 
-impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
+impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator_Impl {
     fn TranslateAndForward(
         &self,
         vkcode: u32,
@@ -240,8 +242,7 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator {
                     return Ok(());
                 }
 
-                lock.keyboard_layout
-                    .store(active_layout.0 as isize, Release);
+                lock.keyboard_layout.store(active_layout.0, Release);
             }
 
             internal
@@ -401,7 +402,7 @@ fn to_unicode_ex_clear_state() {
             &EMPTY_KEYSTATE,
             &mut buffer,
             0,
-            HKL(0),
+            HKL(null_mut()),
         );
         ToUnicodeEx(
             VK_SPACE.0.into(),
@@ -409,7 +410,7 @@ fn to_unicode_ex_clear_state() {
             &EMPTY_KEYSTATE,
             &mut buffer,
             0,
-            HKL(0),
+            HKL(null_mut()),
         );
     }
 }
@@ -418,7 +419,7 @@ fn to_unicode_ex_clear_state() {
 pub(super) struct KeyboardTranslatorFactory;
 
 // Default constructor for KeyboardTranslator WinRT class
-impl IActivationFactory_Impl for KeyboardTranslatorFactory {
+impl IActivationFactory_Impl for KeyboardTranslatorFactory_Impl {
     fn ActivateInstance(&self) -> Result<IInspectable> {
         let instance = KeyboardTranslator {
             internal: Arc::new(RwLock::new(KeyboardTranslatorInternal::new())),
@@ -448,19 +449,8 @@ mod tests {
 
     #[test]
     fn test_activate_instance() {
-        // Create a new instance of KeyboardTranslatorFactory
-        let instance = KeyboardTranslatorFactory {};
-
-        // Call the ActivateInstance method
-        let instance = instance
-            .ActivateInstance()
-            .expect("Instance should be created");
-
-        // Assert that the instance is of type KeyboardTranslator
-        assert!(instance.is_object::<KeyboardTranslator>());
-        let instance = instance
-            .cast::<bindings::KeyboardTranslator>()
-            .expect("Should be castable");
+        // Create a new instance of KeyboardTranslator
+        let instance = bindings::KeyboardTranslator::new().expect("Instance should be created");
         let instance = instance
             .cast_object::<KeyboardTranslator>()
             .expect("Should be castable");
@@ -469,21 +459,8 @@ mod tests {
 
     #[test]
     fn test_on_invalid() {
-        // Create a new instance of KeyboardTranslatorFactory
-        let factory = KeyboardTranslatorFactory {};
-
-        // Call the ActivateInstance method
-        let product = factory
-            .ActivateInstance()
-            .expect("Instance should be created");
-
-        // Assert that the instance is of type KeyboardTranslator
-        assert!(product.is_object::<KeyboardTranslator>());
-        let instance = product
-            .cast::<bindings::KeyboardTranslator>()
-            .expect("Should be castable");
-
-        // Cast the instance to KeyboardTranslator
+        // Create a new instance of KeyboardTranslator
+        let instance = bindings::KeyboardTranslator::new().expect("Instance should be created");
         let instance: ComObject<KeyboardTranslator> =
             instance.cast_object().expect("Should be castable");
 
