@@ -132,7 +132,7 @@ pub struct ISequenceDescription_Vtbl {
 windows_core::imp::define_interface!(
     ISequenceSearcher,
     ISequenceSearcher_Vtbl,
-    0x9dbc70e2_5b6d_503c_be89_f71043cf962d
+    0xede90f31_fce3_5f38_ae85_5ff44e216df5
 );
 impl windows_core::RuntimeType for ISequenceSearcher {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -144,6 +144,7 @@ pub struct ISequenceSearcher_Vtbl {
     pub Search: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         core::mem::MaybeUninit<windows_core::HSTRING>,
+        *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
     pub OnSearchResult: unsafe extern "system" fn(
         *mut core::ffi::c_void,
@@ -523,14 +524,19 @@ impl SequenceSearcher {
         > = windows_core::imp::FactoryCache::new();
         SHARED.call(callback)
     }
-    pub fn Search(&self, keyword: &windows_core::HSTRING) -> windows_core::Result<()> {
+    pub fn Search(
+        &self,
+        keyword: &windows_core::HSTRING,
+    ) -> windows_core::Result<windows::Foundation::IAsyncAction> {
         let this = self;
         unsafe {
+            let mut result__ = core::mem::zeroed();
             (windows_core::Interface::vtable(this).Search)(
                 windows_core::Interface::as_raw(this),
                 core::mem::transmute_copy(keyword),
+                &mut result__,
             )
-            .ok()
+            .and_then(|| windows_core::Type::from_abi(result__))
         }
     }
     pub fn OnSearchResult<P0>(
@@ -1037,7 +1043,10 @@ impl ISequenceDescription_Vtbl {
     }
 }
 pub trait ISequenceSearcher_Impl: Sized {
-    fn Search(&self, keyword: &windows_core::HSTRING) -> windows_core::Result<()>;
+    fn Search(
+        &self,
+        keyword: &windows_core::HSTRING,
+    ) -> windows_core::Result<windows::Foundation::IAsyncAction>;
     fn OnSearchResult(
         &self,
         handler: Option<
@@ -1067,12 +1076,20 @@ impl ISequenceSearcher_Vtbl {
         >(
             this: *mut core::ffi::c_void,
             keyword: core::mem::MaybeUninit<windows_core::HSTRING>,
+            result__: *mut *mut core::ffi::c_void,
         ) -> windows_core::HRESULT
         where
             Identity: ISequenceSearcher_Impl,
         {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            ISequenceSearcher_Impl::Search(this, core::mem::transmute(&keyword)).into()
+            match ISequenceSearcher_Impl::Search(this, core::mem::transmute(&keyword)) {
+                Ok(ok__) => {
+                    result__.write(core::mem::transmute_copy(&ok__));
+                    core::mem::forget(ok__);
+                    windows_core::HRESULT(0)
+                }
+                Err(err) => err.into(),
+            }
         }
         unsafe extern "system" fn OnSearchResult<
             Identity: windows_core::IUnknownImpl,

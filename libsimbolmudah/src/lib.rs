@@ -1,11 +1,13 @@
 mod bindings;
 mod delegate_storage;
+mod key;
 mod keyboard_hook;
 mod keyboard_translator;
 mod sender;
+mod sequence_searcher;
 mod thread_handler;
 
-use crate::{keyboard_translator::KeyboardTranslatorFactory, keyboard_hook::KeyboardHookFactory};
+use crate::{keyboard_hook::KeyboardHookFactory, keyboard_translator::KeyboardTranslatorFactory};
 use windows::{
     core::{Interface, Ref, HRESULT, HSTRING},
     Win32::{
