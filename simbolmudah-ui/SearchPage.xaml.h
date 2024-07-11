@@ -1,21 +1,18 @@
 #pragma once
-
 #include "SearchPage.g.h"
 
 namespace winrt::simbolmudah_ui::implementation
 {
     struct SearchPage : SearchPageT<SearchPage>
     {
-        SearchPage()
-        {
-            // Xaml objects should not call InitializeComponent during construction.
-            // See https://github.com/microsoft/cppwinrt/tree/master/nuget#initializecomponent
-        }
+        simbolmudah_ui::SearchPageViewModel MainViewModel() const;
+        void SubmitSearch(
+            Microsoft::UI::Xaml::Controls::AutoSuggestBox const& sender,
+            Microsoft::UI::Xaml::Controls::AutoSuggestBoxTextChangedEventArgs const& e);
 
-        int32_t MyProperty();
-        void MyProperty(int32_t value);
-
-        void myButton_Click(IInspectable const& sender, Microsoft::UI::Xaml::RoutedEventArgs const& args);
+    private:
+        simbolmudah_ui::SearchPageViewModel mainViewModel;
+        Windows::Foundation::IAsyncAction currentSearch{ nullptr };
     };
 }
 

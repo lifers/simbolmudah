@@ -7,8 +7,37 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
+    
+    <Page.Resources>
+        <DataTemplate x:Key="searchResultTemplate" x:DataType="local:SequenceDetail">
+            <Grid Padding="0,8,0,8" BorderBrush="Red" BorderThickness="1">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" BorderBrush="Yellow" BorderThickness="1">
+                    <TextBlock Text="{x:Bind Result, Mode=OneTime}" FontSize="32" HorizontalAlignment="Left"/>
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="12,0,0,0">
+                        <TextBlock Text="{x:Bind Description, Mode=OneTime}"/>
+                        <TextBlock Text="dimmer details" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" BorderBrush="Green" BorderThickness="1">
+                    <ItemsRepeater ItemsSource="{x:Bind Sequence, Mode=OneTime}" VerticalAlignment="Center">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Orientation="Horizontal" Spacing="4"/>
+                        </ItemsRepeater.Layout>
+                    </ItemsRepeater>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
 
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Button x:Name="myButton" Click="myButton_Click">Click Me</Button>
+    <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="48">
+        <AutoSuggestBox PlaceholderText="Type a character name" QueryIcon="Find" TextChanged="SubmitSearch"/>
+        <ListView x:Name="SearchResults"
+                  ItemsSource="{x:Bind MainViewModel.SearchResults, Mode=OneWay}"
+                  BorderThickness="1"
+                  BorderBrush="Gray">
+            <ListView.ItemTemplate>
+                <StaticResource ResourceKey="searchResultTemplate"/>
+            </ListView.ItemTemplate>
+        </ListView>
     </StackPanel>
 </Page>

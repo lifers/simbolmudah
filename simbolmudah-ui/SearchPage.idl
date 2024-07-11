@@ -1,9 +1,11 @@
+import "SearchPage/SearchPageViewModel.idl";
+
 namespace simbolmudah_ui
 {
     [default_interface]
     runtimeclass SearchPage : Microsoft.UI.Xaml.Controls.Page
     {
         SearchPage();
-        Int32 MyProperty;
+        SearchPageViewModel MainViewModel{ get; };
     }
 }

@@ -1,45 +1,37 @@
 mod bindings;
 mod delegate_storage;
-mod key;
 mod keyboard_hook;
 mod keyboard_translator;
 mod sender;
 mod sequence_searcher;
 mod thread_handler;
 
-use crate::{keyboard_hook::KeyboardHookFactory, keyboard_translator::KeyboardTranslatorFactory};
+use keyboard_hook::KeyboardHookFactory;
+use keyboard_translator::KeyboardTranslatorFactory;
+use sequence_searcher::SequenceSearcherFactory;
 use windows::{
-    core::{Interface, Ref, HRESULT, HSTRING},
+    core::{OutRef, Ref, HRESULT, HSTRING},
     Win32::{
-        Foundation::{CLASS_E_CLASSNOTAVAILABLE, E_POINTER, S_OK},
+        Foundation::{CLASS_E_CLASSNOTAVAILABLE, E_POINTER},
         System::WinRT::IActivationFactory,
     },
 };
 
 #[no_mangle]
-unsafe extern "system" fn DllGetActivationFactory(
+extern "system" fn DllGetActivationFactory(
     name: Ref<HSTRING>,
-    result: *mut *mut std::ffi::c_void,
+    result: OutRef<IActivationFactory>,
 ) -> HRESULT {
     if result.is_null() {
-        return E_POINTER;
-    }
-
-    let factory: Option<IActivationFactory> = if *name == "LibSimbolMudah.KeyboardTranslator" {
-        Some(KeyboardTranslatorFactory.into())
+        E_POINTER
+    } else if *name == "LibSimbolMudah.KeyboardTranslator" {
+        result.write(Some(KeyboardTranslatorFactory.into())).into()
     } else if *name == "LibSimbolMudah.KeyboardHook" {
-        Some(KeyboardHookFactory.into())
+        result.write(Some(KeyboardHookFactory.into())).into()
+    } else if *name == "LibSimbolMudah.SequenceSearcher" {
+        result.write(Some(SequenceSearcherFactory.into())).into()
     } else {
-        None
-    };
-
-    unsafe {
-        if let Some(factory) = factory {
-            *result = factory.into_raw();
-            S_OK
-        } else {
-            *result = std::ptr::null_mut();
-            CLASS_E_CLASSNOTAVAILABLE
-        }
+        let _ = result.write(None);
+        CLASS_E_CLASSNOTAVAILABLE
     }
 }

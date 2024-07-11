@@ -2,84 +2,45 @@ mod internal;
 
 use std::sync::{Arc, RwLock};
 
-use crate::{
-    bindings,
-    delegate_storage::{get_token, DelegateStorage},
-};
+use crate::bindings;
 use internal::SequenceSearcherInternal;
 use windows::{
-    core::{implement, AgileReference, Error, IInspectable, Interface, Result, Weak, HSTRING},
-    Foundation::{
-        AsyncStatus, Collections::IVectorView, EventRegistrationToken, IAsyncAction,
-        TypedEventHandler,
-    },
-    System::Threading::{ThreadPool, WorkItemHandler},
-    Win32::{
-        Foundation::{E_ABORT, E_POINTER},
-        System::WinRT::{IActivationFactory, IActivationFactory_Impl},
-    },
+    core::{h, implement, Array, IInspectable, Interface, Result, Weak, HSTRING},
+    Foundation::Collections::IVectorView,
+    Win32::System::WinRT::{IActivationFactory, IActivationFactory_Impl},
 };
 
 type SS = bindings::SequenceSearcher;
-type SD = bindings::SequenceDescription;
-type D = TypedEventHandler<SS, IVectorView<SD>>;
 
 #[implement(SS)]
 struct SequenceSearcher {
     internal: Arc<RwLock<SequenceSearcherInternal>>,
-    on_result: Arc<RwLock<DelegateStorage<SS, IVectorView<SD>>>>,
 }
 
 impl bindings::ISequenceSearcher_Impl for SequenceSearcher_Impl {
-    fn Search(&self, _keyword: &HSTRING) -> Result<IAsyncAction> {
-        let internal = self.internal.clone();
-        let on_result = self.on_result.clone();
-
-        ThreadPool::RunAsync(&WorkItemHandler::new(move |a| {
-            if let Some(a) = a {
-                if a.Status()? == AsyncStatus::Canceled {
-                    return Err(Error::new(E_ABORT, "Operation canceled"));
-                }
-
-                let args = IVectorView::try_from(vec![Some(SD::new()?), Some(SD::new()?)])?;
-                on_result.write().unwrap().invoke_all(
-                    &internal.read().unwrap().parent.upgrade().unwrap(),
-                    Some(&args),
-                )
-            } else {
-                Err(Error::new(E_POINTER, "Null pointer"))
-            }
-        }))
-    }
-
-    fn OnSearchResult(&self, handler: Option<&D>) -> Result<EventRegistrationToken> {
-        if let Some(handler) = handler {
-            let token = get_token(handler.as_raw());
-            self.on_result
-                .write()
-                .unwrap()
-                .insert(token, AgileReference::new(handler)?);
-
-            Ok(EventRegistrationToken { Value: token })
-        } else {
-            Err(Error::new(E_POINTER, "Null pointer"))
-        }
-    }
-
-    fn RemoveOnSearchResult(&self, token: &EventRegistrationToken) -> Result<()> {
-        Ok(self.on_result.write().unwrap().remove(token.Value))
+    fn Search(
+        &self,
+        keyword: &HSTRING,
+        sequence: &mut Array<IVectorView<u32>>,
+        result: &mut Array<HSTRING>,
+        description: &mut Array<HSTRING>,
+    ) -> Result<()> {
+        let default_seq = IVectorView::try_from(vec![0x65, 0x66, 0x67])?;
+        *sequence = Array::from_slice(&[Some(default_seq.clone()), Some(default_seq.clone())]);
+        *result = Array::from_slice(&[h!("😎").to_owned(), h!("😎").to_owned()]);
+        *description = Array::from_slice(&[keyword.clone(), keyword.clone()]);
+        Ok(())
     }
 }
 
 #[implement(IActivationFactory)]
-struct SequenceSearcherFactory;
+pub(crate) struct SequenceSearcherFactory;
 
 impl IActivationFactory_Impl for SequenceSearcherFactory_Impl {
     fn ActivateInstance(&self) -> Result<IInspectable> {
         let internal = SequenceSearcherInternal::new(Weak::new());
         let instance: SS = SequenceSearcher {
             internal: Arc::new(RwLock::new(internal)),
-            on_result: Arc::new(RwLock::new(DelegateStorage::new())),
         }
         .into();
 

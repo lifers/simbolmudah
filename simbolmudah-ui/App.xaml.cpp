@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "App.xaml.h"
-#include "MainWindow.xaml.h"
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -53,7 +52,7 @@ namespace winrt::simbolmudah_ui::implementation
         this->BuildTranslator();
         this->InitializeSettings();
         
-        this->window = make<MainWindow>();
+        this->window = simbolmudah_ui::MainWindow();
         this->window.ExtendsContentIntoTitleBar(true);
         this->window.Activate();
     }

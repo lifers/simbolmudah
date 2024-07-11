@@ -1,20 +1,15 @@
 namespace LibSimbolMudah
 {
-	runtimeclass SequenceDescription
-	{
-		SequenceDescription();
-
-		IVectorView<UInt32> sequence{ get; };
-		String result{ get; };
-		String description{ get; };
-	}
-
 	runtimeclass SequenceSearcher
 	{
 		SequenceSearcher();
 
-		Windows.Foundation.IAsyncAction Search(String keyword);
-		event Windows.Foundation.TypedEventHandler<SequenceSearcher, IVectorView<SequenceDescription> > OnSearchResult;
+		void Search(
+			String keyword,
+			out IVectorView<UInt32>[] sequence,
+			out String[] result,
+			out String[] description
+		);
 	}
 
 	runtimeclass KeyboardTranslator

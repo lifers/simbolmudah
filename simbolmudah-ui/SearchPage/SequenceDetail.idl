@@ -1,0 +1,10 @@
+namespace simbolmudah_ui
+{
+	runtimeclass SequenceDetail
+	{
+		SequenceDetail(IVectorView<UInt32> sequence, String result, String description);
+		IObservableVector<UInt32> Sequence{ get; };
+		String Result{ get; };
+		String Description{ get; };
+	}
+}
