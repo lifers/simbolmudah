@@ -60,7 +60,7 @@ pub struct IKeyboardHookFactory_Vtbl {
 windows_core::imp::define_interface!(
     IKeyboardTranslator,
     IKeyboardTranslator_Vtbl,
-    0x717f286f_c7e3_50e9_a98e_c8599d927190
+    0x459f4272_0cb3_5e0f_b071_9ab3f095737d
 );
 impl windows_core::RuntimeType for IKeyboardTranslator {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -80,11 +80,6 @@ pub struct IKeyboardTranslator_Vtbl {
     ) -> windows_core::HRESULT,
     pub CheckLayoutAndUpdate:
         unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
-    pub BuildTranslator: unsafe extern "system" fn(
-        *mut core::ffi::c_void,
-        core::mem::MaybeUninit<windows_core::HSTRING>,
-        core::mem::MaybeUninit<windows_core::HSTRING>,
-    ) -> windows_core::HRESULT,
     pub OnTranslated: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut core::ffi::c_void,
@@ -102,6 +97,42 @@ pub struct IKeyboardTranslator_Vtbl {
     pub RemoveOnInvalid: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
+    IKeyboardTranslatorFactory,
+    IKeyboardTranslatorFactory_Vtbl,
+    0x53b7cb66_7ff7_506c_a68b_ee25ddaf9709
+);
+impl windows_core::RuntimeType for IKeyboardTranslatorFactory {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+#[repr(C)]
+pub struct IKeyboardTranslatorFactory_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    pub CreateInstance: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
+    ISequenceDefinition,
+    ISequenceDefinition_Vtbl,
+    0x69655d23_79eb_5c1a_8585_f3e345fe8293
+);
+impl windows_core::RuntimeType for ISequenceDefinition {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+#[repr(C)]
+pub struct ISequenceDefinition_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    pub Build: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
@@ -125,6 +156,24 @@ pub struct ISequenceSearcher_Vtbl {
         *mut *mut core::mem::MaybeUninit<windows_core::HSTRING>,
         *mut u32,
         *mut *mut core::mem::MaybeUninit<windows_core::HSTRING>,
+    ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
+    ISequenceSearcherFactory,
+    ISequenceSearcherFactory_Vtbl,
+    0xa45320a9_3119_50d9_ba29_b37a2846a1cb
+);
+impl windows_core::RuntimeType for ISequenceSearcherFactory {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+#[repr(C)]
+pub struct ISequenceSearcherFactory_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    pub CreateInstance: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
 }
 #[repr(transparent)]
@@ -256,21 +305,6 @@ windows_core::imp::interface_hierarchy!(
     windows_core::IInspectable
 );
 impl KeyboardTranslator {
-    pub fn new() -> windows_core::Result<Self> {
-        Self::IActivationFactory(|f| f.ActivateInstance::<Self>())
-    }
-    fn IActivationFactory<
-        R,
-        F: FnOnce(&windows_core::imp::IGenericFactory) -> windows_core::Result<R>,
-    >(
-        callback: F,
-    ) -> windows_core::Result<R> {
-        static SHARED: windows_core::imp::FactoryCache<
-            KeyboardTranslator,
-            windows_core::imp::IGenericFactory,
-        > = windows_core::imp::FactoryCache::new();
-        SHARED.call(callback)
-    }
     pub fn TranslateAndForward(
         &self,
         vkcode: u32,
@@ -299,21 +333,6 @@ impl KeyboardTranslator {
         unsafe {
             (windows_core::Interface::vtable(this).CheckLayoutAndUpdate)(
                 windows_core::Interface::as_raw(this),
-            )
-            .ok()
-        }
-    }
-    pub fn BuildTranslator(
-        &self,
-        keysymdef: &windows_core::HSTRING,
-        composedef: &windows_core::HSTRING,
-    ) -> windows_core::Result<()> {
-        let this = self;
-        unsafe {
-            (windows_core::Interface::vtable(this).BuildTranslator)(
-                windows_core::Interface::as_raw(this),
-                core::mem::transmute_copy(keysymdef),
-                core::mem::transmute_copy(composedef),
             )
             .ok()
         }
@@ -384,6 +403,33 @@ impl KeyboardTranslator {
             .ok()
         }
     }
+    pub fn CreateInstance<P0>(definition: P0) -> windows_core::Result<KeyboardTranslator>
+    where
+        P0: windows_core::Param<SequenceDefinition>,
+    {
+        Self::IKeyboardTranslatorFactory(|this| unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).CreateInstance)(
+                windows_core::Interface::as_raw(this),
+                definition.param().abi(),
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        })
+    }
+    #[doc(hidden)]
+    pub fn IKeyboardTranslatorFactory<
+        R,
+        F: FnOnce(&IKeyboardTranslatorFactory) -> windows_core::Result<R>,
+    >(
+        callback: F,
+    ) -> windows_core::Result<R> {
+        static SHARED: windows_core::imp::FactoryCache<
+            KeyboardTranslator,
+            IKeyboardTranslatorFactory,
+        > = windows_core::imp::FactoryCache::new();
+        SHARED.call(callback)
+    }
 }
 impl windows_core::RuntimeType for KeyboardTranslator {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -400,13 +446,13 @@ unsafe impl Send for KeyboardTranslator {}
 unsafe impl Sync for KeyboardTranslator {}
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub struct SequenceSearcher(windows_core::IUnknown);
+pub struct SequenceDefinition(windows_core::IUnknown);
 windows_core::imp::interface_hierarchy!(
-    SequenceSearcher,
+    SequenceDefinition,
     windows_core::IUnknown,
     windows_core::IInspectable
 );
-impl SequenceSearcher {
+impl SequenceDefinition {
     pub fn new() -> windows_core::Result<Self> {
         Self::IActivationFactory(|f| f.ActivateInstance::<Self>())
     }
@@ -417,11 +463,49 @@ impl SequenceSearcher {
         callback: F,
     ) -> windows_core::Result<R> {
         static SHARED: windows_core::imp::FactoryCache<
-            SequenceSearcher,
+            SequenceDefinition,
             windows_core::imp::IGenericFactory,
         > = windows_core::imp::FactoryCache::new();
         SHARED.call(callback)
     }
+    pub fn Build(
+        &self,
+        keysymdef: &windows_core::HSTRING,
+        composedef: &windows_core::HSTRING,
+    ) -> windows_core::Result<()> {
+        let this = self;
+        unsafe {
+            (windows_core::Interface::vtable(this).Build)(
+                windows_core::Interface::as_raw(this),
+                core::mem::transmute_copy(keysymdef),
+                core::mem::transmute_copy(composedef),
+            )
+            .ok()
+        }
+    }
+}
+impl windows_core::RuntimeType for SequenceDefinition {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_class::<Self, ISequenceDefinition>();
+}
+unsafe impl windows_core::Interface for SequenceDefinition {
+    type Vtable = ISequenceDefinition_Vtbl;
+    const IID: windows_core::GUID = <ISequenceDefinition as windows_core::Interface>::IID;
+}
+impl windows_core::RuntimeName for SequenceDefinition {
+    const NAME: &'static str = "LibSimbolMudah.SequenceDefinition";
+}
+unsafe impl Send for SequenceDefinition {}
+unsafe impl Sync for SequenceDefinition {}
+#[repr(transparent)]
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct SequenceSearcher(windows_core::IUnknown);
+windows_core::imp::interface_hierarchy!(
+    SequenceSearcher,
+    windows_core::IUnknown,
+    windows_core::IInspectable
+);
+impl SequenceSearcher {
     pub fn Search(
         &self,
         keyword: &windows_core::HSTRING,
@@ -443,6 +527,31 @@ impl SequenceSearcher {
             )
             .ok()
         }
+    }
+    pub fn CreateInstance<P0>(definition: P0) -> windows_core::Result<SequenceSearcher>
+    where
+        P0: windows_core::Param<SequenceDefinition>,
+    {
+        Self::ISequenceSearcherFactory(|this| unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).CreateInstance)(
+                windows_core::Interface::as_raw(this),
+                definition.param().abi(),
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        })
+    }
+    #[doc(hidden)]
+    pub fn ISequenceSearcherFactory<
+        R,
+        F: FnOnce(&ISequenceSearcherFactory) -> windows_core::Result<R>,
+    >(
+        callback: F,
+    ) -> windows_core::Result<R> {
+        static SHARED: windows_core::imp::FactoryCache<SequenceSearcher, ISequenceSearcherFactory> =
+            windows_core::imp::FactoryCache::new();
+        SHARED.call(callback)
     }
 }
 impl windows_core::RuntimeType for SequenceSearcher {
@@ -645,11 +754,6 @@ pub trait IKeyboardTranslator_Impl: Sized {
         destination: u8,
     ) -> windows_core::Result<()>;
     fn CheckLayoutAndUpdate(&self) -> windows_core::Result<()>;
-    fn BuildTranslator(
-        &self,
-        keysymdef: &windows_core::HSTRING,
-        composedef: &windows_core::HSTRING,
-    ) -> windows_core::Result<()>;
     fn OnTranslated(
         &self,
         handler: Option<
@@ -718,25 +822,6 @@ impl IKeyboardTranslator_Vtbl {
         {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
             IKeyboardTranslator_Impl::CheckLayoutAndUpdate(this).into()
-        }
-        unsafe extern "system" fn BuildTranslator<
-            Identity: windows_core::IUnknownImpl,
-            const OFFSET: isize,
-        >(
-            this: *mut core::ffi::c_void,
-            keysymdef: core::mem::MaybeUninit<windows_core::HSTRING>,
-            composedef: core::mem::MaybeUninit<windows_core::HSTRING>,
-        ) -> windows_core::HRESULT
-        where
-            Identity: IKeyboardTranslator_Impl,
-        {
-            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            IKeyboardTranslator_Impl::BuildTranslator(
-                this,
-                core::mem::transmute(&keysymdef),
-                core::mem::transmute(&composedef),
-            )
-            .into()
         }
         unsafe extern "system" fn OnTranslated<
             Identity: windows_core::IUnknownImpl,
@@ -814,7 +899,6 @@ impl IKeyboardTranslator_Vtbl {
             base__: windows_core::IInspectable_Vtbl::new::<Identity, IKeyboardTranslator, OFFSET>(),
             TranslateAndForward: TranslateAndForward::<Identity, OFFSET>,
             CheckLayoutAndUpdate: CheckLayoutAndUpdate::<Identity, OFFSET>,
-            BuildTranslator: BuildTranslator::<Identity, OFFSET>,
             OnTranslated: OnTranslated::<Identity, OFFSET>,
             RemoveOnTranslated: RemoveOnTranslated::<Identity, OFFSET>,
             OnInvalid: OnInvalid::<Identity, OFFSET>,
@@ -823,6 +907,99 @@ impl IKeyboardTranslator_Vtbl {
     }
     pub fn matches(iid: &windows_core::GUID) -> bool {
         iid == &<IKeyboardTranslator as windows_core::Interface>::IID
+    }
+}
+pub trait IKeyboardTranslatorFactory_Impl: Sized {
+    fn CreateInstance(
+        &self,
+        definition: Option<&SequenceDefinition>,
+    ) -> windows_core::Result<KeyboardTranslator>;
+}
+impl windows_core::RuntimeName for IKeyboardTranslatorFactory {
+    const NAME: &'static str = "LibSimbolMudah.IKeyboardTranslatorFactory";
+}
+impl IKeyboardTranslatorFactory_Vtbl {
+    pub const fn new<Identity: windows_core::IUnknownImpl, const OFFSET: isize>(
+    ) -> IKeyboardTranslatorFactory_Vtbl
+    where
+        Identity: IKeyboardTranslatorFactory_Impl,
+    {
+        unsafe extern "system" fn CreateInstance<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            definition: *mut core::ffi::c_void,
+            result__: *mut *mut core::ffi::c_void,
+        ) -> windows_core::HRESULT
+        where
+            Identity: IKeyboardTranslatorFactory_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            match IKeyboardTranslatorFactory_Impl::CreateInstance(
+                this,
+                windows_core::from_raw_borrowed(&definition),
+            ) {
+                Ok(ok__) => {
+                    result__.write(core::mem::transmute_copy(&ok__));
+                    core::mem::forget(ok__);
+                    windows_core::HRESULT(0)
+                }
+                Err(err) => err.into(),
+            }
+        }
+        Self {
+            base__: windows_core::IInspectable_Vtbl::new::<
+                Identity,
+                IKeyboardTranslatorFactory,
+                OFFSET,
+            >(),
+            CreateInstance: CreateInstance::<Identity, OFFSET>,
+        }
+    }
+    pub fn matches(iid: &windows_core::GUID) -> bool {
+        iid == &<IKeyboardTranslatorFactory as windows_core::Interface>::IID
+    }
+}
+pub trait ISequenceDefinition_Impl: Sized {
+    fn Build(
+        &self,
+        keysymdef: &windows_core::HSTRING,
+        composedef: &windows_core::HSTRING,
+    ) -> windows_core::Result<()>;
+}
+impl windows_core::RuntimeName for ISequenceDefinition {
+    const NAME: &'static str = "LibSimbolMudah.ISequenceDefinition";
+}
+impl ISequenceDefinition_Vtbl {
+    pub const fn new<Identity: windows_core::IUnknownImpl, const OFFSET: isize>(
+    ) -> ISequenceDefinition_Vtbl
+    where
+        Identity: ISequenceDefinition_Impl,
+    {
+        unsafe extern "system" fn Build<Identity: windows_core::IUnknownImpl, const OFFSET: isize>(
+            this: *mut core::ffi::c_void,
+            keysymdef: core::mem::MaybeUninit<windows_core::HSTRING>,
+            composedef: core::mem::MaybeUninit<windows_core::HSTRING>,
+        ) -> windows_core::HRESULT
+        where
+            Identity: ISequenceDefinition_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            ISequenceDefinition_Impl::Build(
+                this,
+                core::mem::transmute(&keysymdef),
+                core::mem::transmute(&composedef),
+            )
+            .into()
+        }
+        Self {
+            base__: windows_core::IInspectable_Vtbl::new::<Identity, ISequenceDefinition, OFFSET>(),
+            Build: Build::<Identity, OFFSET>,
+        }
+    }
+    pub fn matches(iid: &windows_core::GUID) -> bool {
+        iid == &<ISequenceDefinition as windows_core::Interface>::IID
     }
 }
 pub trait ISequenceSearcher_Impl: Sized {
@@ -888,5 +1065,57 @@ impl ISequenceSearcher_Vtbl {
     }
     pub fn matches(iid: &windows_core::GUID) -> bool {
         iid == &<ISequenceSearcher as windows_core::Interface>::IID
+    }
+}
+pub trait ISequenceSearcherFactory_Impl: Sized {
+    fn CreateInstance(
+        &self,
+        definition: Option<&SequenceDefinition>,
+    ) -> windows_core::Result<SequenceSearcher>;
+}
+impl windows_core::RuntimeName for ISequenceSearcherFactory {
+    const NAME: &'static str = "LibSimbolMudah.ISequenceSearcherFactory";
+}
+impl ISequenceSearcherFactory_Vtbl {
+    pub const fn new<Identity: windows_core::IUnknownImpl, const OFFSET: isize>(
+    ) -> ISequenceSearcherFactory_Vtbl
+    where
+        Identity: ISequenceSearcherFactory_Impl,
+    {
+        unsafe extern "system" fn CreateInstance<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            definition: *mut core::ffi::c_void,
+            result__: *mut *mut core::ffi::c_void,
+        ) -> windows_core::HRESULT
+        where
+            Identity: ISequenceSearcherFactory_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            match ISequenceSearcherFactory_Impl::CreateInstance(
+                this,
+                windows_core::from_raw_borrowed(&definition),
+            ) {
+                Ok(ok__) => {
+                    result__.write(core::mem::transmute_copy(&ok__));
+                    core::mem::forget(ok__);
+                    windows_core::HRESULT(0)
+                }
+                Err(err) => err.into(),
+            }
+        }
+        Self {
+            base__: windows_core::IInspectable_Vtbl::new::<
+                Identity,
+                ISequenceSearcherFactory,
+                OFFSET,
+            >(),
+            CreateInstance: CreateInstance::<Identity, OFFSET>,
+        }
+    }
+    pub fn matches(iid: &windows_core::GUID) -> bool {
+        iid == &<ISequenceSearcherFactory as windows_core::Interface>::IID
     }
 }

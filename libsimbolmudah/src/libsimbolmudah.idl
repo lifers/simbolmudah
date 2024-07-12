@@ -1,8 +1,15 @@
 namespace LibSimbolMudah
 {
+	runtimeclass SequenceDefinition
+	{
+		SequenceDefinition();
+
+		void Build(String keysymdef, String composedef);
+	}
+
 	runtimeclass SequenceSearcher
 	{
-		SequenceSearcher();
+		SequenceSearcher(SequenceDefinition definition);
 
 		void Search(
 			String keyword,
@@ -14,11 +21,10 @@ namespace LibSimbolMudah
 
 	runtimeclass KeyboardTranslator
 	{
-		KeyboardTranslator();
+		KeyboardTranslator(SequenceDefinition definition);
 
 		void TranslateAndForward(UInt32 vkCode, UInt32 scanCode, Boolean hasCapsLock, Boolean hasShift, Boolean hasAltGr, UInt8 destination);
 		void CheckLayoutAndUpdate();
-		void BuildTranslator(String keysymdef, String composedef);
 		event Windows.Foundation.TypedEventHandler<KeyboardTranslator, String> OnTranslated;
 		event Windows.Foundation.TypedEventHandler<KeyboardTranslator, String> OnInvalid;
 	}

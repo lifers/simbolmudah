@@ -17,6 +17,16 @@ struct SequenceSearcher {
     internal: Arc<RwLock<SequenceSearcherInternal>>,
 }
 
+impl SequenceSearcher {
+    fn tokenize(&self, keyword: &HSTRING) -> Vec<String> {
+        keyword
+            .to_string()
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect()
+    }
+}
+
 impl bindings::ISequenceSearcher_Impl for SequenceSearcher_Impl {
     fn Search(
         &self,
@@ -25,6 +35,7 @@ impl bindings::ISequenceSearcher_Impl for SequenceSearcher_Impl {
         result: &mut Array<HSTRING>,
         description: &mut Array<HSTRING>,
     ) -> Result<()> {
+        let keys = self.tokenize(keyword);
         let default_seq = IVectorView::try_from(vec![0x65, 0x66, 0x67])?;
         *sequence = Array::from_slice(&[Some(default_seq.clone()), Some(default_seq.clone())]);
         *result = Array::from_slice(&[h!("😎").to_owned(), h!("😎").to_owned()]);

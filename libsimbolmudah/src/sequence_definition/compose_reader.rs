@@ -1,4 +1,5 @@
-use super::{fail, fail_message, keysym_reader::KeySymDef, mapped_string::MappedString};
+use super::{keysym_reader::KeySymDef, mapped_string::MappedString};
+use crate::{fail, fail_message};
 use regex::Regex;
 use std::{
     collections::BTreeMap,

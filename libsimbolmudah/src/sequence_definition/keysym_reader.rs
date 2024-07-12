@@ -1,4 +1,4 @@
-use super::{fail, fail_message};
+use crate::{fail, fail_message};
 use once_cell::unsync::Lazy;
 use regex::Regex;
 use std::{
