@@ -6,6 +6,7 @@ use crate::{
     thread_handler::ThreadHandler,
 };
 use std::{
+    cell::Cell,
     fmt::Debug,
     sync::{mpsc::sync_channel, Arc, OnceLock, RwLock, RwLockWriteGuard},
     usize,
@@ -36,6 +37,8 @@ use windows::{
 
 static GLOBAL_INSTANCE: RwLock<OnceLock<KeyboardHookInternal>> = RwLock::new(OnceLock::new());
 
+thread_local!(static THREAD_HOOK: Cell<HHOOK> = panic!("Uninitialized thread hook"));
+
 enum Reporter {
     StateChanged,
     KeyEvent,
@@ -64,8 +67,9 @@ impl KeyboardHook {
             let hmod = unsafe { GetModuleHandleW(None) }?;
             let h_hook =
                 unsafe { SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_procedure), hmod, 0) }?;
+            THREAD_HOOK.set(h_hook);
 
-            let internal = KeyboardHookInternal::new(keyboard_translator, parent, h_hook);
+            let internal = KeyboardHookInternal::new(keyboard_translator, parent);
             let mut write_lock = Self::global_write()?;
 
             write_lock.set(internal).expect(
@@ -152,7 +156,6 @@ impl KeyboardHook {
 struct KeyboardHookInternal {
     debug_state_changed: DelegateStorage<bindings::KeyboardHook, HSTRING>,
     debug_key_event: DelegateStorage<bindings::KeyboardHook, HSTRING>,
-    h_hook: HHOOK,
     keyboard_translator: ComObject<KeyboardTranslator>,
     on_invalid_token: EventRegistrationToken,
     on_translated_token: EventRegistrationToken,
@@ -167,7 +170,6 @@ struct KeyboardHookInternal {
 impl Debug for KeyboardHookInternal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("KeyboardHookInternal")
-            .field("h_hook", &self.h_hook)
             .field("has_capslock", &self.has_capslock)
             .field("has_shift", &self.has_shift)
             .field("has_altgr", &self.has_altgr)
@@ -180,12 +182,10 @@ impl KeyboardHookInternal {
     fn new(
         keyboard_translator: ComObject<KeyboardTranslator>,
         parent: bindings::KeyboardHook,
-        h_hook: HHOOK,
     ) -> Self {
         Self {
             debug_state_changed: DelegateStorage::new(),
             debug_key_event: DelegateStorage::new(),
-            h_hook,
             keyboard_translator,
             on_invalid_token: EventRegistrationToken::default(),
             on_translated_token: EventRegistrationToken::default(),
@@ -318,10 +318,10 @@ impl KeyboardHookInternal {
     }
 }
 
-impl bindings::IKeyboardHook_Impl for KeyboardHook {
+impl bindings::IKeyboardHook_Impl for KeyboardHook_Impl {
     fn Deactivate(&self) -> Result<()> {
         self.thread_controller.try_enqueue_high(|| {
-            let mut write_lock = Self::global_write()?;
+            let mut write_lock = KeyboardHook::global_write()?;
             let instance_ref = write_lock.get_mut().expect("GLOBAL_INSTANCE should be set");
 
             // Unregister the event handlers
@@ -334,7 +334,7 @@ impl bindings::IKeyboardHook_Impl for KeyboardHook {
                 .RemoveOnTranslated(&instance_ref.on_translated_token)
                 .unwrap();
 
-            unsafe { UnhookWindowsHookEx(instance_ref.h_hook) }.expect("Unhooking must succeed");
+            unsafe { UnhookWindowsHookEx(THREAD_HOOK.take()) }.expect("Unhooking must succeed");
             let _ = write_lock.take().expect("GLOBAL_INSTANCE should be set");
             Ok(())
         })
@@ -461,13 +461,13 @@ fn keybdinput_to_hstring(input: KEYBDINPUT) -> HSTRING {
 #[implement(IActivationFactory, bindings::IKeyboardHookFactory)]
 pub(super) struct KeyboardHookFactory;
 
-impl IActivationFactory_Impl for KeyboardHookFactory {
+impl IActivationFactory_Impl for KeyboardHookFactory_Impl {
     fn ActivateInstance(&self) -> Result<IInspectable> {
         Err(E_NOTIMPL.into())
     }
 }
 
-impl bindings::IKeyboardHookFactory_Impl for KeyboardHookFactory {
+impl bindings::IKeyboardHookFactory_Impl for KeyboardHookFactory_Impl {
     fn CreateInstance(
         &self,
         translator: Option<&bindings::KeyboardTranslator>,

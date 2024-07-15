@@ -5,21 +5,44 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="MainWindow.xaml" />
-    <Page Include="SearchPage.xaml" />
     <Page Include="HomePage.xaml" />
     <Page Include="SettingsPage.xaml" />
+    <Page Include="SearchPage.xaml">
+      <Filter>SearchPage</Filter>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />
+    <Midl Include="SearchPage\SearchPageViewModel.idl">
+      <Filter>SearchPage</Filter>
+    </Midl>
+    <Midl Include="SearchPage\SequenceDetail.idl">
+      <Filter>SearchPage</Filter>
+    </Midl>
+    <Midl Include="SearchPage.idl">
+      <Filter>SearchPage</Filter>
+    </Midl>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
+    <ClCompile Include="SearchPage\SearchPageViewModel.cpp">
+      <Filter>SearchPage</Filter>
+    </ClCompile>
+    <ClCompile Include="SearchPage\SequenceDetail.cpp">
+      <Filter>SearchPage</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="Assets\Resources\keysymdef.h">
       <Filter>Assets\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="SearchPage\SearchPageViewModel.h">
+      <Filter>SearchPage</Filter>
+    </ClInclude>
+    <ClInclude Include="SearchPage\SequenceDetail.h">
+      <Filter>SearchPage</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -28,6 +51,12 @@
     </Filter>
     <Filter Include="Assets\Resources">
       <UniqueIdentifier>{727390d1-6787-4add-834b-540001af7a85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SearchPage">
+      <UniqueIdentifier>{5e6d4c98-5dc7-4eda-9097-08c977fbac0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Wrapper">
+      <UniqueIdentifier>{a6084de3-4f04-45fa-93b5-1f9b40da85b7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

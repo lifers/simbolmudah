@@ -7,8 +7,62 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
+    
+    <Page.Resources>
+        <DataTemplate x:Key="searchResultTemplate" x:DataType="local:SequenceDetail">
+            <Grid Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="4" Padding="8" Margin="0,4,0,4">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            Width="48"
+                            CornerRadius="4"
+                            Padding="4,2,4,2">
+                        <TextBlock Text="{x:Bind Result, Mode=OneTime}"
+                                   FontSize="32"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="16,0,0,0">
+                        <TextBlock Text="{x:Bind Description, Mode=OneTime}"/>
+                        <TextBlock Text="{x:Bind Codepoints, Mode=OneTime}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+                <ItemsRepeater ItemsSource="{x:Bind Sequence, Mode=OneTime}" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <ItemsRepeater.Layout>
+                        <StackLayout Orientation="Horizontal" Spacing="2"/>
+                    </ItemsRepeater.Layout>
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <Border Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                    Width="32"
+                                    CornerRadius="4"
+                                    Padding="4,2,4,2"
+                                    Margin="4,0,0,0">
+                                <TextBlock Text="{x:Bind}"
+                                           Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                           Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                           FontSize="16"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
 
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Button x:Name="myButton" Click="myButton_Click">Click Me</Button>
+    <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="48" Height="Auto">
+        <AutoSuggestBox x:Name="SearchBox"
+                        PlaceholderText="Type a character name"
+                        QueryIcon="Find"
+                        TextChanged="SubmitSearch"
+                        Margin="0,0,0,16"/>
+        <ListView x:Name="SearchResults"
+                  ItemsSource="{x:Bind MainViewModel.SearchResults, Mode=OneWay}"
+                  ItemTemplate="{StaticResource searchResultTemplate}"
+                  MaxHeight="500">
+        </ListView>
     </StackPanel>
 </Page>
