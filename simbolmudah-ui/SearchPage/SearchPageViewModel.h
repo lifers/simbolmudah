@@ -12,7 +12,7 @@ namespace winrt::simbolmudah_ui::implementation
         Windows::Foundation::IAsyncAction Search(hstring const& keyword);
 
     private:
-        LibSimbolMudah::SequenceSearcher searcher;
+        const LibSimbolMudah::SequenceSearcher searcher;
         Windows::Foundation::Collections::IObservableVector<simbolmudah_ui::SequenceDetail> searchResults;
     };
 }

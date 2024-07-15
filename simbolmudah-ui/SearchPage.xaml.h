@@ -11,7 +11,7 @@ namespace winrt::simbolmudah_ui::implementation
             Microsoft::UI::Xaml::Controls::AutoSuggestBoxTextChangedEventArgs const& e);
 
     private:
-        simbolmudah_ui::SearchPageViewModel mainViewModel;
+        const simbolmudah_ui::SearchPageViewModel mainViewModel;
         Windows::Foundation::IAsyncAction currentSearch{ nullptr };
     };
 }

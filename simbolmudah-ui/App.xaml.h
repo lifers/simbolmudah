@@ -15,11 +15,12 @@ namespace winrt::simbolmudah_ui::implementation
         void OnLaunched(Microsoft::UI::Xaml::LaunchActivatedEventArgs const&);
         void OnHookToggle(bool isOn);
         bool hookState{ false };
+        const LibSimbolMudah::SequenceDefinition sequenceDefinition;
         const LibSimbolMudah::KeyboardTranslator keyboardTranslator;
 		const apartment_context main_thread;
 
     private:
-        fire_and_forget BuildTranslator() const;
+        fire_and_forget BuildDefinition() const;
         void InitializeSettings();
 
         Microsoft::UI::Xaml::Window window{ nullptr };

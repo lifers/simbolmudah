@@ -1,5 +1,12 @@
 namespace LibSimbolMudah
 {
+	struct SequenceDescription
+	{
+		String sequence;
+		String result;
+		String description;
+	};
+
 	runtimeclass SequenceDefinition
 	{
 		SequenceDefinition();
@@ -11,12 +18,7 @@ namespace LibSimbolMudah
 	{
 		SequenceSearcher(SequenceDefinition definition);
 
-		void Search(
-			String keyword,
-			out IVectorView<UInt32>[] sequence,
-			out String[] result,
-			out String[] description
-		);
+		IVectorView<SequenceDescription> Search(String keyword);
 	}
 
 	runtimeclass KeyboardTranslator

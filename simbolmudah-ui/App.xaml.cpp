@@ -16,7 +16,7 @@ namespace winrt::simbolmudah_ui::implementation
     /// Initializes the singleton application object.  This is the first line of authored code
     /// executed, and as such is the logical equivalent of main() or WinMain().
     /// </summary>
-    App::App() : main_thread{ apartment_context() }
+    App::App() : main_thread{ apartment_context() }, keyboardTranslator{ sequenceDefinition }
     {
         // Xaml objects should not call InitializeComponent during construction.
         // See https://github.com/microsoft/cppwinrt/tree/master/nuget#initializecomponent
@@ -49,7 +49,7 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     void App::OnLaunched(LaunchActivatedEventArgs const&)
     {
-        this->BuildTranslator();
+        this->BuildDefinition();
         this->InitializeSettings();
         
         this->window = simbolmudah_ui::MainWindow();
@@ -77,11 +77,11 @@ namespace winrt::simbolmudah_ui::implementation
     /// Builds the keyboard translator finite state automaton.
     /// </summary>
     /// <returns></returns>
-    fire_and_forget App::BuildTranslator() const
+    fire_and_forget App::BuildDefinition() const
 	{
 		const auto keysymdef_path = StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.h"));
 		const auto composedef_path = StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre"));
-		this->keyboardTranslator.BuildTranslator((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
+		this->sequenceDefinition.Build((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
 	}
 
     /// <summary>

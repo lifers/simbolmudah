@@ -4,6 +4,9 @@
 #include <restrictederrorinfo.h>
 #include <hstring.h>
 
+#define UCHAR_TYPE wchar_t
+#include <icu.h>
+
 // Undefine GetCurrentTime macro to prevent
 // conflict with Storyboard::GetCurrentTime
 #undef GetCurrentTime

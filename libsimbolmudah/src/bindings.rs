@@ -138,7 +138,7 @@ pub struct ISequenceDefinition_Vtbl {
 windows_core::imp::define_interface!(
     ISequenceSearcher,
     ISequenceSearcher_Vtbl,
-    0xcdcb6385_c167_506a_ab27_6be7e7828061
+    0x9881b990_042e_50ad_84e0_d2c1eb4a79e2
 );
 impl windows_core::RuntimeType for ISequenceSearcher {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -150,12 +150,7 @@ pub struct ISequenceSearcher_Vtbl {
     pub Search: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         core::mem::MaybeUninit<windows_core::HSTRING>,
-        *mut u32,
-        *mut *mut *mut core::ffi::c_void,
-        *mut u32,
-        *mut *mut core::mem::MaybeUninit<windows_core::HSTRING>,
-        *mut u32,
-        *mut *mut core::mem::MaybeUninit<windows_core::HSTRING>,
+        *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
@@ -509,23 +504,17 @@ impl SequenceSearcher {
     pub fn Search(
         &self,
         keyword: &windows_core::HSTRING,
-        sequence: &mut windows_core::Array<windows::Foundation::Collections::IVectorView<u32>>,
-        result: &mut windows_core::Array<windows_core::HSTRING>,
-        description: &mut windows_core::Array<windows_core::HSTRING>,
-    ) -> windows_core::Result<()> {
+    ) -> windows_core::Result<windows::Foundation::Collections::IVectorView<SequenceDescription>>
+    {
         let this = self;
         unsafe {
+            let mut result__ = core::mem::zeroed();
             (windows_core::Interface::vtable(this).Search)(
                 windows_core::Interface::as_raw(this),
                 core::mem::transmute_copy(keyword),
-                sequence.set_abi_len(),
-                sequence as *mut _ as _,
-                result.set_abi_len(),
-                result as *mut _ as _,
-                description.set_abi_len(),
-                description as *mut _ as _,
+                &mut result__,
             )
-            .ok()
+            .and_then(|| windows_core::Type::from_abi(result__))
         }
     }
     pub fn CreateInstance<P0>(definition: P0) -> windows_core::Result<SequenceSearcher>
@@ -567,6 +556,26 @@ impl windows_core::RuntimeName for SequenceSearcher {
 }
 unsafe impl Send for SequenceSearcher {}
 unsafe impl Sync for SequenceSearcher {}
+#[repr(C)]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SequenceDescription {
+    pub sequence: windows_core::HSTRING,
+    pub result: windows_core::HSTRING,
+    pub description: windows_core::HSTRING,
+}
+impl windows_core::TypeKind for SequenceDescription {
+    type TypeKind = windows_core::CloneType;
+}
+impl windows_core::RuntimeType for SequenceDescription {
+    const SIGNATURE: windows_core::imp::ConstBuffer = windows_core::imp::ConstBuffer::from_slice(
+        b"struct(LibSimbolMudah.SequenceDescription;string;string;string)",
+    );
+}
+impl Default for SequenceDescription {
+    fn default() -> Self {
+        unsafe { core::mem::zeroed() }
+    }
+}
 pub trait IKeyboardHook_Impl: Sized {
     fn Deactivate(&self) -> windows_core::Result<()>;
     fn DebugStateChanged(
@@ -1006,10 +1015,7 @@ pub trait ISequenceSearcher_Impl: Sized {
     fn Search(
         &self,
         keyword: &windows_core::HSTRING,
-        sequence: &mut windows_core::Array<windows::Foundation::Collections::IVectorView<u32>>,
-        result: &mut windows_core::Array<windows_core::HSTRING>,
-        description: &mut windows_core::Array<windows_core::HSTRING>,
-    ) -> windows_core::Result<()>;
+    ) -> windows_core::Result<windows::Foundation::Collections::IVectorView<SequenceDescription>>;
 }
 impl windows_core::RuntimeName for ISequenceSearcher {
     const NAME: &'static str = "LibSimbolMudah.ISequenceSearcher";
@@ -1026,37 +1032,20 @@ impl ISequenceSearcher_Vtbl {
         >(
             this: *mut core::ffi::c_void,
             keyword: core::mem::MaybeUninit<windows_core::HSTRING>,
-            sequence_array_size: *mut u32,
-            sequence: *mut *mut *mut core::ffi::c_void,
-            result_array_size: *mut u32,
-            result: *mut *mut core::mem::MaybeUninit<windows_core::HSTRING>,
-            description_array_size: *mut u32,
-            description: *mut *mut core::mem::MaybeUninit<windows_core::HSTRING>,
+            result__: *mut *mut core::ffi::c_void,
         ) -> windows_core::HRESULT
         where
             Identity: ISequenceSearcher_Impl,
         {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            ISequenceSearcher_Impl::Search(
-                this,
-                core::mem::transmute(&keyword),
-                windows_core::ArrayProxy::from_raw_parts(
-                    core::mem::transmute_copy(&sequence),
-                    sequence_array_size,
-                )
-                .as_array(),
-                windows_core::ArrayProxy::from_raw_parts(
-                    core::mem::transmute_copy(&result),
-                    result_array_size,
-                )
-                .as_array(),
-                windows_core::ArrayProxy::from_raw_parts(
-                    core::mem::transmute_copy(&description),
-                    description_array_size,
-                )
-                .as_array(),
-            )
-            .into()
+            match ISequenceSearcher_Impl::Search(this, core::mem::transmute(&keyword)) {
+                Ok(ok__) => {
+                    result__.write(core::mem::transmute_copy(&ok__));
+                    core::mem::forget(ok__);
+                    windows_core::HRESULT(0)
+                }
+                Err(err) => err.into(),
+            }
         }
         Self {
             base__: windows_core::IInspectable_Vtbl::new::<Identity, ISequenceSearcher, OFFSET>(),

@@ -20,14 +20,19 @@ namespace winrt::simbolmudah_ui::implementation
 
 	void SearchPage::SubmitSearch(AutoSuggestBox const& sender, AutoSuggestBoxTextChangedEventArgs const&)
 	{
+		// Cancel the previous search if it is still running
 		if (this->currentSearch != nullptr)
 		{
 			this->currentSearch.Cancel();
 		}
+
 		this->currentSearch = this->mainViewModel.Search(sender.Text());
-		this->currentSearch.Completed([this](IAsyncAction const&, AsyncStatus const&)
+		this->currentSearch.Completed([weak_this{ this->get_weak() }](IAsyncAction const&, AsyncStatus const&)
 		{
-			this->currentSearch = nullptr;
+			if (auto strong_this{ weak_this.get() })
+			{
+				strong_this->currentSearch = nullptr;
+			}
 		});
 	}
 }

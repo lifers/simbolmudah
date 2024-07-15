@@ -8,17 +8,19 @@ namespace winrt::simbolmudah_ui::implementation
         SequenceDetail() = delete;
         SequenceDetail(SequenceDetail const&) = delete;
         SequenceDetail& operator=(SequenceDetail const&) = delete;
-        SequenceDetail(
-            Windows::Foundation::Collections::IVectorView<uint32_t> const& sequence,
-            hstring const& result, hstring const& description);
-        Windows::Foundation::Collections::IObservableVector<uint32_t> Sequence() const;
+        explicit SequenceDetail(
+            Windows::Foundation::Collections::IVectorView<hstring> const& sequence,
+            hstring const& result, hstring const& description, hstring const& codepoints);
+        Windows::Foundation::Collections::IObservableVector<hstring> Sequence() const;
         hstring Result() const;
         hstring Description() const;
+        hstring Codepoints() const;
 
     private:
-        const Windows::Foundation::Collections::IObservableVector<uint32_t> m_sequence;
+        const Windows::Foundation::Collections::IObservableVector<hstring> m_sequence;
         const hstring m_result;
 		const hstring m_description;
+        const hstring m_codepoints;
     };
 }
 namespace winrt::simbolmudah_ui::factory_implementation

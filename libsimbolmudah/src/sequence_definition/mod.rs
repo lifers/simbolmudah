@@ -6,9 +6,7 @@ mod mapped_string;
 use std::sync::RwLock;
 
 use crate::{bindings, fail};
-use compose_reader::ComposeDef;
 use internal::SequenceDefinitionInternal;
-use keysym_reader::KeySymDef;
 use windows::{
     core::{implement, Error, IInspectable, Result, Weak, HSTRING},
     Win32::System::WinRT::{IActivationFactory, IActivationFactory_Impl},
@@ -43,13 +41,21 @@ impl SequenceDefinition {
             .map_err(fail)?
             .translate_sequence(sequence)
     }
+
+    pub(crate) fn filter_sequence(&self, tokens: Vec<String>) -> Result<Vec<bindings::SequenceDescription>> {
+        self.internal
+            .read()
+            .map_err(fail)?
+            .filter_sequence(tokens)
+    }
 }
 
 impl bindings::ISequenceDefinition_Impl for SequenceDefinition_Impl {
     fn Build(&self, keysymdef: &HSTRING, composedef: &HSTRING) -> Result<()> {
-        let keysymdef = KeySymDef::new(keysymdef.to_string().as_str())?;
-        let composedef = ComposeDef::build(&keysymdef, composedef.to_string().as_str())?;
-        self.internal.write().map_err(fail)?.build(composedef)
+        self.internal.write().map_err(fail)?.build(
+            keysymdef.to_string().as_str(),
+            composedef.to_string().as_str(),
+        )
     }
 }
 
