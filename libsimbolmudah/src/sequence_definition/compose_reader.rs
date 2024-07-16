@@ -66,7 +66,7 @@ fn get_compose_def(
 
     // result.insert(">=".into(), MappedString::Basic('≥'));
     // result.insert("oe".into(), MappedString::Basic('œ'));
-    result.insert("wkwk".into(), "🤣".to_string().into());
+    result.insert("wkwk".into(), "🤣".to_smolstr().into());
     result.insert("pr".into(), "peradaban".to_string().into());
 
     Ok(result)
