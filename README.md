@@ -10,7 +10,7 @@ This is inspired by the Compose Key mechanism from Freedesktop's X project.
   - [x] Example compose sequence for basic usage
 - [x] Compose mode
   - [x] Get compose sequence from Freedesktop's X project
-  - [x] Parse keysym definitions from keysymdef.h
+  - [x] Parse keysym definitions from keysymdef.txt
   - [x] Parse basic compose sequences from en_US.UTF-8/Compose.pre
   - [x] Connect the two and generate mappings from keysym sequence to the resulting Unicode
   - [x] Rework the compose search engine to use the mappings

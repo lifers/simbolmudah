@@ -88,7 +88,7 @@ mod tests {
 
     use crate::bindings;
 
-    const KEYSYMDEF: &str = "tests/keysymdef.h";
+    const KEYSYMDEF: &str = "tests/keysymdef.txt";
     const COMPOSEDEF: &str = "tests/Compose.pre";
 
     #[test]

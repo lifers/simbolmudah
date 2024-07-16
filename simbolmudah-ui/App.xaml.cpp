@@ -67,8 +67,8 @@ namespace winrt::simbolmudah_ui::implementation
     /// <returns></returns>
     fire_and_forget App::BuildDefinition() const
 	{
-		const auto keysymdef_path = StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.h"));
-		const auto composedef_path = StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre"));
+        const auto keysymdef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.txt")) };
+        const auto composedef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre")) };
 		this->sequenceDefinition.Build((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
 	}
 

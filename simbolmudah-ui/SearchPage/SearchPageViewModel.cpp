@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+﻿#include "pch.hpp"
 #include "SearchPageViewModel.h"
 #include "SearchPageViewModel.g.cpp"
 #include "App.xaml.h"

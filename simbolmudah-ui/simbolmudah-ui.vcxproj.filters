@@ -34,8 +34,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="Assets\Resources\keysymdef.h">
+    <ClInclude Include="pch.hpp"/>
+    <ClInclude Include="Assets\Resources\keysymdef.txt">
       <Filter>Assets\Resources</Filter>
     </ClInclude>
     <ClInclude Include="SearchPage\SearchPageViewModel.h">
