@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "App.xaml.h"
 #include "MainWindow.xaml.h"
 #if __has_include("MainWindow.g.cpp")
 #include "MainWindow.g.cpp"
@@ -17,7 +18,7 @@ namespace winrt::simbolmudah_ui::implementation
 
 	void MainWindow::ContentFrame_Navigated(IInspectable const&, NavigationEventArgs const&)
 	{
-		const auto& n{ this->NavigationViewControl() };
+		const auto& n{ this->rootNavView() };
 		const auto& f{ this->ContentFrame() };
 		n.IsBackEnabled(f.CanGoBack());
 
@@ -69,10 +70,22 @@ namespace winrt::simbolmudah_ui::implementation
 	{
 		if (const auto& f{ this->ContentFrame() }; f.CanGoBack())
 		{
-			if (const auto& n{ this->NavigationViewControl() }; !n.IsPaneOpen() && n.DisplayMode() == NavigationViewDisplayMode::Expanded)
+			if (const auto& n{ this->rootNavView() }; !n.IsPaneOpen() && n.DisplayMode() == NavigationViewDisplayMode::Expanded)
 			{
 				f.GoBack();
 			}
+		}
+	}
+
+	void MainWindow::Window_SizeChanged(IInspectable const&, WindowSizeChangedEventArgs const& args)
+	{
+		if (const auto& n{ this->rootNavView() }; args.Size().Width <= n.CompactModeThresholdWidth())
+		{
+			n.PaneDisplayMode(NavigationViewPaneDisplayMode::Auto);
+		}
+		else
+		{
+			n.PaneDisplayMode(NavigationViewPaneDisplayMode::Top);
 		}
 	}
 

@@ -34,17 +34,6 @@ namespace winrt::simbolmudah_ui::implementation
     }
 
     /// <summary>
-    /// Destroy the app
-    /// <summary>
-    App::~App()
-	{
-        if (this->keyboardHook)
-		{
-			this->keyboardHook->Deactivate();
-		}
-	}
-
-    /// <summary>
     /// Invoked when the application is launched.
     /// </summary>
     void App::OnLaunched(LaunchActivatedEventArgs const&)
@@ -68,7 +57,6 @@ namespace winrt::simbolmudah_ui::implementation
         }
 		else
 		{
-			this->keyboardHook->Deactivate();
 			this->keyboardHook.reset();
 		}
     }

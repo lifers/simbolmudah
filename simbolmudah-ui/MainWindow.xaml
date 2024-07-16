@@ -7,24 +7,43 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="simbolmudah">
+    Title="simbolmudah"
+    SizeChanged="Window_SizeChanged">
 
-    <NavigationView x:Name="NavigationViewControl"
-                    Header="NavHeader"
-                    Loaded="NavigationViewControl_Loaded"
-                    ItemInvoked="NavigationViewControl_ItemInvoked"
-                    BackRequested="NavigationViewControl_BackRequested"
-                    SelectedItem="HomePage">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        
+        <Grid x:Name="AppTitleBar">
+            <Image Source="Images/WindowIcon.png"
+                   HorizontalAlignment="Left" 
+                   Width="16" Height="16" 
+                   Margin="8,0"/>
+            <TextBlock x:Name="AppTitleTextBlock" Text="App title"
+                       TextWrapping="NoWrap"
+                       Style="{StaticResource CaptionTextBlockStyle}" 
+                       VerticalAlignment="Center"
+                       Margin="28,0,0,0"/>
+        </Grid>
+        
+        <NavigationView x:Name="rootNavView"
+                        Loaded="NavigationViewControl_Loaded"
+                        ItemInvoked="NavigationViewControl_ItemInvoked"
+                        BackRequested="NavigationViewControl_BackRequested"
+                        SelectedItem="HomePage"
+                        Grid.Row="1">
 
-        <NavigationView.MenuItems>
-            <NavigationViewItem Content="Home" x:Name="HomePage" Tag="simbolmudah_ui.HomePage"/>
-            <NavigationViewItem Content="Search" x:Name="SearchPage" Tag="simbolmudah_ui.SearchPage" />
-            <NavigationViewItem Content="C" x:Name="CPage" />
-        </NavigationView.MenuItems>
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Home" x:Name="HomePage" Tag="simbolmudah_ui.HomePage"/>
+                <NavigationViewItem Content="Search" x:Name="SearchPage" Tag="simbolmudah_ui.SearchPage" />
+            </NavigationView.MenuItems>
 
-        <Frame x:Name="ContentFrame" Navigated="ContentFrame_Navigated" NavigationFailed="ContentFrame_NavigationFailed"/>
-    </NavigationView>
-
+            <Frame x:Name="ContentFrame" Navigated="ContentFrame_Navigated" NavigationFailed="ContentFrame_NavigationFailed"/>
+        </NavigationView>
+    </Grid>
+    
     <Window.SystemBackdrop>
         <MicaBackdrop Kind="Base"/>
     </Window.SystemBackdrop>

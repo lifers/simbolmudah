@@ -10,6 +10,7 @@
     Unloaded="OnUnloaded">
 
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <TextBox MinWidth="100"/>
         <ToggleSwitch x:Name="listenKeySwitch" Header="Listen" IsOn="{x:Bind HookEnabled, Mode=TwoWay}" />
         <InfoBar x:Name="infoBar" Title="Last Key" Severity="Informational" />
         <InfoBar x:Name="stateBar" Title="Current State" Severity="Informational" />

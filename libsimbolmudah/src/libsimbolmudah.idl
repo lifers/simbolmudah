@@ -35,7 +35,6 @@ namespace LibSimbolMudah
 	{
 		KeyboardHook(KeyboardTranslator translator);
 
-		void Deactivate();
 		event Windows.Foundation.TypedEventHandler<KeyboardHook, String> DebugStateChanged;
 		event Windows.Foundation.TypedEventHandler<KeyboardHook, String> DebugKeyEvent;
 	}

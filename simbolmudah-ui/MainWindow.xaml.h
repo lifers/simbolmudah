@@ -15,6 +15,7 @@ namespace winrt::simbolmudah_ui::implementation
 		void NavigationViewControl_BackRequested(
 			Microsoft::UI::Xaml::Controls::NavigationView const&,
 			Microsoft::UI::Xaml::Controls::NavigationViewBackRequestedEventArgs const&);
+		void Window_SizeChanged(IInspectable const&, Microsoft::UI::Xaml::WindowSizeChangedEventArgs const& args);
 
 	private:
 		void NavigateInternal(
