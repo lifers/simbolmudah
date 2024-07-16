@@ -1,4 +1,4 @@
-#include "pch.h"
+#include "pch.hpp"
 #include "App.xaml.h"
 #include "MainWindow.xaml.h"
 #if __has_include("MainWindow.g.cpp")

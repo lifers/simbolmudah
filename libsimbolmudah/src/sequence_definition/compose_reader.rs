@@ -165,7 +165,7 @@ mod tests {
 
     use super::*;
 
-    const KEYSYMDEF: &str = "tests/keysymdef.h";
+    const KEYSYMDEF: &str = "tests/keysymdef.txt";
     const COMPOSEDEF: &str = "tests/Compose.pre";
 
     #[test]

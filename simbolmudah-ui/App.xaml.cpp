@@ -1,4 +1,4 @@
-#include "pch.h"
+#include "pch.hpp"
 #include "App.xaml.h"
 
 // To learn more about WinUI, the WinUI project structure,
