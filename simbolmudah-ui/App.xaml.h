@@ -1,6 +1,7 @@
 #pragma once
 
 #include "App.xaml.g.h"
+#include <optional>
 
 namespace winrt::simbolmudah_ui::implementation
 {
@@ -11,8 +12,18 @@ namespace winrt::simbolmudah_ui::implementation
         App& operator=(const App&) = delete;
 
         void OnLaunched(Microsoft::UI::Xaml::LaunchActivatedEventArgs const&);
+        void OnHookToggle(bool isOn);
+        bool hookState{ false };
+        const LibSimbolMudah::SequenceDefinition sequenceDefinition;
+        const LibSimbolMudah::KeyboardTranslator keyboardTranslator;
+		const apartment_context main_thread;
 
     private:
-        winrt::Microsoft::UI::Xaml::Window window{ nullptr };
+        fire_and_forget BuildDefinition() const;
+        void InitializeSettings();
+
+        Microsoft::UI::Xaml::Window window{ nullptr };
+        std::optional<LibSimbolMudah::KeyboardHook> keyboardHook;
+        Microsoft::UI::Xaml::Controls::ToggleSwitch::Toggled_revoker hookToggleRevoker;
     };
 }

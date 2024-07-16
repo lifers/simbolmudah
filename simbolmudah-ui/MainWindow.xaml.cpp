@@ -1,83 +1,102 @@
 #include "pch.hpp"
+#include "App.xaml.h"
 #include "MainWindow.xaml.h"
 #if __has_include("MainWindow.g.cpp")
 #include "MainWindow.g.cpp"
 #endif
-
-using namespace winrt;
-using namespace LibSimbolMudah;
-using namespace Microsoft::UI::Xaml;
-using namespace Windows::Foundation;
-using namespace Windows::Storage;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace winrt::simbolmudah_ui::implementation
 {
-	MainWindow::MainWindow() : main_thread(apartment_context())
+	using namespace Microsoft::UI::Xaml;
+	using namespace Navigation;
+	using namespace Controls;
+	using namespace Media::Animation;
+	using namespace Windows::UI::Xaml::Interop;
+
+	void MainWindow::ContentFrame_Navigated(IInspectable const&, NavigationEventArgs const&)
 	{
-		this->showResultsToken = this->keyboardTranslator.OnTranslated(
-			TypedEventHandler<KeyboardTranslator, hstring>::TypedEventHandler(this, &MainWindow::ShowResult)
-		);
-		this->BuildTranslator();
+		const auto& n{ this->rootNavView() };
+		const auto& f{ this->ContentFrame() };
+		n.IsBackEnabled(f.CanGoBack());
+
+		if (const auto& name{ f.SourcePageType().Name }; name == xaml_typename<simbolmudah_ui::SettingsPage>().Name)
+		{
+			n.SelectedItem(n.SettingsItem().as<NavigationViewItem>());
+			n.Header(box_value(L"Settings"));
+		}
+		else if (name != L"")
+		{
+			for (const auto&& i : n.MenuItems())
+			{
+				const auto& item{ i.try_as<NavigationViewItem>() };
+				if (item && unbox_value_or<hstring>(item.Tag(), L"") == name)
+				{
+					n.SelectedItem(item);
+					n.Header(item.Content());
+				}
+			}
+		}
 	}
 
-	MainWindow::~MainWindow()
+	void MainWindow::ContentFrame_NavigationFailed(IInspectable const&, NavigationFailedEventArgs const& e)
 	{
-		this->keyboardTranslator.OnTranslated(this->showResultsToken);
+		throw hresult_error(E_FAIL, L"Failed to load Page " + e.SourcePageType().Name);
 	}
-	
-	void MainWindow::ListenKeyUpdate(const IInspectable&, const RoutedEventArgs&)
-	{	
-		if (this->listenKeySwitch().IsOn())
+
+	void MainWindow::NavigationViewControl_Loaded(IInspectable const&, RoutedEventArgs const&)
+	{
+		this->NavigateInternal(xaml_typename<simbolmudah_ui::HomePage>(), EntranceNavigationTransitionInfo());
+	}
+
+	void MainWindow::NavigationViewControl_ItemInvoked(NavigationView const&, NavigationViewItemInvokedEventArgs const& args)
+	{
+		if (args.IsSettingsInvoked())
 		{
-			this->keyboardHook.emplace(this->keyboardTranslator);
-			this->infoUpdaterToken = this->keyboardHook->DebugKeyEvent(
-				TypedEventHandler<KeyboardHook, hstring>::TypedEventHandler(this, &MainWindow::InfoUpdater)
+			this->NavigateInternal(xaml_typename<simbolmudah_ui::SettingsPage>(), args.RecommendedNavigationTransitionInfo());
+		}
+		else if (args.InvokedItemContainer())
+		{
+			this->NavigateInternal(
+				TypeName{ .Name = unbox_value<hstring>(args.InvokedItemContainer().Tag()), .Kind = TypeKind::Metadata },
+				args.RecommendedNavigationTransitionInfo()
 			);
-			this->stateUpdaterToken = this->keyboardHook->DebugStateChanged(
-				TypedEventHandler<KeyboardHook, hstring>::TypedEventHandler(this, &MainWindow::StateUpdater)
-			);
+		}
+	}
+
+	void MainWindow::NavigationViewControl_BackRequested(NavigationView const&, NavigationViewBackRequestedEventArgs const&)
+	{
+		if (const auto& f{ this->ContentFrame() }; f.CanGoBack())
+		{
+			if (const auto& n{ this->rootNavView() }; !n.IsPaneOpen() && n.DisplayMode() == NavigationViewDisplayMode::Expanded)
+			{
+				f.GoBack();
+			}
+		}
+	}
+
+	void MainWindow::Window_SizeChanged(IInspectable const&, WindowSizeChangedEventArgs const& args)
+	{
+		if (const auto& n{ this->rootNavView() }; args.Size().Width <= n.CompactModeThresholdWidth())
+		{
+			n.PaneDisplayMode(NavigationViewPaneDisplayMode::Auto);
 		}
 		else
 		{
-			this->keyboardHook->DebugKeyEvent(this->infoUpdaterToken);
-			this->keyboardHook->DebugStateChanged(this->stateUpdaterToken);
-			this->keyboardHook->Deactivate();
-			this->keyboardHook.reset(); 
+			n.PaneDisplayMode(NavigationViewPaneDisplayMode::Top);
 		}
 	}
 
-	fire_and_forget MainWindow::BuildTranslator() const
+	void MainWindow::NavigateInternal(TypeName const& navPageType, NavigationTransitionInfo const& transitionInfo)
 	{
-		co_await resume_background();
-		const auto keysymdef_path = StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.txt"));
-		const auto composedef_path = StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre"));
-		this->keyboardTranslator.BuildTranslator(keysymdef_path.get().Path(), composedef_path.get().Path());
-	}
-
-	fire_and_forget MainWindow::InfoUpdater(const KeyboardHook&, const hstring& message)
-	{
-		const hstring result{ message };
-		co_await this->main_thread;
-		this->infoBar().Message(result);
-		this->infoBar().IsOpen(true);
-	}
-
-	fire_and_forget MainWindow::StateUpdater(const KeyboardHook&, const hstring& message)
-	{
-		const hstring result{ message };
-		co_await this->main_thread;
-		this->stateBar().Message(result);
-		this->stateBar().IsOpen(true);
-	}
-
-	fire_and_forget MainWindow::ShowResult(const KeyboardTranslator&, const hstring& message)
-	{
-		const hstring result{ message };
-		co_await this->main_thread;
-		this->resultBar().Message(result);
-		this->resultBar().IsOpen(true);
+		if (navPageType.Name != L"")
+		{
+			if (const auto& contentFrame{ this->ContentFrame() }; contentFrame.CurrentSourcePageType().Name != navPageType.Name)
+			{
+				contentFrame.Navigate(navPageType, nullptr, transitionInfo);
+			}
+		}
 	}
 }

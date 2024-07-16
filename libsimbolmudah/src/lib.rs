@@ -3,41 +3,55 @@ mod delegate_storage;
 mod keyboard_hook;
 mod keyboard_translator;
 mod sender;
+mod sequence_definition;
+mod sequence_searcher;
 mod thread_handler;
 
-use crate::{keyboard_translator::KeyboardTranslatorFactory, keyboard_hook::KeyboardHookFactory};
+use keyboard_hook::KeyboardHookFactory;
+use keyboard_translator::KeyboardTranslatorFactory;
+use sequence_definition::SequenceDefinitionFactory;
+use sequence_searcher::SequenceSearcherFactory;
 use windows::{
-    core::{Interface, Ref, HRESULT, HSTRING},
+    core::{Error, Interface, OutRef, Ref, Result, Weak, HRESULT, HSTRING},
     Win32::{
-        Foundation::{CLASS_E_CLASSNOTAVAILABLE, E_POINTER, S_OK},
+        Foundation::{CLASS_E_CLASSNOTAVAILABLE, E_FAIL, E_POINTER},
         System::WinRT::IActivationFactory,
     },
 };
 
 #[no_mangle]
-unsafe extern "system" fn DllGetActivationFactory(
+extern "system" fn DllGetActivationFactory(
     name: Ref<HSTRING>,
-    result: *mut *mut std::ffi::c_void,
+    result: OutRef<IActivationFactory>,
 ) -> HRESULT {
     if result.is_null() {
-        return E_POINTER;
-    }
-
-    let factory: Option<IActivationFactory> = if *name == "LibSimbolMudah.KeyboardTranslator" {
-        Some(KeyboardTranslatorFactory.into())
+        E_POINTER
+    } else if *name == "LibSimbolMudah.KeyboardTranslator" {
+        result.write(Some(KeyboardTranslatorFactory.into())).into()
     } else if *name == "LibSimbolMudah.KeyboardHook" {
-        Some(KeyboardHookFactory.into())
+        result.write(Some(KeyboardHookFactory.into())).into()
+    } else if *name == "LibSimbolMudah.SequenceSearcher" {
+        result.write(Some(SequenceSearcherFactory.into())).into()
+    } else if *name == "LibSimbolMudah.SequenceDefinition" {
+        result.write(Some(SequenceDefinitionFactory.into())).into()
     } else {
-        None
-    };
-
-    unsafe {
-        if let Some(factory) = factory {
-            *result = factory.into_raw();
-            S_OK
-        } else {
-            *result = std::ptr::null_mut();
-            CLASS_E_CLASSNOTAVAILABLE
-        }
+        let _ = result.write(None);
+        CLASS_E_CLASSNOTAVAILABLE
     }
+}
+
+pub(crate) fn fail(error: impl std::error::Error) -> Error {
+    Error::new(E_FAIL, format!("{:?}", error))
+}
+
+pub(crate) fn fail_message(message: &str) -> Error {
+    Error::new(E_FAIL, message)
+}
+
+pub(crate) fn get_strong_ref<T>(weak: &Weak<T>) -> Result<T>
+where
+    T: Interface,
+{
+    weak.upgrade()
+        .ok_or_else(|| Error::new(E_POINTER, "Weak pointer died"))
 }

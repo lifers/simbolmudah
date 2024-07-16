@@ -1,31 +1,26 @@
 #pragma once
 
 #include "MainWindow.g.h"
-#include <winrt/LibSimbolMudah.h>
-#include <optional>
 
 namespace winrt::simbolmudah_ui::implementation
 {
 	struct MainWindow : MainWindowT<MainWindow>
 	{
-		MainWindow();
-		~MainWindow();
-		MainWindow(const MainWindow&) = delete;
-		MainWindow& operator=(const MainWindow&) = delete;
-		void ListenKeyUpdate(const IInspectable& sender, const Microsoft::UI::Xaml::RoutedEventArgs& args);
+		void ContentFrame_Navigated(IInspectable const&, Microsoft::UI::Xaml::Navigation::NavigationEventArgs const&);
+		void ContentFrame_NavigationFailed(IInspectable const&, Microsoft::UI::Xaml::Navigation::NavigationFailedEventArgs const& e);
+		void NavigationViewControl_Loaded(IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
+		void NavigationViewControl_ItemInvoked(
+			Microsoft::UI::Xaml::Controls::NavigationView const&,
+			Microsoft::UI::Xaml::Controls::NavigationViewItemInvokedEventArgs const& args);
+		void NavigationViewControl_BackRequested(
+			Microsoft::UI::Xaml::Controls::NavigationView const&,
+			Microsoft::UI::Xaml::Controls::NavigationViewBackRequestedEventArgs const&);
+		void Window_SizeChanged(IInspectable const&, Microsoft::UI::Xaml::WindowSizeChangedEventArgs const& args);
 
 	private:
-		fire_and_forget InfoUpdater(const LibSimbolMudah::KeyboardHook&, const hstring& message);
-		fire_and_forget StateUpdater(const LibSimbolMudah::KeyboardHook&, const hstring& message);
-		fire_and_forget ShowResult(const LibSimbolMudah::KeyboardTranslator&, const hstring& message);
-		fire_and_forget BuildTranslator() const;
-
-		const LibSimbolMudah::KeyboardTranslator keyboardTranslator;
-		std::optional<LibSimbolMudah::KeyboardHook> keyboardHook;
-		const apartment_context main_thread;
-		event_token showResultsToken;
-		event_token infoUpdaterToken;
-		event_token stateUpdaterToken;
+		void NavigateInternal(
+			Windows::UI::Xaml::Interop::TypeName const& navPageType,
+			Microsoft::UI::Xaml::Media::Animation::NavigationTransitionInfo const& transitionInfo);
 	};
 }
 
