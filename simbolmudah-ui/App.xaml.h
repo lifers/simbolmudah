@@ -23,7 +23,7 @@ namespace winrt::simbolmudah_ui::implementation
         void InitializeSettings();
 
         Microsoft::UI::Xaml::Window window{ nullptr };
+        std::optional<simbolmudah_ui::BlankWindow> popup;
         std::optional<LibSimbolMudah::KeyboardHook> keyboardHook;
-        Microsoft::UI::Xaml::Controls::ToggleSwitch::Toggled_revoker hookToggleRevoker;
     };
 }

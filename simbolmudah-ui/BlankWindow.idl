@@ -1,0 +1,8 @@
+namespace simbolmudah_ui
+{
+    [default_interface]
+    runtimeclass BlankWindow : Microsoft.UI.Xaml.Window
+    {
+        BlankWindow(LibSimbolMudah.KeyboardTranslator translator);
+    }
+}

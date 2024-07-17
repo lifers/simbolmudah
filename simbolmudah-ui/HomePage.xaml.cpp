@@ -46,6 +46,11 @@ namespace winrt::simbolmudah_ui::implementation
 		return this->app->hookState;
 	}
 
+	void HomePage::Button_Click(IInspectable const&, RoutedEventArgs const&)
+	{
+		this->buttonOne().Content(box_value(L"Clicked"));
+	}
+
 	fire_and_forget HomePage::InfoUpdater(const KeyboardHook&, const hstring& message)
 	{
 		const hstring result{ message };

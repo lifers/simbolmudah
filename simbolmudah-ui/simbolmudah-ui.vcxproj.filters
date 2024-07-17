@@ -10,6 +10,7 @@
     <Page Include="SearchPage.xaml">
       <Filter>SearchPage</Filter>
     </Page>
+    <Page Include="BlankWindow.xaml" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />
@@ -34,7 +35,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.hpp"/>
+    <ClInclude Include="pch.hpp" />
     <ClInclude Include="Assets\Resources\keysymdef.txt">
       <Filter>Assets\Resources</Filter>
     </ClInclude>

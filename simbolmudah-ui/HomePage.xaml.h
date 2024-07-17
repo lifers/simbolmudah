@@ -15,16 +15,19 @@ namespace winrt::simbolmudah_ui::implementation
 		void OnUnloaded(const IInspectable&, const Microsoft::UI::Xaml::RoutedEventArgs&);
 		void HookEnabled(bool value);
 		bool HookEnabled() const;
+		void Button_Click(IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
 
 	private:
 		fire_and_forget InfoUpdater(const LibSimbolMudah::KeyboardHook&, const hstring& message);
 		fire_and_forget StateUpdater(const LibSimbolMudah::KeyboardHook&, const hstring& message);
 		fire_and_forget ShowResult(const LibSimbolMudah::KeyboardTranslator&, const hstring& message);
+		Microsoft::UI::Xaml::Window CustomWindow();
 
 		const com_ptr<App> app;
 		event_token showResultsToken;
 		event_token infoUpdaterToken;
 		event_token stateUpdaterToken;
+		Microsoft::UI::Xaml::Window window{ nullptr };
    };
 }
 
