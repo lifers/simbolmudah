@@ -3,6 +3,10 @@ namespace simbolmudah_ui
     [default_interface]
     runtimeclass BlankWindow : Microsoft.UI.Xaml.Window
     {
-        BlankWindow(LibSimbolMudah.KeyboardTranslator translator);
+        BlankWindow(
+            LibSimbolMudah.KeyboardTranslator translator,
+            LibSimbolMudah.KeyboardHook hook,
+            LibSimbolMudah.SequenceDefinition definition
+        );
     }
 }

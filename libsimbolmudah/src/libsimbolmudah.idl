@@ -12,6 +12,7 @@ namespace LibSimbolMudah
 		SequenceDefinition();
 
 		void Build(String keysymdef, String composedef);
+		IVectorView<SequenceDescription> PotentialPrefix(String sequence, UInt32 limit);
 	}
 
 	runtimeclass SequenceSearcher
@@ -29,13 +30,14 @@ namespace LibSimbolMudah
 		void CheckLayoutAndUpdate();
 		event Windows.Foundation.TypedEventHandler<KeyboardTranslator, String> OnTranslated;
 		event Windows.Foundation.TypedEventHandler<KeyboardTranslator, String> OnInvalid;
+		event Windows.Foundation.TypedEventHandler<KeyboardTranslator, String> OnKeyTranslated;
 	}
 
 	runtimeclass KeyboardHook
 	{
 		KeyboardHook(KeyboardTranslator translator);
 
-		event Windows.Foundation.TypedEventHandler<KeyboardHook, String> DebugStateChanged;
-		event Windows.Foundation.TypedEventHandler<KeyboardHook, String> DebugKeyEvent;
+		event Windows.Foundation.TypedEventHandler<KeyboardHook, UInt8> OnStateChanged;
+		event Windows.Foundation.TypedEventHandler<KeyboardHook, String> OnKeyEvent;
 	}
 }

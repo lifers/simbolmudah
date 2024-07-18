@@ -12,37 +12,57 @@ namespace winrt::simbolmudah_ui::implementation
 	using namespace LibSimbolMudah;
 	using namespace Microsoft::UI;
 	using namespace Xaml;
+	using namespace Controls;
 	using namespace Windowing;
-	using namespace Windows::Foundation;
 	using namespace std::chrono_literals;
 
-	BlankWindow::BlankWindow(KeyboardTranslator const& translator) :
-		app{ Application::Current().as<App>() }, translator{ translator }
+	BlankWindow::BlankWindow(KeyboardTranslator const& translator, KeyboardHook const& hook, SequenceDefinition const& definition) :
+		translator{ translator }, hook{ hook }, main_thread{ apartment_context() },
+		keyTranslatedToken{ this->translator.OnKeyTranslated(auto_revoke, { this->get_weak(), &BlankWindow::OnKeyTranslated }) },
+		stateChangedToken{ this->hook.OnStateChanged(auto_revoke, { this->get_weak(), &BlankWindow::OnStateChanged }) },
+		defaultPage{ Page() }, sequencePopup{ definition }
 	{
 		const auto& appWindow{ this->AppWindow() };
-		appWindow.Resize({ 400, 300 });
+		appWindow.Resize({ 400, 100 });
 		appWindow.SetPresenter(OverlappedPresenter::CreateForContextMenu());
 		appWindow.Hide();
 
-		this->showResultsToken = this->translator.OnTranslated(
-			TypedEventHandler<KeyboardTranslator, hstring>::TypedEventHandler(this->get_weak(), &BlankWindow::ShowResult)
-		);
+		const auto textBlock{ TextBlock() };
+		textBlock.Text(L"Start composing, or press ESC to exit");
+		textBlock.HorizontalAlignment(HorizontalAlignment::Center);
+		textBlock.VerticalAlignment(VerticalAlignment::Center);
+		this->defaultPage.Content(textBlock);
+		this->Content(this->defaultPage);
 	}
 
-	BlankWindow::~BlankWindow()
+	fire_and_forget BlankWindow::OnKeyTranslated(KeyboardTranslator const&, hstring const& message) const
 	{
-		this->translator.OnTranslated(this->showResultsToken);
+		const auto key{ message };
+		co_await this->main_thread;
+		this->sequencePopup.Sequence().Append(key);
+		this->sequencePopup.FindPotentialPrefix();
 	}
 
-    fire_and_forget BlankWindow::ShowResult(KeyboardTranslator const&, hstring const& message)
+	fire_and_forget BlankWindow::OnStateChanged(KeyboardHook const&, uint8_t state) const
 	{
-		const auto result{ message };
-		co_await this->app->main_thread;
-		this->resultBar().Message(result);
-		this->resultBar().IsOpen(true);
-		const auto& appWindow{ this->AppWindow() };
-		appWindow.Show();
-		co_await 5s;
-		appWindow.Hide();
+		co_await this->main_thread;
+		switch (state)
+		{
+		case 0: // Idle
+			this->AppWindow().Hide();
+			co_return;
+		case 2: // ComposeKeyupFirst
+		{
+			this->Content(this->defaultPage);
+			const auto& appWindow{ this->AppWindow() };
+			appWindow.MoveInZOrderAtTop();
+			appWindow.Show();
+			co_return;
+		}
+		case 4: // SequenceMode
+			this->sequencePopup.Sequence().Clear();
+			this->Content(this->sequencePopup);
+			co_return;
+		}
 	}
 }

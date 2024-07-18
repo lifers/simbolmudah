@@ -1,0 +1,13 @@
+import "SearchPage/SequenceDetail.idl";
+
+namespace simbolmudah_ui
+{
+    [default_interface]
+    runtimeclass SequencePopup : Microsoft.UI.Xaml.Controls.Page
+    {
+        SequencePopup(LibSimbolMudah.SequenceDefinition definition);
+        void FindPotentialPrefix();
+        IObservableVector<String> Sequence{ get; };
+        IObservableVector<SequenceDetail> SearchResults{ get; };
+    }
+}

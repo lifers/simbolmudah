@@ -164,6 +164,10 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     </ClInclude>
     <ClInclude Include="SearchPage\SearchPageViewModel.h" />
     <ClInclude Include="SearchPage\SequenceDetail.h" />
+    <ClInclude Include="SequencePopup.xaml.h">
+      <DependentUpon>SequencePopup.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
     <ClInclude Include="SettingsPage.xaml.h">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -179,6 +183,9 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     </Page>
     <Page Include="MainWindow.xaml" />
     <Page Include="SearchPage.xaml" />
+    <Page Include="SequencePopup.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="SettingsPage.xaml">
       <SubType>Designer</SubType>
     </Page>
@@ -207,6 +214,10 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     </ClCompile>
     <ClCompile Include="SearchPage\SearchPageViewModel.cpp" />
     <ClCompile Include="SearchPage\SequenceDetail.cpp" />
+    <ClCompile Include="SequencePopup.xaml.cpp">
+      <DependentUpon>SequencePopup.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
     <ClCompile Include="SettingsPage.xaml.cpp">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -230,6 +241,10 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     <Midl Include="SearchPage.idl" />
     <Midl Include="SearchPage\SearchPageViewModel.idl" />
     <Midl Include="SearchPage\SequenceDetail.idl" />
+    <Midl Include="SequencePopup.idl">
+      <DependentUpon>SequencePopup.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
     <Midl Include="SettingsPage.idl">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
       <SubType>Code</SubType>

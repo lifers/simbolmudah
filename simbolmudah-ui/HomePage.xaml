@@ -9,7 +9,7 @@
     mc:Ignorable="d"
     Unloaded="OnUnloaded">
 
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
         <Button Content="Open BlankWindow" Click="Button_Click" x:Name="buttonOne"/>
         <ToggleSwitch x:Name="listenKeySwitch" Header="Listen" IsOn="{x:Bind HookEnabled, Mode=TwoWay}" />
         <InfoBar x:Name="infoBar" Title="Last Key" Severity="Informational" />

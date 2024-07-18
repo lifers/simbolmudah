@@ -11,6 +11,7 @@ namespace winrt::simbolmudah_ui::implementation
         explicit SequenceDetail(
             Windows::Foundation::Collections::IVectorView<hstring> const& sequence,
             hstring const& result, hstring const& description, hstring const& codepoints);
+        explicit SequenceDetail(LibSimbolMudah::SequenceDescription const& desc);
         Windows::Foundation::Collections::IObservableVector<hstring> Sequence() const;
         hstring Result() const;
         hstring Description() const;

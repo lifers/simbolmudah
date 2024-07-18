@@ -39,9 +39,20 @@ static GLOBAL_INSTANCE: RwLock<OnceLock<KeyboardHookInternal>> = RwLock::new(Onc
 
 thread_local!(static THREAD_HOOK: Cell<HHOOK> = panic!("Uninitialized thread hook"));
 
+#[derive(Debug, Clone)]
 enum Reporter {
-    StateChanged,
-    KeyEvent,
+    OnStateChanged(
+        (
+            AgileReference<TypedEventHandler<bindings::KeyboardHook, u8>>,
+            i64,
+        ),
+    ),
+    OnKeyEvent(
+        (
+            AgileReference<TypedEventHandler<bindings::KeyboardHook, HSTRING>>,
+            i64,
+        ),
+    ),
 }
 
 #[implement(bindings::KeyboardHook)]
@@ -104,45 +115,30 @@ impl KeyboardHook {
             .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))
     }
 
-    fn register_reporter(
-        &self,
-        reporter: Reporter,
-        handler: Option<&TypedEventHandler<bindings::KeyboardHook, HSTRING>>,
-    ) -> Result<EventRegistrationToken> {
-        if let Some(handler) = handler {
-            let token = get_token(handler.as_raw());
-            let handler_ref = AgileReference::new(handler)?;
+    fn register_reporter(&self, reporter: Reporter) -> Result<()> {
+        // making sure this callback runs after the hook is activated
+        self.thread_controller.try_enqueue_high(move || {
+            let mut write_lock = Self::global_write()?;
+            let internal = write_lock.get_mut().expect("GLOBAL_INSTANCE should be set");
 
-            // making sure this callback runs after the hook is activated
-            self.thread_controller.try_enqueue_high(move || {
-                let mut write_lock = Self::global_write()?;
-                let internal = write_lock.get_mut().expect("GLOBAL_INSTANCE should be set");
-
-                Ok(match reporter {
-                    Reporter::StateChanged => internal
-                        .debug_state_changed
-                        .insert(token, handler_ref.clone()),
-                    Reporter::KeyEvent => {
-                        internal.debug_key_event.insert(token, handler_ref.clone())
-                    }
-                })
-            })?;
-
-            Ok(EventRegistrationToken { Value: token })
-        } else {
-            Err(Error::new(E_POINTER, "Null handler pointer"))
-        }
+            Ok(match &reporter {
+                Reporter::OnStateChanged((h, token)) => {
+                    internal.state_changed.insert(*token, h.clone())
+                }
+                Reporter::OnKeyEvent((h, token)) => internal.key_event.insert(*token, h.clone()),
+            })
+        })
     }
 
-    fn unregister_reporter(&self, reporter: Reporter, token: i64) -> Result<()> {
+    fn unregister_reporter(&self, reporter: Reporter) -> Result<()> {
         // making sure this callback runs after the reporter is registered
         self.thread_controller.try_enqueue_high(move || {
             let mut write_lock = Self::global_write()?;
             let internal = write_lock.get_mut().expect("GLOBAL_INSTANCE should be set");
 
             Ok(match reporter {
-                Reporter::StateChanged => internal.debug_state_changed.remove(token),
-                Reporter::KeyEvent => internal.debug_key_event.remove(token),
+                Reporter::OnStateChanged((_, token)) => internal.state_changed.remove(token),
+                Reporter::OnKeyEvent((_, token)) => internal.key_event.remove(token),
             })
         })?;
         Ok(())
@@ -175,8 +171,8 @@ impl Drop for KeyboardHook {
 }
 
 struct KeyboardHookInternal {
-    debug_state_changed: DelegateStorage<bindings::KeyboardHook, HSTRING>,
-    debug_key_event: DelegateStorage<bindings::KeyboardHook, HSTRING>,
+    state_changed: DelegateStorage<bindings::KeyboardHook, u8>,
+    key_event: DelegateStorage<bindings::KeyboardHook, HSTRING>,
     keyboard_translator: Weak<bindings::KeyboardTranslator>,
     on_invalid_token: EventRegistrationToken,
     on_translated_token: EventRegistrationToken,
@@ -205,8 +201,8 @@ impl KeyboardHookInternal {
         parent: Weak<bindings::KeyboardHook>,
     ) -> Self {
         Self {
-            debug_state_changed: DelegateStorage::new(),
-            debug_key_event: DelegateStorage::new(),
+            state_changed: DelegateStorage::new(),
+            key_event: DelegateStorage::new(),
             keyboard_translator,
             on_invalid_token: EventRegistrationToken::default(),
             on_translated_token: EventRegistrationToken::default(),
@@ -316,16 +312,16 @@ impl KeyboardHookInternal {
     }
 
     fn report_state(&mut self) {
-        self.debug_state_changed
+        self.state_changed
             .invoke_all(
                 &get_strong_ref(&self.parent).unwrap(),
-                Some(&HSTRING::from(format!("{:?}", self.stage))),
+                Some(&(self.stage as u8)),
             )
             .unwrap();
     }
 
     fn report_key_event(&mut self, input: KEYBDINPUT) {
-        self.debug_key_event
+        self.key_event
             .invoke_all(
                 &get_strong_ref(&self.parent).unwrap(),
                 Some(&keybdinput_to_hstring(input)),
@@ -353,65 +349,87 @@ impl KeyboardHookInternal {
 }
 
 impl bindings::IKeyboardHook_Impl for KeyboardHook_Impl {
-    fn DebugStateChanged(
+    fn OnStateChanged(
+        &self,
+        handler: Option<&TypedEventHandler<bindings::KeyboardHook, u8>>,
+    ) -> Result<EventRegistrationToken> {
+        if let Some(handler) = handler {
+            let token = get_token(handler.as_raw());
+            self.register_reporter(Reporter::OnStateChanged((
+                AgileReference::new(handler)?,
+                token,
+            )))?;
+            Ok(EventRegistrationToken { Value: token })
+        } else {
+            Err(Error::new(E_POINTER, "Null OnStateChanged handle pointer"))
+        }
+    }
+
+    fn RemoveOnStateChanged(&self, token: &EventRegistrationToken) -> Result<()> {
+        self.unregister_reporter(Reporter::OnStateChanged((
+            AgileReference::new(&TypedEventHandler::new(|_, _| Err(E_NOTIMPL.into())))?,
+            token.Value,
+        )))
+    }
+
+    fn OnKeyEvent(
         &self,
         handler: Option<&TypedEventHandler<bindings::KeyboardHook, HSTRING>>,
     ) -> Result<EventRegistrationToken> {
-        self.register_reporter(Reporter::StateChanged, handler)
+        if let Some(handler) = handler {
+            let token = get_token(handler.as_raw());
+            self.register_reporter(Reporter::OnKeyEvent((AgileReference::new(handler)?, token)))?;
+            Ok(EventRegistrationToken { Value: token })
+        } else {
+            Err(Error::new(E_POINTER, "Null OnKeyEvent handle pointer"))
+        }
     }
 
-    fn RemoveDebugStateChanged(&self, token: &EventRegistrationToken) -> Result<()> {
-        self.unregister_reporter(Reporter::StateChanged, token.Value)
-    }
-
-    fn DebugKeyEvent(
-        &self,
-        handler: Option<&TypedEventHandler<bindings::KeyboardHook, HSTRING>>,
-    ) -> Result<EventRegistrationToken> {
-        self.register_reporter(Reporter::KeyEvent, handler)
-    }
-
-    fn RemoveDebugKeyEvent(&self, token: &EventRegistrationToken) -> Result<()> {
-        self.unregister_reporter(Reporter::KeyEvent, token.Value)
+    fn RemoveOnKeyEvent(&self, token: &EventRegistrationToken) -> Result<()> {
+        self.unregister_reporter(Reporter::OnKeyEvent((
+            AgileReference::new(&TypedEventHandler::new(|_, _| Err(E_NOTIMPL.into())))?,
+            token.Value,
+        )))
     }
 }
 
 /// Stage enum controls how low_level_keyboard_proc behave.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
+#[repr(u8)]
 enum Stage {
     /// No compose key pressed.
     /// If receives compose keydown, intercept the event and go to stage 1.
     /// Otherwise, ignore the event and stay at state 0.
     /// The compose fail function will return all events to system and set stage to 0 when called.
     #[default]
-    Idle,
+    Idle = 0,
     /// Compose keydown pressed for the first time.
     /// If receives compose keyup, intercept the event and go to stage 2. Assume consecutive compose
     /// keydown-keyup to be an intentional compose key press by the user.
     /// Otherwise, intercept the event and call compose fail. Assume the user is using the compose
     /// key to do something outside the scope of `simbolmudah`, so we return their inputs in the
     /// correct order.
-    ComposeKeydownFirst,
+    ComposeKeydownFirst = 1,
     /// Compose key pressed once, compose mode on.
     /// Whatever happens, intercept the event.
     /// If receives compose keydown, go to stage 3.
     /// Else if receives keydown, send the event to the sequence tree, go to stage 254.
-    ComposeKeyupFirst,
+    ComposeKeyupFirst = 2,
     /// Compose keydown pressed for the second time.
     /// Whatever happens, intercept the event.
     /// If receives compose keyup, intercept the event and go to stage 255. Assume consecutive compose
     /// keydown-keyup to be an intentional compose key press by the user.
     /// Otherwise, send the event to the sequence tree. Assume the user is using the compose key to
     /// insert a character for sequence mode. Go to stage 254.
-    ComposeKeydownSecond,
+    ComposeKeydownSecond = 3,
     /// Sequence mode.
     /// Intercept and send the event to the sequence tree. The sequence tree will call compose fail
     /// upon failure.
-    SequenceMode,
+    SequenceMode = 4,
     /// Search mode. Not implemented yet.
-    SearchMode,
+    SearchMode = 5,
     /// Unicode mode. If receives a hexadecimal keydown, push the key to the unicode state.
-    UnicodeMode,
+    UnicodeMode = 6,
 }
 
 unsafe extern "system" fn keyboard_procedure(
@@ -467,8 +485,8 @@ const fn kbdllhookstruct_to_keybdinput(event: KBDLLHOOKSTRUCT) -> KEYBDINPUT {
 }
 
 fn keybdinput_to_hstring(input: KEYBDINPUT) -> HSTRING {
-    HSTRING::from(format!("KEYBDINPUT {{\n\twVk: {},\n\twScan: {},\n\tdwFlags: {},\n\ttime: {},\n\tdwExtraInfo: {}\n}}",
-        input.wVk.0, input.wScan, input.dwFlags.0, input.time, input.dwExtraInfo))
+    format!("KEYBDINPUT {{\n\twVk: {},\n\twScan: {},\n\tdwFlags: {},\n\ttime: {},\n\tdwExtraInfo: {}\n}}",
+        input.wVk.0, input.wScan, input.dwFlags.0, input.time, input.dwExtraInfo).into()
 }
 
 #[implement(IActivationFactory, bindings::IKeyboardHookFactory)]

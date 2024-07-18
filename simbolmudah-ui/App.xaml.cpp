@@ -54,11 +54,12 @@ namespace winrt::simbolmudah_ui::implementation
         if (isOn)
         {
             this->keyboardHook.emplace(this->keyboardTranslator);
-            this->popup.emplace(this->keyboardTranslator);
+            this->popup = simbolmudah_ui::BlankWindow(
+                this->keyboardTranslator, this->keyboardHook.value(), this->sequenceDefinition);
         }
 		else
 		{
-            this->popup.reset();
+            this->popup = nullptr;
 			this->keyboardHook.reset();
 		}
     }
@@ -86,7 +87,8 @@ namespace winrt::simbolmudah_ui::implementation
         else if (unbox_value<bool>(localSettings.Lookup(L"keyboardHookEnabled")))
 		{
 			this->keyboardHook.emplace(this->keyboardTranslator);
-            this->popup.emplace(this->keyboardTranslator);
+            this->popup = simbolmudah_ui::BlankWindow(
+                this->keyboardTranslator, this->keyboardHook.value(), this->sequenceDefinition);
             this->hookState = true;
 		}
 	}

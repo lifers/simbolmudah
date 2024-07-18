@@ -1,5 +1,4 @@
 #include "pch.hpp"
-#include "App.xaml.h"
 #include "MainWindow.xaml.h"
 #if __has_include("MainWindow.g.cpp")
 #include "MainWindow.g.cpp"
@@ -22,7 +21,7 @@ namespace winrt::simbolmudah_ui::implementation
 		const auto& f{ this->ContentFrame() };
 		n.IsBackEnabled(f.CanGoBack());
 
-		if (const auto& name{ f.SourcePageType().Name }; name == xaml_typename<simbolmudah_ui::SettingsPage>().Name)
+		if (const auto& name{ f.SourcePageType().Name }; name == L"simbolmudah_ui.SettingsPage")
 		{
 			n.SelectedItem(n.SettingsItem().as<NavigationViewItem>());
 			n.Header(box_value(L"Settings"));
@@ -48,21 +47,20 @@ namespace winrt::simbolmudah_ui::implementation
 
 	void MainWindow::NavigationViewControl_Loaded(IInspectable const&, RoutedEventArgs const&)
 	{
-		this->NavigateInternal(xaml_typename<simbolmudah_ui::HomePage>(), EntranceNavigationTransitionInfo());
+		this->NavigateInternal(L"simbolmudah_ui.HomePage", EntranceNavigationTransitionInfo());
 	}
 
 	void MainWindow::NavigationViewControl_ItemInvoked(NavigationView const&, NavigationViewItemInvokedEventArgs const& args)
 	{
 		if (args.IsSettingsInvoked())
 		{
-			this->NavigateInternal(xaml_typename<simbolmudah_ui::SettingsPage>(), args.RecommendedNavigationTransitionInfo());
+			this->NavigateInternal(L"simbolmudah_ui.SettingsPage", args.RecommendedNavigationTransitionInfo());
 		}
 		else if (args.InvokedItemContainer())
 		{
 			this->NavigateInternal(
-				TypeName{ .Name = unbox_value<hstring>(args.InvokedItemContainer().Tag()), .Kind = TypeKind::Metadata },
-				args.RecommendedNavigationTransitionInfo()
-			);
+				unbox_value<hstring>(args.InvokedItemContainer().Tag()),
+				args.RecommendedNavigationTransitionInfo());
 		}
 	}
 
@@ -89,13 +87,13 @@ namespace winrt::simbolmudah_ui::implementation
 		}
 	}
 
-	void MainWindow::NavigateInternal(TypeName const& navPageType, NavigationTransitionInfo const& transitionInfo)
+	void MainWindow::NavigateInternal(hstring const& navPageName, NavigationTransitionInfo const& transitionInfo)
 	{
-		if (navPageType.Name != L"")
+		if (navPageName != L"")
 		{
-			if (const auto& contentFrame{ this->ContentFrame() }; contentFrame.CurrentSourcePageType().Name != navPageType.Name)
+			if (const auto& contentFrame{ this->ContentFrame() }; contentFrame.CurrentSourcePageType().Name != navPageName)
 			{
-				contentFrame.Navigate(navPageType, nullptr, transitionInfo);
+				contentFrame.Navigate({ navPageName, TypeKind::Metadata }, nullptr, transitionInfo);
 			}
 		}
 	}

@@ -16,7 +16,7 @@
 #include <winrt/Windows.Foundation.Collections.h>
 //#include <winrt/Windows.Graphics.h>
 #include <winrt/Windows.Storage.h>
-#include <winrt/Windows.UI.Xaml.Interop.h>
+//#include <winrt/Windows.UI.Xaml.Interop.h>
 #include <winrt/LibSimbolMudah.h>
 //#include <winrt/Microsoft.UI.Composition.h>
 #include <winrt/Microsoft.UI.Xaml.h>

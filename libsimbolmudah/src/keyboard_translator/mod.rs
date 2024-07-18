@@ -10,7 +10,7 @@ use windows::{
     core::{implement, AgileReference, Error, IInspectable, Interface, Result, Weak, HSTRING},
     Foundation::{EventRegistrationToken, TypedEventHandler},
     Win32::{
-        Foundation::{E_ACCESSDENIED, E_INVALIDARG, E_NOTIMPL, E_POINTER},
+        Foundation::{E_ACCESSDENIED, E_NOTIMPL, E_POINTER},
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
         UI::{
             Input::KeyboardAndMouse::{
@@ -21,11 +21,71 @@ use windows::{
     },
 };
 
+type H = TypedEventHandler<bindings::KeyboardTranslator, HSTRING>;
+
+enum Reporter {
+    Invalid,
+    Translated,
+    KeyTranslated,
+}
+
 #[implement(bindings::KeyboardTranslator)]
 #[derive(Debug)]
 pub(crate) struct KeyboardTranslator {
     internal: Arc<RwLock<KeyboardTranslatorInternal>>,
     thread_controller: ThreadHandler,
+}
+
+impl KeyboardTranslator {
+    fn register_reporter(
+        &self,
+        handler: Option<&H>,
+        reporter: Reporter,
+    ) -> Result<EventRegistrationToken> {
+        if let Some(handler) = handler {
+            let token = get_token(handler.as_raw());
+            let internal = self.internal.clone();
+            let handler_ref = AgileReference::new(handler)?;
+
+            self.thread_controller.try_enqueue(move || -> Result<()> {
+                let mut internal = internal
+                    .try_write()
+                    .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?;
+
+                Ok(match reporter {
+                    Reporter::Invalid => &mut internal.report_invalid,
+                    Reporter::Translated => &mut internal.report_translated,
+                    Reporter::KeyTranslated => &mut internal.report_key_translated,
+                }
+                .insert(token, handler_ref.clone()))
+            })?;
+
+            Ok(EventRegistrationToken { Value: token })
+        } else {
+            Err(E_POINTER.into())
+        }
+    }
+
+    fn unregister_reporter(
+        &self,
+        reporter: Reporter,
+        token: &EventRegistrationToken,
+    ) -> Result<()> {
+        let internal = self.internal.clone();
+        let value = token.Value;
+        self.thread_controller.try_enqueue(move || -> Result<()> {
+            let mut internal = internal
+                .try_write()
+                .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?;
+
+            Ok(match reporter {
+                Reporter::Invalid => &mut internal.report_invalid,
+                Reporter::Translated => &mut internal.report_translated,
+                Reporter::KeyTranslated => &mut internal.report_key_translated,
+            }
+            .remove(value))
+        })
+    }
 }
 
 impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator_Impl {
@@ -46,6 +106,7 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator_Impl {
 
             let keystate = calculate_bg_keystate(hascapslock, hasshift, hasaltgr);
             let value = internal.translate(vkcode, scancode, &keystate)?;
+            internal.report_key(&value)?;
             let result = internal.forward(destination, value);
             internal.report(result)
         })
@@ -77,74 +138,28 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator_Impl {
         })
     }
 
-    fn OnInvalid(
-        &self,
-        handler: Option<&TypedEventHandler<bindings::KeyboardTranslator, HSTRING>>,
-    ) -> Result<EventRegistrationToken> {
-        if let Some(handler) = handler {
-            let token = get_token(handler.as_raw());
-            let internal = self.internal.clone();
-            let handler_ref = AgileReference::new(handler)?;
-
-            self.thread_controller.try_enqueue(move || -> Result<()> {
-                Ok(internal
-                    .try_write()
-                    .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?
-                    .report_invalid
-                    .insert(token, handler_ref.clone()))
-            })?;
-
-            Ok(EventRegistrationToken { Value: token })
-        } else {
-            Err(E_INVALIDARG.into())
-        }
+    fn OnInvalid(&self, handler: Option<&H>) -> Result<EventRegistrationToken> {
+        self.register_reporter(handler, Reporter::Invalid)
     }
 
-    fn OnTranslated(
-        &self,
-        handler: Option<&TypedEventHandler<bindings::KeyboardTranslator, HSTRING>>,
-    ) -> Result<EventRegistrationToken> {
-        if let Some(handler) = handler {
-            let token = get_token(handler.as_raw());
-            let internal = self.internal.clone();
-            let handler_ref = AgileReference::new(handler)?;
+    fn OnTranslated(&self, handler: Option<&H>) -> Result<EventRegistrationToken> {
+        self.register_reporter(handler, Reporter::Translated)
+    }
 
-            self.thread_controller.try_enqueue(move || -> Result<()> {
-                Ok(internal
-                    .try_write()
-                    .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?
-                    .report_translated
-                    .insert(token, handler_ref.clone()))
-            })?;
-
-            Ok(EventRegistrationToken { Value: token })
-        } else {
-            Err(E_INVALIDARG.into())
-        }
+    fn OnKeyTranslated(&self, handler: Option<&H>) -> Result<EventRegistrationToken> {
+        self.register_reporter(handler, Reporter::KeyTranslated)
     }
 
     fn RemoveOnInvalid(&self, token: &EventRegistrationToken) -> Result<()> {
-        let internal = self.internal.clone();
-        let value = token.Value;
-        self.thread_controller.try_enqueue(move || -> Result<()> {
-            Ok(internal
-                .try_write()
-                .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?
-                .report_invalid
-                .remove(value))
-        })
+        self.unregister_reporter(Reporter::Invalid, token)
     }
 
     fn RemoveOnTranslated(&self, token: &EventRegistrationToken) -> Result<()> {
-        let internal = self.internal.clone();
-        let value = token.Value;
-        self.thread_controller.try_enqueue(move || -> Result<()> {
-            Ok(internal
-                .try_write()
-                .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?
-                .report_translated
-                .remove(value))
-        })
+        self.unregister_reporter(Reporter::Translated, token)
+    }
+
+    fn RemoveOnKeyTranslated(&self, token: &EventRegistrationToken) -> Result<()> {
+        self.unregister_reporter(Reporter::KeyTranslated, token)
     }
 }
 
@@ -206,8 +221,10 @@ impl bindings::IKeyboardTranslatorFactory_Impl for KeyboardTranslatorFactory_Imp
 #[cfg(test)]
 mod tests {
     use bindings::IKeyboardTranslator_Impl;
-    use windows::System::DispatcherQueue;
-    use windows_core::AsImpl;
+    use windows::{
+        core::{h, AsImpl},
+        System::DispatcherQueue,
+    };
 
     use crate::sequence_definition::SequenceDefinitionError;
 
@@ -242,7 +259,7 @@ mod tests {
         let seqdef =
             bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
         seqdef
-            .Build(&HSTRING::from(KEYSYMDEF), &HSTRING::from(COMPOSEDEF))
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("Should be built");
 
         // Create a new instance of KeyboardTranslator
@@ -260,7 +277,7 @@ mod tests {
         let handler = TypedEventHandler::new(
             move |sender: &Option<bindings::KeyboardTranslator>, result| {
                 assert!(sender.is_some());
-                assert_eq!(result, &HSTRING::from("Value not found"));
+                assert_eq!(result, h!("Value not found"));
                 assert!(!clone.fetch_or(true, AcqRel));
                 Ok(())
             },
@@ -355,7 +372,7 @@ mod tests {
         let seqdef =
             bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
         seqdef
-            .Build(&HSTRING::from(KEYSYMDEF), &HSTRING::from(COMPOSEDEF))
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 
         // Create a new instance of KeyboardTranslator
@@ -385,7 +402,7 @@ mod tests {
         let seqdef =
             bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
         seqdef
-            .Build(&HSTRING::from(KEYSYMDEF), &HSTRING::from(COMPOSEDEF))
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 
         // Create a new instance of KeyboardTranslator

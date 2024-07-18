@@ -1,23 +1,29 @@
 #pragma once
 
 #include "BlankWindow.g.h"
-#include "App.xaml.h"
 
 namespace winrt::simbolmudah_ui::implementation
 {
     struct BlankWindow : BlankWindowT<BlankWindow>
     {
-        explicit BlankWindow(LibSimbolMudah::KeyboardTranslator const& translator);
+        explicit BlankWindow(
+            const LibSimbolMudah::KeyboardTranslator& translator,
+            const LibSimbolMudah::KeyboardHook& hook,
+            const LibSimbolMudah::SequenceDefinition& definition);
         BlankWindow(const BlankWindow&) = delete;
         BlankWindow& operator=(const BlankWindow&) = delete;
-        ~BlankWindow();
 
     private:
-        fire_and_forget ShowResult(const LibSimbolMudah::KeyboardTranslator& translator, const hstring& message);
+        fire_and_forget OnKeyTranslated(const LibSimbolMudah::KeyboardTranslator& translator, const hstring& message) const;
+        fire_and_forget OnStateChanged(const LibSimbolMudah::KeyboardHook& hook, uint8_t state) const;
 
-        const com_ptr<App> app;
+        const apartment_context main_thread;
         const LibSimbolMudah::KeyboardTranslator translator;
-        event_token showResultsToken;
+        const LibSimbolMudah::KeyboardTranslator::OnKeyTranslated_revoker keyTranslatedToken;
+        const LibSimbolMudah::KeyboardHook hook;
+        const LibSimbolMudah::KeyboardHook::OnStateChanged_revoker stateChangedToken;
+        const Microsoft::UI::Xaml::Controls::Page defaultPage;
+        const simbolmudah_ui::SequencePopup sequencePopup;
     };
 }
 

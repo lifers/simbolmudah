@@ -10,7 +10,7 @@
 windows_core::imp::define_interface!(
     IKeyboardHook,
     IKeyboardHook_Vtbl,
-    0xa36838bf_852a_5d0f_a772_76cada53be3f
+    0x47f0fb93_b520_5189_88bb_1e4d17f6e494
 );
 impl windows_core::RuntimeType for IKeyboardHook {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -19,21 +19,21 @@ impl windows_core::RuntimeType for IKeyboardHook {
 #[repr(C)]
 pub struct IKeyboardHook_Vtbl {
     pub base__: windows_core::IInspectable_Vtbl,
-    pub DebugStateChanged: unsafe extern "system" fn(
+    pub OnStateChanged: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut core::ffi::c_void,
         *mut windows::Foundation::EventRegistrationToken,
     ) -> windows_core::HRESULT,
-    pub RemoveDebugStateChanged: unsafe extern "system" fn(
+    pub RemoveOnStateChanged: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         windows::Foundation::EventRegistrationToken,
     ) -> windows_core::HRESULT,
-    pub DebugKeyEvent: unsafe extern "system" fn(
+    pub OnKeyEvent: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut core::ffi::c_void,
         *mut windows::Foundation::EventRegistrationToken,
     ) -> windows_core::HRESULT,
-    pub RemoveDebugKeyEvent: unsafe extern "system" fn(
+    pub RemoveOnKeyEvent: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         windows::Foundation::EventRegistrationToken,
     ) -> windows_core::HRESULT,
@@ -59,7 +59,7 @@ pub struct IKeyboardHookFactory_Vtbl {
 windows_core::imp::define_interface!(
     IKeyboardTranslator,
     IKeyboardTranslator_Vtbl,
-    0x459f4272_0cb3_5e0f_b071_9ab3f095737d
+    0xdb43efff_7a2f_5a1f_bdd5_cc4176aeaac5
 );
 impl windows_core::RuntimeType for IKeyboardTranslator {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -97,6 +97,15 @@ pub struct IKeyboardTranslator_Vtbl {
         *mut core::ffi::c_void,
         windows::Foundation::EventRegistrationToken,
     ) -> windows_core::HRESULT,
+    pub OnKeyTranslated: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::HRESULT,
+    pub RemoveOnKeyTranslated: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
     IKeyboardTranslatorFactory,
@@ -119,7 +128,7 @@ pub struct IKeyboardTranslatorFactory_Vtbl {
 windows_core::imp::define_interface!(
     ISequenceDefinition,
     ISequenceDefinition_Vtbl,
-    0x69655d23_79eb_5c1a_8585_f3e345fe8293
+    0x9f561fff_9ed8_54aa_9b49_fe7abb7b62df
 );
 impl windows_core::RuntimeType for ISequenceDefinition {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -132,6 +141,12 @@ pub struct ISequenceDefinition_Vtbl {
         *mut core::ffi::c_void,
         core::mem::MaybeUninit<windows_core::HSTRING>,
         core::mem::MaybeUninit<windows_core::HSTRING>,
+    ) -> windows_core::HRESULT,
+    pub PotentialPrefix: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
+        u32,
+        *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
@@ -179,19 +194,17 @@ windows_core::imp::interface_hierarchy!(
     windows_core::IInspectable
 );
 impl KeyboardHook {
-    pub fn DebugStateChanged<P0>(
+    pub fn OnStateChanged<P0>(
         &self,
         handler: P0,
     ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>
     where
-        P0: windows_core::Param<
-            windows::Foundation::TypedEventHandler<KeyboardHook, windows_core::HSTRING>,
-        >,
+        P0: windows_core::Param<windows::Foundation::TypedEventHandler<KeyboardHook, u8>>,
     {
         let this = self;
         unsafe {
             let mut result__ = core::mem::zeroed();
-            (windows_core::Interface::vtable(this).DebugStateChanged)(
+            (windows_core::Interface::vtable(this).OnStateChanged)(
                 windows_core::Interface::as_raw(this),
                 handler.param().abi(),
                 &mut result__,
@@ -199,20 +212,20 @@ impl KeyboardHook {
             .map(|| result__)
         }
     }
-    pub fn RemoveDebugStateChanged(
+    pub fn RemoveOnStateChanged(
         &self,
         token: windows::Foundation::EventRegistrationToken,
     ) -> windows_core::Result<()> {
         let this = self;
         unsafe {
-            (windows_core::Interface::vtable(this).RemoveDebugStateChanged)(
+            (windows_core::Interface::vtable(this).RemoveOnStateChanged)(
                 windows_core::Interface::as_raw(this),
                 token,
             )
             .ok()
         }
     }
-    pub fn DebugKeyEvent<P0>(
+    pub fn OnKeyEvent<P0>(
         &self,
         handler: P0,
     ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>
@@ -224,7 +237,7 @@ impl KeyboardHook {
         let this = self;
         unsafe {
             let mut result__ = core::mem::zeroed();
-            (windows_core::Interface::vtable(this).DebugKeyEvent)(
+            (windows_core::Interface::vtable(this).OnKeyEvent)(
                 windows_core::Interface::as_raw(this),
                 handler.param().abi(),
                 &mut result__,
@@ -232,13 +245,13 @@ impl KeyboardHook {
             .map(|| result__)
         }
     }
-    pub fn RemoveDebugKeyEvent(
+    pub fn RemoveOnKeyEvent(
         &self,
         token: windows::Foundation::EventRegistrationToken,
     ) -> windows_core::Result<()> {
         let this = self;
         unsafe {
-            (windows_core::Interface::vtable(this).RemoveDebugKeyEvent)(
+            (windows_core::Interface::vtable(this).RemoveOnKeyEvent)(
                 windows_core::Interface::as_raw(this),
                 token,
             )
@@ -388,6 +401,39 @@ impl KeyboardTranslator {
             .ok()
         }
     }
+    pub fn OnKeyTranslated<P0>(
+        &self,
+        handler: P0,
+    ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>
+    where
+        P0: windows_core::Param<
+            windows::Foundation::TypedEventHandler<KeyboardTranslator, windows_core::HSTRING>,
+        >,
+    {
+        let this = self;
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).OnKeyTranslated)(
+                windows_core::Interface::as_raw(this),
+                handler.param().abi(),
+                &mut result__,
+            )
+            .map(|| result__)
+        }
+    }
+    pub fn RemoveOnKeyTranslated(
+        &self,
+        token: windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::Result<()> {
+        let this = self;
+        unsafe {
+            (windows_core::Interface::vtable(this).RemoveOnKeyTranslated)(
+                windows_core::Interface::as_raw(this),
+                token,
+            )
+            .ok()
+        }
+    }
     pub fn CreateInstance<P0>(definition: P0) -> windows_core::Result<KeyboardTranslator>
     where
         P0: windows_core::Param<SequenceDefinition>,
@@ -466,6 +512,24 @@ impl SequenceDefinition {
                 core::mem::transmute_copy(composedef),
             )
             .ok()
+        }
+    }
+    pub fn PotentialPrefix(
+        &self,
+        sequence: &windows_core::HSTRING,
+        limit: u32,
+    ) -> windows_core::Result<windows::Foundation::Collections::IVectorView<SequenceDescription>>
+    {
+        let this = self;
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).PotentialPrefix)(
+                windows_core::Interface::as_raw(this),
+                core::mem::transmute_copy(sequence),
+                limit,
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
         }
     }
 }
@@ -567,23 +631,21 @@ impl Default for SequenceDescription {
     }
 }
 pub trait IKeyboardHook_Impl: Sized {
-    fn DebugStateChanged(
+    fn OnStateChanged(
         &self,
-        handler: Option<
-            &windows::Foundation::TypedEventHandler<KeyboardHook, windows_core::HSTRING>,
-        >,
+        handler: Option<&windows::Foundation::TypedEventHandler<KeyboardHook, u8>>,
     ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>;
-    fn RemoveDebugStateChanged(
+    fn RemoveOnStateChanged(
         &self,
         token: &windows::Foundation::EventRegistrationToken,
     ) -> windows_core::Result<()>;
-    fn DebugKeyEvent(
+    fn OnKeyEvent(
         &self,
         handler: Option<
             &windows::Foundation::TypedEventHandler<KeyboardHook, windows_core::HSTRING>,
         >,
     ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>;
-    fn RemoveDebugKeyEvent(
+    fn RemoveOnKeyEvent(
         &self,
         token: &windows::Foundation::EventRegistrationToken,
     ) -> windows_core::Result<()>;
@@ -597,7 +659,7 @@ impl IKeyboardHook_Vtbl {
     where
         Identity: IKeyboardHook_Impl,
     {
-        unsafe extern "system" fn DebugStateChanged<
+        unsafe extern "system" fn OnStateChanged<
             Identity: windows_core::IUnknownImpl,
             const OFFSET: isize,
         >(
@@ -609,7 +671,7 @@ impl IKeyboardHook_Vtbl {
             Identity: IKeyboardHook_Impl,
         {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            match IKeyboardHook_Impl::DebugStateChanged(
+            match IKeyboardHook_Impl::OnStateChanged(
                 this,
                 windows_core::from_raw_borrowed(&handler),
             ) {
@@ -620,7 +682,7 @@ impl IKeyboardHook_Vtbl {
                 Err(err) => err.into(),
             }
         }
-        unsafe extern "system" fn RemoveDebugStateChanged<
+        unsafe extern "system" fn RemoveOnStateChanged<
             Identity: windows_core::IUnknownImpl,
             const OFFSET: isize,
         >(
@@ -631,9 +693,9 @@ impl IKeyboardHook_Vtbl {
             Identity: IKeyboardHook_Impl,
         {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            IKeyboardHook_Impl::RemoveDebugStateChanged(this, core::mem::transmute(&token)).into()
+            IKeyboardHook_Impl::RemoveOnStateChanged(this, core::mem::transmute(&token)).into()
         }
-        unsafe extern "system" fn DebugKeyEvent<
+        unsafe extern "system" fn OnKeyEvent<
             Identity: windows_core::IUnknownImpl,
             const OFFSET: isize,
         >(
@@ -645,8 +707,7 @@ impl IKeyboardHook_Vtbl {
             Identity: IKeyboardHook_Impl,
         {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            match IKeyboardHook_Impl::DebugKeyEvent(this, windows_core::from_raw_borrowed(&handler))
-            {
+            match IKeyboardHook_Impl::OnKeyEvent(this, windows_core::from_raw_borrowed(&handler)) {
                 Ok(ok__) => {
                     result__.write(core::mem::transmute_copy(&ok__));
                     windows_core::HRESULT(0)
@@ -654,7 +715,7 @@ impl IKeyboardHook_Vtbl {
                 Err(err) => err.into(),
             }
         }
-        unsafe extern "system" fn RemoveDebugKeyEvent<
+        unsafe extern "system" fn RemoveOnKeyEvent<
             Identity: windows_core::IUnknownImpl,
             const OFFSET: isize,
         >(
@@ -665,14 +726,14 @@ impl IKeyboardHook_Vtbl {
             Identity: IKeyboardHook_Impl,
         {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            IKeyboardHook_Impl::RemoveDebugKeyEvent(this, core::mem::transmute(&token)).into()
+            IKeyboardHook_Impl::RemoveOnKeyEvent(this, core::mem::transmute(&token)).into()
         }
         Self {
             base__: windows_core::IInspectable_Vtbl::new::<Identity, IKeyboardHook, OFFSET>(),
-            DebugStateChanged: DebugStateChanged::<Identity, OFFSET>,
-            RemoveDebugStateChanged: RemoveDebugStateChanged::<Identity, OFFSET>,
-            DebugKeyEvent: DebugKeyEvent::<Identity, OFFSET>,
-            RemoveDebugKeyEvent: RemoveDebugKeyEvent::<Identity, OFFSET>,
+            OnStateChanged: OnStateChanged::<Identity, OFFSET>,
+            RemoveOnStateChanged: RemoveOnStateChanged::<Identity, OFFSET>,
+            OnKeyEvent: OnKeyEvent::<Identity, OFFSET>,
+            RemoveOnKeyEvent: RemoveOnKeyEvent::<Identity, OFFSET>,
         }
     }
     pub fn matches(iid: &windows_core::GUID) -> bool {
@@ -756,6 +817,16 @@ pub trait IKeyboardTranslator_Impl: Sized {
         >,
     ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>;
     fn RemoveOnInvalid(
+        &self,
+        token: &windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::Result<()>;
+    fn OnKeyTranslated(
+        &self,
+        handler: Option<
+            &windows::Foundation::TypedEventHandler<KeyboardTranslator, windows_core::HSTRING>,
+        >,
+    ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>;
+    fn RemoveOnKeyTranslated(
         &self,
         token: &windows::Foundation::EventRegistrationToken,
     ) -> windows_core::Result<()>;
@@ -880,6 +951,43 @@ impl IKeyboardTranslator_Vtbl {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
             IKeyboardTranslator_Impl::RemoveOnInvalid(this, core::mem::transmute(&token)).into()
         }
+        unsafe extern "system" fn OnKeyTranslated<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            handler: *mut core::ffi::c_void,
+            result__: *mut windows::Foundation::EventRegistrationToken,
+        ) -> windows_core::HRESULT
+        where
+            Identity: IKeyboardTranslator_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            match IKeyboardTranslator_Impl::OnKeyTranslated(
+                this,
+                windows_core::from_raw_borrowed(&handler),
+            ) {
+                Ok(ok__) => {
+                    result__.write(core::mem::transmute_copy(&ok__));
+                    windows_core::HRESULT(0)
+                }
+                Err(err) => err.into(),
+            }
+        }
+        unsafe extern "system" fn RemoveOnKeyTranslated<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            token: windows::Foundation::EventRegistrationToken,
+        ) -> windows_core::HRESULT
+        where
+            Identity: IKeyboardTranslator_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            IKeyboardTranslator_Impl::RemoveOnKeyTranslated(this, core::mem::transmute(&token))
+                .into()
+        }
         Self {
             base__: windows_core::IInspectable_Vtbl::new::<Identity, IKeyboardTranslator, OFFSET>(),
             TranslateAndForward: TranslateAndForward::<Identity, OFFSET>,
@@ -888,6 +996,8 @@ impl IKeyboardTranslator_Vtbl {
             RemoveOnTranslated: RemoveOnTranslated::<Identity, OFFSET>,
             OnInvalid: OnInvalid::<Identity, OFFSET>,
             RemoveOnInvalid: RemoveOnInvalid::<Identity, OFFSET>,
+            OnKeyTranslated: OnKeyTranslated::<Identity, OFFSET>,
+            RemoveOnKeyTranslated: RemoveOnKeyTranslated::<Identity, OFFSET>,
         }
     }
     pub fn matches(iid: &windows_core::GUID) -> bool {
@@ -952,6 +1062,11 @@ pub trait ISequenceDefinition_Impl: Sized {
         keysymdef: &windows_core::HSTRING,
         composedef: &windows_core::HSTRING,
     ) -> windows_core::Result<()>;
+    fn PotentialPrefix(
+        &self,
+        sequence: &windows_core::HSTRING,
+        limit: u32,
+    ) -> windows_core::Result<windows::Foundation::Collections::IVectorView<SequenceDescription>>;
 }
 impl windows_core::RuntimeName for ISequenceDefinition {
     const NAME: &'static str = "LibSimbolMudah.ISequenceDefinition";
@@ -978,9 +1093,36 @@ impl ISequenceDefinition_Vtbl {
             )
             .into()
         }
+        unsafe extern "system" fn PotentialPrefix<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            sequence: core::mem::MaybeUninit<windows_core::HSTRING>,
+            limit: u32,
+            result__: *mut *mut core::ffi::c_void,
+        ) -> windows_core::HRESULT
+        where
+            Identity: ISequenceDefinition_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            match ISequenceDefinition_Impl::PotentialPrefix(
+                this,
+                core::mem::transmute(&sequence),
+                limit,
+            ) {
+                Ok(ok__) => {
+                    result__.write(core::mem::transmute_copy(&ok__));
+                    core::mem::forget(ok__);
+                    windows_core::HRESULT(0)
+                }
+                Err(err) => err.into(),
+            }
+        }
         Self {
             base__: windows_core::IInspectable_Vtbl::new::<Identity, ISequenceDefinition, OFFSET>(),
             Build: Build::<Identity, OFFSET>,
+            PotentialPrefix: PotentialPrefix::<Identity, OFFSET>,
         }
     }
     pub fn matches(iid: &windows_core::GUID) -> bool {

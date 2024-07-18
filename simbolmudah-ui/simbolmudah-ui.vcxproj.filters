@@ -10,7 +10,12 @@
     <Page Include="SearchPage.xaml">
       <Filter>SearchPage</Filter>
     </Page>
-    <Page Include="BlankWindow.xaml" />
+    <Page Include="BlankWindow.xaml">
+      <Filter>Popup</Filter>
+    </Page>
+    <Page Include="SequencePopup.xaml">
+      <Filter>Popup</Filter>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />
@@ -58,6 +63,9 @@
     </Filter>
     <Filter Include="Wrapper">
       <UniqueIdentifier>{a6084de3-4f04-45fa-93b5-1f9b40da85b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Popup">
+      <UniqueIdentifier>{019cba15-cb44-40c8-b7d6-aebbd0d04cf2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
