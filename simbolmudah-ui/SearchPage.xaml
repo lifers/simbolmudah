@@ -10,7 +10,14 @@
     
     <Page.Resources>
         <DataTemplate x:Key="searchResultTemplate" x:DataType="local:SequenceDetail">
-            <Grid Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="4" Padding="8" Margin="0,4,0,4">
+            <Grid Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                  BorderThickness="1"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                  CornerRadius="4" Padding="8" Margin="0,4,0,4">
+                <Grid.Shadow>
+                    <ThemeShadow/>
+                </Grid.Shadow>
+                
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             Width="48"
@@ -21,6 +28,7 @@
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
                     </Border>
+                    
                     <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="16,0,0,0">
                         <TextBlock Text="{x:Bind Description, Mode=OneTime}"/>
                         <TextBlock Text="{x:Bind Codepoints, Mode=OneTime}"
@@ -28,10 +36,12 @@
                                    Margin="0,4,0,0"/>
                     </StackPanel>
                 </StackPanel>
+                
                 <ItemsRepeater ItemsSource="{x:Bind Sequence, Mode=OneTime}" VerticalAlignment="Center" HorizontalAlignment="Right">
                     <ItemsRepeater.Layout>
                         <StackLayout Orientation="Horizontal" Spacing="2"/>
                     </ItemsRepeater.Layout>
+                    
                     <ItemsRepeater.ItemTemplate>
                         <DataTemplate x:DataType="x:String">
                             <Border Background="{ThemeResource AccentFillColorDefaultBrush}"

@@ -3,6 +3,7 @@
 #include <unknwn.h>
 #include <restrictederrorinfo.h>
 #include <hstring.h>
+#include <oleacc.h>
 
 #define UCHAR_TYPE wchar_t
 #include <icu.h>
@@ -14,11 +15,12 @@
 //#include <winrt/Windows.ApplicationModel.Activation.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Foundation.Collections.h>
-//#include <winrt/Windows.Graphics.h>
+//#include <winrt/Windows.Graphics.Display.h>
 #include <winrt/Windows.Storage.h>
-//#include <winrt/Windows.UI.Xaml.Interop.h>
+#include <winrt/Windows.UI.Xaml.Interop.h>
 #include <winrt/LibSimbolMudah.h>
 //#include <winrt/Microsoft.UI.Composition.h>
+#include <winrt/Microsoft.UI.Interop.h>
 #include <winrt/Microsoft.UI.Xaml.h>
 #include <winrt/Microsoft.UI.Xaml.Controls.h>
 #include <winrt/Microsoft.UI.Xaml.Controls.Primitives.h>

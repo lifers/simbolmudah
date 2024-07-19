@@ -16,6 +16,7 @@ namespace winrt::simbolmudah_ui::implementation
     private:
         fire_and_forget OnKeyTranslated(const LibSimbolMudah::KeyboardTranslator& translator, const hstring& message) const;
         fire_and_forget OnStateChanged(const LibSimbolMudah::KeyboardHook& hook, uint8_t state) const;
+        void DrawWindow() const;
 
         const apartment_context main_thread;
         const LibSimbolMudah::KeyboardTranslator translator;
