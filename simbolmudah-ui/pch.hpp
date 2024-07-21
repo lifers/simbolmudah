@@ -4,6 +4,7 @@
 #include <restrictederrorinfo.h>
 #include <hstring.h>
 #include <oleacc.h>
+#include <uiautomation.h>
 
 #define UCHAR_TYPE wchar_t
 #include <icu.h>
