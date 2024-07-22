@@ -37,6 +37,10 @@ fn generate_bindgen() {
 }
 
 fn main() {
+    let is_debug = std::env::var("PROFILE").unwrap() == "debug";
+    if is_debug {
+        std::env::set_var("RUST_BACKTRACE", "1");
+    }
     let headers_enabled = std::env::var("CARGO_FEATURE_HEADERS").is_ok();
     if headers_enabled {
         generate_bindgen();
