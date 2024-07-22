@@ -137,31 +137,46 @@ impl SequenceDefinitionInternal {
     pub(super) fn filter_sequence(
         &self,
         tokens: Vec<String>,
-    ) -> Result<Vec<bindings::SequenceDescription>> {
-        Ok(self
-            .index_map
-            .iter()
-            .filter_map(|(seq, v)| match v {
+        limit: usize,
+    ) -> Vec<bindings::SequenceDescription> {
+        let mut result = Vec::with_capacity(limit);
+
+        // prioritize exact character match
+        for (seq, value) in self.index_map.iter() {
+            if let MappedString::Basic(c) = value {
+                if tokens.iter().any(|t| c.contains(t)) {
+                    result.push(self.to_sequence_description(seq, value));
+                }
+            }
+
+            if result.len() == limit {
+                return result;
+            }
+        }
+
+        // search in descriptions
+        for (seq, value) in self.index_map.iter() {
+            match value {
                 MappedString::Basic(c) => {
                     let ch = c.chars().next().unwrap();
                     let name = self.char_to_name.get(&ch).unwrap();
-                    if tokens.iter().any(|t| c.contains(t))
-                        || tokens.iter().all(|t| name.contains(&t.to_uppercase()))
-                    {
-                        Some(self.to_sequence_description(seq, v))
-                    } else {
-                        None
+                    if tokens.iter().all(|t| name.contains(&t.to_uppercase())) {
+                        result.push(self.to_sequence_description(seq, value));
                     }
                 }
                 MappedString::Extra(s) => {
                     if tokens.iter().any(|t| s.contains(t)) {
-                        Some(self.to_sequence_description(seq, v))
-                    } else {
-                        None
+                        result.push(self.to_sequence_description(seq, value));
                     }
                 }
-            })
-            .collect())
+            }
+
+            if result.len() == limit {
+                return result;
+            }
+        }
+
+        result
     }
 
     fn to_sequence_description(

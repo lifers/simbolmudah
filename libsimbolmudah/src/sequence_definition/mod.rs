@@ -43,11 +43,12 @@ impl SequenceDefinition {
             .translate_sequence(sequence)
     }
 
-    pub(crate) fn filter_sequence(
-        &self,
-        tokens: Vec<String>,
-    ) -> Result<Vec<bindings::SequenceDescription>> {
-        self.internal.read().map_err(fail)?.filter_sequence(tokens)
+    fn tokenize(&self, keyword: &HSTRING) -> Vec<String> {
+        keyword
+            .to_string()
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect()
     }
 }
 
@@ -68,6 +69,18 @@ impl bindings::ISequenceDefinition_Impl for SequenceDefinition_Impl {
             .read()
             .map_err(fail)?
             .potential_prefix(sequence.to_string().as_str(), limit as usize)
+            .try_into()
+    }
+
+    fn Search(
+        &self,
+        sequence: &HSTRING,
+        limit: u32,
+    ) -> Result<IVectorView<bindings::SequenceDescription>> {
+        self.internal
+            .read()
+            .map_err(fail)?
+            .filter_sequence(self.tokenize(sequence), limit as usize)
             .try_into()
     }
 }

@@ -128,7 +128,7 @@ pub struct IKeyboardTranslatorFactory_Vtbl {
 windows_core::imp::define_interface!(
     ISequenceDefinition,
     ISequenceDefinition_Vtbl,
-    0x9f561fff_9ed8_54aa_9b49_fe7abb7b62df
+    0x09f566ee_0de2_51b8_aef7_3d4bb720bff2
 );
 impl windows_core::RuntimeType for ISequenceDefinition {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -148,40 +148,10 @@ pub struct ISequenceDefinition_Vtbl {
         u32,
         *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
-}
-windows_core::imp::define_interface!(
-    ISequenceSearcher,
-    ISequenceSearcher_Vtbl,
-    0x9881b990_042e_50ad_84e0_d2c1eb4a79e2
-);
-impl windows_core::RuntimeType for ISequenceSearcher {
-    const SIGNATURE: windows_core::imp::ConstBuffer =
-        windows_core::imp::ConstBuffer::for_interface::<Self>();
-}
-#[repr(C)]
-pub struct ISequenceSearcher_Vtbl {
-    pub base__: windows_core::IInspectable_Vtbl,
     pub Search: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         core::mem::MaybeUninit<windows_core::HSTRING>,
-        *mut *mut core::ffi::c_void,
-    ) -> windows_core::HRESULT,
-}
-windows_core::imp::define_interface!(
-    ISequenceSearcherFactory,
-    ISequenceSearcherFactory_Vtbl,
-    0xa45320a9_3119_50d9_ba29_b37a2846a1cb
-);
-impl windows_core::RuntimeType for ISequenceSearcherFactory {
-    const SIGNATURE: windows_core::imp::ConstBuffer =
-        windows_core::imp::ConstBuffer::for_interface::<Self>();
-}
-#[repr(C)]
-pub struct ISequenceSearcherFactory_Vtbl {
-    pub base__: windows_core::IInspectable_Vtbl,
-    pub CreateInstance: unsafe extern "system" fn(
-        *mut core::ffi::c_void,
-        *mut core::ffi::c_void,
+        u32,
         *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
 }
@@ -532,6 +502,24 @@ impl SequenceDefinition {
             .and_then(|| windows_core::Type::from_abi(result__))
         }
     }
+    pub fn Search(
+        &self,
+        sequence: &windows_core::HSTRING,
+        limit: u32,
+    ) -> windows_core::Result<windows::Foundation::Collections::IVectorView<SequenceDescription>>
+    {
+        let this = self;
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).Search)(
+                windows_core::Interface::as_raw(this),
+                core::mem::transmute_copy(sequence),
+                limit,
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        }
+    }
 }
 impl windows_core::RuntimeType for SequenceDefinition {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -546,70 +534,6 @@ impl windows_core::RuntimeName for SequenceDefinition {
 }
 unsafe impl Send for SequenceDefinition {}
 unsafe impl Sync for SequenceDefinition {}
-#[repr(transparent)]
-#[derive(PartialEq, Eq, Debug, Clone)]
-pub struct SequenceSearcher(windows_core::IUnknown);
-windows_core::imp::interface_hierarchy!(
-    SequenceSearcher,
-    windows_core::IUnknown,
-    windows_core::IInspectable
-);
-impl SequenceSearcher {
-    pub fn Search(
-        &self,
-        keyword: &windows_core::HSTRING,
-    ) -> windows_core::Result<windows::Foundation::Collections::IVectorView<SequenceDescription>>
-    {
-        let this = self;
-        unsafe {
-            let mut result__ = core::mem::zeroed();
-            (windows_core::Interface::vtable(this).Search)(
-                windows_core::Interface::as_raw(this),
-                core::mem::transmute_copy(keyword),
-                &mut result__,
-            )
-            .and_then(|| windows_core::Type::from_abi(result__))
-        }
-    }
-    pub fn CreateInstance<P0>(definition: P0) -> windows_core::Result<SequenceSearcher>
-    where
-        P0: windows_core::Param<SequenceDefinition>,
-    {
-        Self::ISequenceSearcherFactory(|this| unsafe {
-            let mut result__ = core::mem::zeroed();
-            (windows_core::Interface::vtable(this).CreateInstance)(
-                windows_core::Interface::as_raw(this),
-                definition.param().abi(),
-                &mut result__,
-            )
-            .and_then(|| windows_core::Type::from_abi(result__))
-        })
-    }
-    #[doc(hidden)]
-    pub fn ISequenceSearcherFactory<
-        R,
-        F: FnOnce(&ISequenceSearcherFactory) -> windows_core::Result<R>,
-    >(
-        callback: F,
-    ) -> windows_core::Result<R> {
-        static SHARED: windows_core::imp::FactoryCache<SequenceSearcher, ISequenceSearcherFactory> =
-            windows_core::imp::FactoryCache::new();
-        SHARED.call(callback)
-    }
-}
-impl windows_core::RuntimeType for SequenceSearcher {
-    const SIGNATURE: windows_core::imp::ConstBuffer =
-        windows_core::imp::ConstBuffer::for_class::<Self, ISequenceSearcher>();
-}
-unsafe impl windows_core::Interface for SequenceSearcher {
-    type Vtable = ISequenceSearcher_Vtbl;
-    const IID: windows_core::GUID = <ISequenceSearcher as windows_core::Interface>::IID;
-}
-impl windows_core::RuntimeName for SequenceSearcher {
-    const NAME: &'static str = "LibSimbolMudah.SequenceSearcher";
-}
-unsafe impl Send for SequenceSearcher {}
-unsafe impl Sync for SequenceSearcher {}
 #[repr(C)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SequenceDescription {
@@ -1067,6 +991,11 @@ pub trait ISequenceDefinition_Impl: Sized {
         sequence: &windows_core::HSTRING,
         limit: u32,
     ) -> windows_core::Result<windows::Foundation::Collections::IVectorView<SequenceDescription>>;
+    fn Search(
+        &self,
+        sequence: &windows_core::HSTRING,
+        limit: u32,
+    ) -> windows_core::Result<windows::Foundation::Collections::IVectorView<SequenceDescription>>;
 }
 impl windows_core::RuntimeName for ISequenceDefinition {
     const NAME: &'static str = "LibSimbolMudah.ISequenceDefinition";
@@ -1119,44 +1048,20 @@ impl ISequenceDefinition_Vtbl {
                 Err(err) => err.into(),
             }
         }
-        Self {
-            base__: windows_core::IInspectable_Vtbl::new::<Identity, ISequenceDefinition, OFFSET>(),
-            Build: Build::<Identity, OFFSET>,
-            PotentialPrefix: PotentialPrefix::<Identity, OFFSET>,
-        }
-    }
-    pub fn matches(iid: &windows_core::GUID) -> bool {
-        iid == &<ISequenceDefinition as windows_core::Interface>::IID
-    }
-}
-pub trait ISequenceSearcher_Impl: Sized {
-    fn Search(
-        &self,
-        keyword: &windows_core::HSTRING,
-    ) -> windows_core::Result<windows::Foundation::Collections::IVectorView<SequenceDescription>>;
-}
-impl windows_core::RuntimeName for ISequenceSearcher {
-    const NAME: &'static str = "LibSimbolMudah.ISequenceSearcher";
-}
-impl ISequenceSearcher_Vtbl {
-    pub const fn new<Identity: windows_core::IUnknownImpl, const OFFSET: isize>(
-    ) -> ISequenceSearcher_Vtbl
-    where
-        Identity: ISequenceSearcher_Impl,
-    {
         unsafe extern "system" fn Search<
             Identity: windows_core::IUnknownImpl,
             const OFFSET: isize,
         >(
             this: *mut core::ffi::c_void,
-            keyword: core::mem::MaybeUninit<windows_core::HSTRING>,
+            sequence: core::mem::MaybeUninit<windows_core::HSTRING>,
+            limit: u32,
             result__: *mut *mut core::ffi::c_void,
         ) -> windows_core::HRESULT
         where
-            Identity: ISequenceSearcher_Impl,
+            Identity: ISequenceDefinition_Impl,
         {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            match ISequenceSearcher_Impl::Search(this, core::mem::transmute(&keyword)) {
+            match ISequenceDefinition_Impl::Search(this, core::mem::transmute(&sequence), limit) {
                 Ok(ok__) => {
                     result__.write(core::mem::transmute_copy(&ok__));
                     core::mem::forget(ok__);
@@ -1166,63 +1071,13 @@ impl ISequenceSearcher_Vtbl {
             }
         }
         Self {
-            base__: windows_core::IInspectable_Vtbl::new::<Identity, ISequenceSearcher, OFFSET>(),
+            base__: windows_core::IInspectable_Vtbl::new::<Identity, ISequenceDefinition, OFFSET>(),
+            Build: Build::<Identity, OFFSET>,
+            PotentialPrefix: PotentialPrefix::<Identity, OFFSET>,
             Search: Search::<Identity, OFFSET>,
         }
     }
     pub fn matches(iid: &windows_core::GUID) -> bool {
-        iid == &<ISequenceSearcher as windows_core::Interface>::IID
-    }
-}
-pub trait ISequenceSearcherFactory_Impl: Sized {
-    fn CreateInstance(
-        &self,
-        definition: Option<&SequenceDefinition>,
-    ) -> windows_core::Result<SequenceSearcher>;
-}
-impl windows_core::RuntimeName for ISequenceSearcherFactory {
-    const NAME: &'static str = "LibSimbolMudah.ISequenceSearcherFactory";
-}
-impl ISequenceSearcherFactory_Vtbl {
-    pub const fn new<Identity: windows_core::IUnknownImpl, const OFFSET: isize>(
-    ) -> ISequenceSearcherFactory_Vtbl
-    where
-        Identity: ISequenceSearcherFactory_Impl,
-    {
-        unsafe extern "system" fn CreateInstance<
-            Identity: windows_core::IUnknownImpl,
-            const OFFSET: isize,
-        >(
-            this: *mut core::ffi::c_void,
-            definition: *mut core::ffi::c_void,
-            result__: *mut *mut core::ffi::c_void,
-        ) -> windows_core::HRESULT
-        where
-            Identity: ISequenceSearcherFactory_Impl,
-        {
-            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            match ISequenceSearcherFactory_Impl::CreateInstance(
-                this,
-                windows_core::from_raw_borrowed(&definition),
-            ) {
-                Ok(ok__) => {
-                    result__.write(core::mem::transmute_copy(&ok__));
-                    core::mem::forget(ok__);
-                    windows_core::HRESULT(0)
-                }
-                Err(err) => err.into(),
-            }
-        }
-        Self {
-            base__: windows_core::IInspectable_Vtbl::new::<
-                Identity,
-                ISequenceSearcherFactory,
-                OFFSET,
-            >(),
-            CreateInstance: CreateInstance::<Identity, OFFSET>,
-        }
-    }
-    pub fn matches(iid: &windows_core::GUID) -> bool {
-        iid == &<ISequenceSearcherFactory as windows_core::Interface>::IID
+        iid == &<ISequenceDefinition as windows_core::Interface>::IID
     }
 }
