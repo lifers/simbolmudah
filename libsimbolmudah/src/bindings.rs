@@ -10,7 +10,7 @@
 windows_core::imp::define_interface!(
     IKeyboardHook,
     IKeyboardHook_Vtbl,
-    0x47f0fb93_b520_5189_88bb_1e4d17f6e494
+    0xbbbd064a_b62f_50dd_baed_68008d8a8371
 );
 impl windows_core::RuntimeType for IKeyboardHook {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -19,6 +19,7 @@ impl windows_core::RuntimeType for IKeyboardHook {
 #[repr(C)]
 pub struct IKeyboardHook_Vtbl {
     pub base__: windows_core::IInspectable_Vtbl,
+    pub ResetStage: unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
     pub OnStateChanged: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut core::ffi::c_void,
@@ -164,6 +165,15 @@ windows_core::imp::interface_hierarchy!(
     windows_core::IInspectable
 );
 impl KeyboardHook {
+    pub fn ResetStage(&self) -> windows_core::Result<()> {
+        let this = self;
+        unsafe {
+            (windows_core::Interface::vtable(this).ResetStage)(windows_core::Interface::as_raw(
+                this,
+            ))
+            .ok()
+        }
+    }
     pub fn OnStateChanged<P0>(
         &self,
         handler: P0,
@@ -555,6 +565,7 @@ impl Default for SequenceDescription {
     }
 }
 pub trait IKeyboardHook_Impl: Sized {
+    fn ResetStage(&self) -> windows_core::Result<()>;
     fn OnStateChanged(
         &self,
         handler: Option<&windows::Foundation::TypedEventHandler<KeyboardHook, u8>>,
@@ -583,6 +594,18 @@ impl IKeyboardHook_Vtbl {
     where
         Identity: IKeyboardHook_Impl,
     {
+        unsafe extern "system" fn ResetStage<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+        ) -> windows_core::HRESULT
+        where
+            Identity: IKeyboardHook_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            IKeyboardHook_Impl::ResetStage(this).into()
+        }
         unsafe extern "system" fn OnStateChanged<
             Identity: windows_core::IUnknownImpl,
             const OFFSET: isize,
@@ -654,6 +677,7 @@ impl IKeyboardHook_Vtbl {
         }
         Self {
             base__: windows_core::IInspectable_Vtbl::new::<Identity, IKeyboardHook, OFFSET>(),
+            ResetStage: ResetStage::<Identity, OFFSET>,
             OnStateChanged: OnStateChanged::<Identity, OFFSET>,
             RemoveOnStateChanged: RemoveOnStateChanged::<Identity, OFFSET>,
             OnKeyEvent: OnKeyEvent::<Identity, OFFSET>,

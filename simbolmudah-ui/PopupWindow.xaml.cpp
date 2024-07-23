@@ -1,7 +1,7 @@
 #include "pch.hpp"
-#include "BlankWindow.xaml.h"
-#if __has_include("BlankWindow.g.cpp")
-#include "BlankWindow.g.cpp"
+#include "PopupWindow.xaml.h"
+#if __has_include("PopupWindow.g.cpp")
+#include "PopupWindow.g.cpp"
 #endif
 
 // To learn more about WinUI, the WinUI project structure,
@@ -133,11 +133,11 @@ namespace winrt::simbolmudah_ui::implementation
     using namespace Windowing;
     using namespace std::chrono_literals;
 
-    BlankWindow::BlankWindow(KeyboardTranslator const& translator, KeyboardHook const& hook, SequenceDefinition const& definition) :
+    PopupWindow::PopupWindow(KeyboardTranslator const& translator, KeyboardHook const& hook, SequenceDefinition const& definition) :
         translator{ translator }, hook{ hook }, main_thread{ apartment_context() },
-        keyTranslatedToken{ this->translator.OnKeyTranslated(auto_revoke, { this->get_weak(), &BlankWindow::OnKeyTranslated }) },
-        stateChangedToken{ this->hook.OnStateChanged(auto_revoke, { this->get_weak(), &BlankWindow::OnStateChanged }) },
-        defaultPage{ Page() }, sequencePopup{ definition }
+        keyTranslatedToken{ this->translator.OnKeyTranslated(auto_revoke, { this->get_weak(), &PopupWindow::OnKeyTranslated }) },
+        stateChangedToken{ this->hook.OnStateChanged(auto_revoke, { this->get_weak(), &PopupWindow::OnStateChanged }) },
+        defaultPage{ Page() }, sequencePopup{ definition }, searchPopup{ hook, definition }
     {
         const auto presenter{ OverlappedPresenter::CreateForContextMenu() };
         presenter.IsAlwaysOnTop(true);
@@ -154,7 +154,7 @@ namespace winrt::simbolmudah_ui::implementation
         this->Content(this->defaultPage);
     }
 
-    fire_and_forget BlankWindow::OnKeyTranslated(KeyboardTranslator const&, hstring const& message) const
+    fire_and_forget PopupWindow::OnKeyTranslated(KeyboardTranslator const&, hstring const& message) const
     {
         const auto key{ message };
         co_await this->main_thread;
@@ -162,7 +162,7 @@ namespace winrt::simbolmudah_ui::implementation
         this->sequencePopup.FindPotentialPrefix();
     }
 
-    fire_and_forget BlankWindow::OnStateChanged(KeyboardHook const&, uint8_t state) const
+    fire_and_forget PopupWindow::OnStateChanged(KeyboardHook const&, uint8_t state) const
     {
         co_await this->main_thread;
         switch (state)
@@ -171,19 +171,22 @@ namespace winrt::simbolmudah_ui::implementation
             this->AppWindow().Hide();
             co_return;
         case 2: // ComposeKeyupFirst
-        {
             this->Content(this->defaultPage);
             this->DrawWindow();
             co_return;
-        }
         case 4: // SequenceMode
             this->sequencePopup.Sequence().Clear();
             this->Content(this->sequencePopup);
             co_return;
+        case 5: // SearchMode
+            this->searchPopup.SearchResults().Clear();
+            this->Content(this->searchPopup);
+            this->AppWindow().Show(true);
+            co_return;
         }
     }
 
-    fire_and_forget BlankWindow::DrawWindow() const
+    fire_and_forget PopupWindow::DrawWindow() const
     {
         const auto& appWindow{ this->AppWindow() };
         const auto windowId{ appWindow.Id() };

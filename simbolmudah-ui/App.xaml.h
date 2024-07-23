@@ -23,7 +23,7 @@ namespace winrt::simbolmudah_ui::implementation
         void InitializeSettings();
 
         Microsoft::UI::Xaml::Window window{ nullptr };
-        simbolmudah_ui::BlankWindow popup{ nullptr };
+        simbolmudah_ui::PopupWindow popup{ nullptr };
         std::optional<LibSimbolMudah::KeyboardHook> keyboardHook;
     };
 }

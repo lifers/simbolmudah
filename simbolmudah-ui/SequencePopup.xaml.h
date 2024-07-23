@@ -6,7 +6,7 @@ namespace winrt::simbolmudah_ui::implementation
 {
     struct SequencePopup : SequencePopupT<SequencePopup>
     {
-        SequencePopup(const LibSimbolMudah::SequenceDefinition& definition);
+        explicit SequencePopup(const LibSimbolMudah::SequenceDefinition& definition);
         SequencePopup(const SequencePopup&) = delete;
         SequencePopup& operator=(const SequencePopup&) = delete;
 

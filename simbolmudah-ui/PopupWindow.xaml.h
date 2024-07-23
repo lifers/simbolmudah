@@ -1,17 +1,17 @@
 #pragma once
 
-#include "BlankWindow.g.h"
+#include "PopupWindow.g.h"
 
 namespace winrt::simbolmudah_ui::implementation
 {
-    struct BlankWindow : BlankWindowT<BlankWindow>
+    struct PopupWindow : PopupWindowT<PopupWindow>
     {
-        explicit BlankWindow(
+        explicit PopupWindow(
             const LibSimbolMudah::KeyboardTranslator& translator,
             const LibSimbolMudah::KeyboardHook& hook,
             const LibSimbolMudah::SequenceDefinition& definition);
-        BlankWindow(const BlankWindow&) = delete;
-        BlankWindow& operator=(const BlankWindow&) = delete;
+        PopupWindow(const PopupWindow&) = delete;
+        PopupWindow& operator=(const PopupWindow&) = delete;
 
     private:
         fire_and_forget OnKeyTranslated(const LibSimbolMudah::KeyboardTranslator& translator, const hstring& message) const;
@@ -25,12 +25,13 @@ namespace winrt::simbolmudah_ui::implementation
         const LibSimbolMudah::KeyboardHook::OnStateChanged_revoker stateChangedToken;
         const Microsoft::UI::Xaml::Controls::Page defaultPage;
         const simbolmudah_ui::SequencePopup sequencePopup;
+        const simbolmudah_ui::SearchPopup searchPopup;
     };
 }
 
 namespace winrt::simbolmudah_ui::factory_implementation
 {
-    struct BlankWindow : BlankWindowT<BlankWindow, implementation::BlankWindow>
+    struct PopupWindow : PopupWindowT<PopupWindow, implementation::PopupWindow>
     {
     };
 }

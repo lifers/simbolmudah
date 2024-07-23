@@ -1,9 +1,9 @@
 namespace simbolmudah_ui
 {
     [default_interface]
-    runtimeclass BlankWindow : Microsoft.UI.Xaml.Window
+    runtimeclass PopupWindow : Microsoft.UI.Xaml.Window
     {
-        BlankWindow(
+        PopupWindow(
             LibSimbolMudah.KeyboardTranslator translator,
             LibSimbolMudah.KeyboardHook hook,
             LibSimbolMudah.SequenceDefinition definition

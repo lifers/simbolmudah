@@ -1,0 +1,14 @@
+import "SearchPage/SequenceDetail.idl";
+
+namespace simbolmudah_ui
+{
+    [default_interface]
+    runtimeclass SearchPopup : Microsoft.UI.Xaml.Controls.Page
+    {
+        SearchPopup(
+            LibSimbolMudah.KeyboardHook hook,
+            LibSimbolMudah.SequenceDefinition definition
+        );
+        IObservableVector<SequenceDetail> SearchResults{ get; };
+    }
+}

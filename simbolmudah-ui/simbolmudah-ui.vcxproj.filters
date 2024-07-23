@@ -10,10 +10,13 @@
     <Page Include="SearchPage.xaml">
       <Filter>SearchPage</Filter>
     </Page>
-    <Page Include="BlankWindow.xaml">
+    <Page Include="PopupWindow.xaml">
       <Filter>Popup</Filter>
     </Page>
     <Page Include="SequencePopup.xaml">
+      <Filter>Popup</Filter>
+    </Page>
+    <Page Include="SearchPopup.xaml">
       <Filter>Popup</Filter>
     </Page>
   </ItemGroup>

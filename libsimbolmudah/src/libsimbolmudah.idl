@@ -30,6 +30,7 @@ namespace LibSimbolMudah
     runtimeclass KeyboardHook
     {
         KeyboardHook(KeyboardTranslator translator);
+        void ResetStage();
 
         event Windows.Foundation.TypedEventHandler<KeyboardHook, UInt8> OnStateChanged;
         event Windows.Foundation.TypedEventHandler<KeyboardHook, String> OnKeyEvent;
