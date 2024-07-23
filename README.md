@@ -15,12 +15,12 @@ This is inspired by the Compose Key mechanism from Freedesktop's X project.
   - [x] Connect the two and generate mappings from keysym sequence to the resulting Unicode
   - [x] Rework the compose search engine to use the mappings
 - [x] Unicode explicit code input mode
-- [ ] Popup window for hints
-  - [ ] Display a small popup near the cursor for mode indicator (similar to Windows' autocomplete)
-  - [ ] Unicode name search mode basic frontend
+- [x] Popup window for hints
+  - [x] Display a small popup near the cursor for mode indicator (similar to Windows' autocomplete)
+  - [x] Unicode name search mode basic frontend
 - [ ] Unicode name search mode
   - [ ] Use fuzzy text search engine
-  - [ ] Implement recommendations
+  - [x] Implement recommendations
   - [ ] Implement Emoji variants
 - [ ] Tray menu
   - [ ] Add exit button
