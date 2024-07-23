@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use fst::{automaton::Str, Automaton, IntoStreamer, Map, MapBuilder, Streamer};
 use windows::{
-    core::{Result, Weak, HSTRING, PSTR},
+    core::{Result, Weak, PSTR},
     Win32::Globalization::{u_charName, UErrorCode, U_EXTENDED_CHAR_NAME},
 };
 
@@ -73,14 +73,11 @@ impl SequenceDefinitionInternal {
     ) -> std::result::Result<String, SequenceDefinitionError> {
         self.prefix_map.get(sequence.as_bytes()).map_or_else(
             || {
-                Err(self
-                    .prefix_map
-                    .search(Str::new(sequence).starts_with())
-                    .into_stream()
-                    .next()
-                    .map_or(SequenceDefinitionError::ValueNotFound, |_| {
-                        SequenceDefinitionError::Incomplete
-                    }))
+                Err(if self.potential_prefix(sequence, 1).is_empty() {
+                    SequenceDefinitionError::ValueNotFound
+                } else {
+                    SequenceDefinitionError::Incomplete
+                })
             },
             |value| {
                 Ok(self
@@ -90,6 +87,36 @@ impl SequenceDefinitionInternal {
                     .to_string())
             },
         )
+    }
+
+    pub(super) fn potential_prefix(
+        &self,
+        sequence: &str,
+        limit: usize,
+    ) -> Vec<bindings::SequenceDescription> {
+        let mut stream = self
+            .prefix_map
+            .search(Str::new(sequence).starts_with())
+            .into_stream();
+        let mut result = Vec::with_capacity(limit);
+
+        for _ in 0..limit {
+            if let Some(element) = stream.next() {
+                let (seq, value) = element;
+                result.push(
+                    self.to_sequence_description(
+                        &unsafe { String::from_utf8_unchecked(seq.to_vec()) },
+                        self.value_to_string
+                            .get(&value)
+                            .expect("value previously mapped"),
+                    ),
+                );
+            } else {
+                return result;
+            }
+        }
+
+        result
     }
 
     pub(super) fn index_char(&mut self, value: char) -> Result<()> {
@@ -110,31 +137,46 @@ impl SequenceDefinitionInternal {
     pub(super) fn filter_sequence(
         &self,
         tokens: Vec<String>,
-    ) -> Result<Vec<bindings::SequenceDescription>> {
-        Ok(self
-            .index_map
-            .iter()
-            .filter_map(|(seq, v)| match v {
+        limit: usize,
+    ) -> Vec<bindings::SequenceDescription> {
+        let mut result = Vec::with_capacity(limit);
+
+        // prioritize exact character match
+        for (seq, value) in self.index_map.iter() {
+            if let MappedString::Basic(c) = value {
+                if tokens.iter().any(|t| c.contains(t)) {
+                    result.push(self.to_sequence_description(seq, value));
+                }
+            }
+
+            if result.len() == limit {
+                return result;
+            }
+        }
+
+        // search in descriptions
+        for (seq, value) in self.index_map.iter() {
+            match value {
                 MappedString::Basic(c) => {
                     let ch = c.chars().next().unwrap();
                     let name = self.char_to_name.get(&ch).unwrap();
-                    if tokens.iter().any(|t| c.contains(t))
-                        || tokens.iter().all(|t| name.contains(&t.to_uppercase()))
-                    {
-                        Some(self.to_sequence_description(seq, v))
-                    } else {
-                        None
+                    if tokens.iter().all(|t| name.contains(&t.to_uppercase())) {
+                        result.push(self.to_sequence_description(seq, value));
                     }
                 }
                 MappedString::Extra(s) => {
                     if tokens.iter().any(|t| s.contains(t)) {
-                        Some(self.to_sequence_description(seq, v))
-                    } else {
-                        None
+                        result.push(self.to_sequence_description(seq, value));
                     }
                 }
-            })
-            .collect())
+            }
+
+            if result.len() == limit {
+                return result;
+            }
+        }
+
+        result
     }
 
     fn to_sequence_description(
@@ -144,7 +186,7 @@ impl SequenceDefinitionInternal {
     ) -> bindings::SequenceDescription {
         bindings::SequenceDescription {
             sequence: seq.into(),
-            result: HSTRING::from(value.to_string()),
+            result: value.to_string().into(),
             description: match value {
                 MappedString::Basic(c) => self
                     .char_to_name

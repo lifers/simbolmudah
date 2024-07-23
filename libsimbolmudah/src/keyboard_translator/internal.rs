@@ -7,7 +7,7 @@ use std::{
 };
 
 use windows::{
-    core::{Error, Interface, Result, Weak, HRESULT, HSTRING},
+    core::{h, Error, Interface, Result, Weak, HRESULT, HSTRING},
     Win32::{
         Foundation::{ERROR_NO_UNICODE_TRANSLATION, E_INVALIDARG, E_NOTIMPL, E_POINTER},
         UI::Input::KeyboardAndMouse::{ToUnicodeEx, HKL, VK_CONTROL, VK_MENU, VK_SHIFT, VK_SPACE},
@@ -17,7 +17,6 @@ use windows::{
 use crate::{
     bindings,
     delegate_storage::DelegateStorage,
-    get_strong_ref,
     sequence_definition::{SequenceDefinition, SequenceDefinitionError},
 };
 
@@ -45,6 +44,7 @@ pub(super) struct KeyboardTranslatorInternal {
     pub(super) keyboard_layout: AtomicPtr<c_void>,
     pub(super) report_invalid: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
     pub(super) report_translated: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
+    pub(super) report_key_translated: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
     possible_altgr: HashMap<String, String>,
     possible_dead: HashMap<String, u16>,
     pub(super) state: String,
@@ -61,6 +61,7 @@ impl KeyboardTranslatorInternal {
             keyboard_layout: AtomicPtr::new(null_mut()),
             report_invalid: DelegateStorage::new(),
             report_translated: DelegateStorage::new(),
+            report_key_translated: DelegateStorage::new(),
             possible_altgr: HashMap::new(),
             possible_dead: HashMap::new(),
             state: String::new(),
@@ -88,7 +89,7 @@ impl KeyboardTranslatorInternal {
                         .parent
                         .upgrade()
                         .ok_or(Error::new(E_POINTER, "Invalid pointer"))?,
-                    Some(&HSTRING::from("Invalid VK code")),
+                    Some(h!("Invalid VK code")),
                 )?;
 
                 match e {
@@ -111,7 +112,8 @@ impl KeyboardTranslatorInternal {
             0 => {
                 // Forward to SequenceTranslator
                 self.state.push_str(&value);
-                match get_strong_ref(&self.sequence_definition)?
+                match self
+                    .get_seqdef_ref()?
                     .cast_object_ref::<SequenceDefinition>()?
                     .translate_sequence(&self.state)
                 {
@@ -143,17 +145,21 @@ impl KeyboardTranslatorInternal {
         match result {
             Ok(s) => self
                 .report_translated
-                .invoke_all(&get_strong_ref(&self.parent)?, Some(&HSTRING::from(s))),
-            Err(SequenceDefinitionError::ValueNotFound) => self.report_invalid.invoke_all(
-                &get_strong_ref(&self.parent)?,
-                Some(&HSTRING::from("Value not found")),
-            ),
+                .invoke_all(&self.get_parent_ref()?, Some(&s.into())),
+            Err(SequenceDefinitionError::ValueNotFound) => self
+                .report_invalid
+                .invoke_all(&self.get_parent_ref()?, Some(h!("Value not found"))),
             Err(SequenceDefinitionError::Incomplete) => {
                 // Do nothing
                 Ok(())
             }
             Err(SequenceDefinitionError::Failure(e)) => Err(e),
         }
+    }
+
+    pub(super) fn report_key(&mut self, key: &str) -> Result<()> {
+        self.report_key_translated
+            .invoke_all(&self.get_parent_ref()?, Some(&key.into()))
     }
 
     pub(super) fn analyze_layout(&mut self) -> Result<()> {
@@ -201,6 +207,18 @@ impl KeyboardTranslatorInternal {
         }
 
         Ok(())
+    }
+
+    fn get_parent_ref(&self) -> Result<bindings::KeyboardTranslator> {
+        self.parent
+            .upgrade()
+            .ok_or_else(|| Error::new(E_POINTER, "Weak pointer died"))
+    }
+
+    fn get_seqdef_ref(&self) -> Result<bindings::SequenceDefinition> {
+        self.sequence_definition
+            .upgrade()
+            .ok_or_else(|| Error::new(E_POINTER, "Weak pointer died"))
     }
 }
 

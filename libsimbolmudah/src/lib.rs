@@ -4,13 +4,11 @@ mod keyboard_hook;
 mod keyboard_translator;
 mod sender;
 mod sequence_definition;
-mod sequence_searcher;
 mod thread_handler;
 
 use keyboard_hook::KeyboardHookFactory;
 use keyboard_translator::KeyboardTranslatorFactory;
 use sequence_definition::SequenceDefinitionFactory;
-use sequence_searcher::SequenceSearcherFactory;
 use windows::{
     core::{Error, Interface, OutRef, Ref, Result, Weak, HRESULT, HSTRING},
     Win32::{
@@ -30,8 +28,6 @@ extern "system" fn DllGetActivationFactory(
         result.write(Some(KeyboardTranslatorFactory.into())).into()
     } else if *name == "LibSimbolMudah.KeyboardHook" {
         result.write(Some(KeyboardHookFactory.into())).into()
-    } else if *name == "LibSimbolMudah.SequenceSearcher" {
-        result.write(Some(SequenceSearcherFactory.into())).into()
     } else if *name == "LibSimbolMudah.SequenceDefinition" {
         result.write(Some(SequenceDefinitionFactory.into())).into()
     } else {

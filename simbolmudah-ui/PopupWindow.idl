@@ -1,0 +1,12 @@
+namespace simbolmudah_ui
+{
+    [default_interface]
+    runtimeclass PopupWindow : Microsoft.UI.Xaml.Window
+    {
+        PopupWindow(
+            LibSimbolMudah.KeyboardTranslator translator,
+            LibSimbolMudah.KeyboardHook hook,
+            LibSimbolMudah.SequenceDefinition definition
+        );
+    }
+}

@@ -9,6 +9,7 @@ use crate::{bindings, fail};
 use internal::SequenceDefinitionInternal;
 use windows::{
     core::{implement, Error, IInspectable, Result, Weak, HSTRING},
+    Foundation::Collections::IVectorView,
     Win32::System::WinRT::{IActivationFactory, IActivationFactory_Impl},
 };
 use windows_core::Interface;
@@ -42,11 +43,12 @@ impl SequenceDefinition {
             .translate_sequence(sequence)
     }
 
-    pub(crate) fn filter_sequence(&self, tokens: Vec<String>) -> Result<Vec<bindings::SequenceDescription>> {
-        self.internal
-            .read()
-            .map_err(fail)?
-            .filter_sequence(tokens)
+    fn tokenize(&self, keyword: &HSTRING) -> Vec<String> {
+        keyword
+            .to_string()
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect()
     }
 }
 
@@ -56,6 +58,30 @@ impl bindings::ISequenceDefinition_Impl for SequenceDefinition_Impl {
             keysymdef.to_string().as_str(),
             composedef.to_string().as_str(),
         )
+    }
+
+    fn PotentialPrefix(
+        &self,
+        sequence: &HSTRING,
+        limit: u32,
+    ) -> Result<IVectorView<bindings::SequenceDescription>> {
+        self.internal
+            .read()
+            .map_err(fail)?
+            .potential_prefix(sequence.to_string().as_str(), limit as usize)
+            .try_into()
+    }
+
+    fn Search(
+        &self,
+        sequence: &HSTRING,
+        limit: u32,
+    ) -> Result<IVectorView<bindings::SequenceDescription>> {
+        self.internal
+            .read()
+            .map_err(fail)?
+            .filter_sequence(self.tokenize(sequence), limit as usize)
+            .try_into()
     }
 }
 
@@ -84,7 +110,7 @@ impl IActivationFactory_Impl for SequenceDefinitionFactory_Impl {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use windows_core::{Interface, HSTRING};
+    use windows_core::Interface;
 
     use crate::bindings;
 
@@ -96,7 +122,7 @@ mod tests {
         let seqdef =
             bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
         seqdef
-            .Build(&HSTRING::from(KEYSYMDEF), &HSTRING::from(COMPOSEDEF))
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
     }
 
@@ -106,7 +132,7 @@ mod tests {
         let seqdef =
             bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
         seqdef
-            .Build(&HSTRING::from(KEYSYMDEF), &HSTRING::from(COMPOSEDEF))
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 
         // Cast SequenceDefinition to its object
@@ -125,7 +151,7 @@ mod tests {
         let seqdef =
             bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
         seqdef
-            .Build(&HSTRING::from(KEYSYMDEF), &HSTRING::from(COMPOSEDEF))
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 
         // Cast SequenceDefinition to its object
@@ -147,7 +173,7 @@ mod tests {
         let seqdef =
             bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
         seqdef
-            .Build(&HSTRING::from(KEYSYMDEF), &HSTRING::from(COMPOSEDEF))
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 
         // Cast SequenceDefinition to its object

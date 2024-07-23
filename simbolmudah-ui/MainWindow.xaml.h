@@ -19,7 +19,7 @@ namespace winrt::simbolmudah_ui::implementation
 
 	private:
 		void NavigateInternal(
-			Windows::UI::Xaml::Interop::TypeName const& navPageType,
+			hstring const& navPageType,
 			Microsoft::UI::Xaml::Media::Animation::NavigationTransitionInfo const& transitionInfo);
 	};
 }

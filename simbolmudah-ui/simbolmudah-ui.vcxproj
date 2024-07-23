@@ -101,10 +101,11 @@
       <EnableModules Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">false</EnableModules>
       <EnableModules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</EnableModules>
       <EnableModules Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</EnableModules>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\libsimbolmudah\target\debug;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\libsimbolmudah\target\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">libsimbolmudah.dll.lib;oleacc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsimbolmudah.dll" "$(OutDir)"
@@ -143,6 +144,10 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
       <DeploymentContent>true</DeploymentContent>
       <FileType>Document</FileType>
     </ClInclude>
+    <ClInclude Include="PopupWindow.xaml.h">
+      <DependentUpon>PopupWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
     <ClInclude Include="HomePage.xaml.h">
       <DependentUpon>HomePage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -159,6 +164,14 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     </ClInclude>
     <ClInclude Include="SearchPage\SearchPageViewModel.h" />
     <ClInclude Include="SearchPage\SequenceDetail.h" />
+    <ClInclude Include="SearchPopup.xaml.h">
+      <DependentUpon>SearchPopup.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
+    <ClInclude Include="SequencePopup.xaml.h">
+      <DependentUpon>SequencePopup.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
     <ClInclude Include="SettingsPage.xaml.h">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -166,16 +179,29 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml" />
+    <Page Include="PopupWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="HomePage.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Include="MainWindow.xaml" />
     <Page Include="SearchPage.xaml" />
+    <Page Include="SearchPopup.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="SequencePopup.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="SettingsPage.xaml">
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="PopupWindow.xaml.cpp">
+      <DependentUpon>PopupWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
     <ClCompile Include="HomePage.xaml.cpp">
       <DependentUpon>HomePage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -195,12 +221,26 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     </ClCompile>
     <ClCompile Include="SearchPage\SearchPageViewModel.cpp" />
     <ClCompile Include="SearchPage\SequenceDetail.cpp" />
+    <ClCompile Include="SearchPopup.xaml.cpp">
+      <DependentUpon>SearchPopup.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
+    <ClCompile Include="SequencePopup.xaml.cpp">
+      <DependentUpon>SequencePopup.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
     <ClCompile Include="SettingsPage.xaml.cpp">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <Midl Include="PopupWindow.idl">
+      <DependentUpon>PopupWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+      <AdditionalMetadataDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalMetadataDirectories)</AdditionalMetadataDirectories>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/reference "..\libsimbolmudah\libsimbolmudah.winmd" %(AdditionalOptions)</AdditionalOptions>
+    </Midl>
     <Midl Include="HomePage.idl">
       <DependentUpon>HomePage.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -212,6 +252,14 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     <Midl Include="SearchPage.idl" />
     <Midl Include="SearchPage\SearchPageViewModel.idl" />
     <Midl Include="SearchPage\SequenceDetail.idl" />
+    <Midl Include="SearchPopup.idl">
+      <DependentUpon>SearchPopup.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
+    <Midl Include="SequencePopup.idl">
+      <DependentUpon>SequencePopup.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
     <Midl Include="SettingsPage.idl">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
       <SubType>Code</SubType>

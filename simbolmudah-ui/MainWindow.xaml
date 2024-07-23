@@ -9,7 +9,7 @@
     mc:Ignorable="d"
     Title="simbolmudah"
     SizeChanged="Window_SizeChanged">
-
+   
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="32"/>
