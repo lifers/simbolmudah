@@ -1,0 +1,8 @@
+namespace simbolmudah_ui
+{
+    [default_interface]
+    runtimeclass NotifyIconPopup : Microsoft.UI.Xaml.Window
+    {
+        NotifyIconPopup();
+    }
+}

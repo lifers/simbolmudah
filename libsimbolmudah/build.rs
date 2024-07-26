@@ -12,6 +12,8 @@ fn generate_bindgen() {
         &metadata_dir,
         "/reference",
         &format!("{metadata_dir}\\Windows.Foundation.winmd"),
+        "/reference",
+        &format!("{metadata_dir}\\Windows.Graphics.winmd"),
         "/winmd",
         "libsimbolmudah.winmd",
         "src/libsimbolmudah.idl",

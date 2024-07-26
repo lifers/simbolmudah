@@ -1,8 +1,7 @@
 use crate::{fail, fail_message};
-use once_cell::unsync::Lazy;
 use regex::Regex;
 use std::{
-    cell::RefCell,
+    cell::{LazyCell, RefCell},
     collections::HashMap,
     fs::File,
     io::{BufRead, BufReader},
@@ -20,14 +19,14 @@ const UNICODE_REGEX_STR: &str =
 
 thread_local! {
     static GENERAL_KEYSYM: RefCell<HashMap<String, u32>> = RefCell::new(HashMap::new());
-    static KEYPAD_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(
+    static KEYPAD_REGEX: LazyCell<Regex> = LazyCell::new(|| Regex::new(
         r"^#define XK_(KP_[a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*(/\*[ |<].*[ |>]\*/)?\s*$"
     ).unwrap());
     // static UNICODE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(UNICODE_REGEX_STR).unwrap());
-    static DEPRECATED_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(
+    static DEPRECATED_REGEX: LazyCell<Regex> = LazyCell::new(|| Regex::new(
         r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*/\* (deprecated.*) \*/\s*$"
     ).unwrap());
-    static GENERAL_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(
+    static GENERAL_REGEX: LazyCell<Regex> = LazyCell::new(|| Regex::new(
         r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*(/\*.*\*/)?\s*$"
     ).unwrap());
 }

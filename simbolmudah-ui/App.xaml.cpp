@@ -44,6 +44,8 @@ namespace winrt::simbolmudah_ui::implementation
         this->window = simbolmudah_ui::MainWindow();
         this->window.ExtendsContentIntoTitleBar(true);
         this->window.Activate();
+
+        this->notifyIcon = simbolmudah_ui::NotifyIconPopup();
     }
 
     /// <summary>
@@ -57,11 +59,11 @@ namespace winrt::simbolmudah_ui::implementation
             this->popup = simbolmudah_ui::PopupWindow(
                 this->keyboardTranslator, this->keyboardHook.value(), this->sequenceDefinition);
         }
-		else
-		{
+        else
+        {
             this->popup = nullptr;
-			this->keyboardHook.reset();
-		}
+            this->keyboardHook.reset();
+        }
     }
 
     /// <summary>
@@ -69,27 +71,27 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     /// <returns></returns>
     fire_and_forget App::BuildDefinition() const
-	{
+    {
         const auto keysymdef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.txt")) };
         const auto composedef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre")) };
-		this->sequenceDefinition.Build((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
-	}
+        this->sequenceDefinition.Build((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
+    }
 
     /// <summary>
-	/// Initializes the application settings.
-	/// </summary>
-	void App::InitializeSettings()
-	{
+    /// Initializes the application settings.
+    /// </summary>
+    void App::InitializeSettings()
+    {
         if (const auto& localSettings{ ApplicationData::Current().LocalSettings().Values() }; !localSettings.HasKey(L"keyboardHookEnabled"))
-		{
-			localSettings.Insert(L"keyboardHookEnabled", box_value(false));
-		}
+        {
+            localSettings.Insert(L"keyboardHookEnabled", box_value(false));
+        }
         else if (unbox_value<bool>(localSettings.Lookup(L"keyboardHookEnabled")))
-		{
-			this->keyboardHook.emplace(this->keyboardTranslator);
+        {
+            this->keyboardHook.emplace(this->keyboardTranslator);
             this->popup = simbolmudah_ui::PopupWindow(
                 this->keyboardTranslator, this->keyboardHook.value(), this->sequenceDefinition);
             this->hookState = true;
-		}
-	}
+        }
+    }
 }
