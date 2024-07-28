@@ -19,9 +19,6 @@
     <Page Include="SearchPopup.xaml">
       <Filter>Popup</Filter>
     </Page>
-    <Page Include="NotifyIconPopup.xaml">
-      <Filter>NotifyIcon</Filter>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />
@@ -43,12 +40,6 @@
     </ClCompile>
     <ClCompile Include="SearchPage\SequenceDetail.cpp">
       <Filter>SearchPage</Filter>
-    </ClCompile>
-    <ClCompile Include="NotifyIcon.ixx">
-      <Filter>NotifyIcon</Filter>
-    </ClCompile>
-    <ClCompile Include="NotifyIcon.cpp">
-      <Filter>NotifyIcon</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -78,9 +69,6 @@
     </Filter>
     <Filter Include="Popup">
       <UniqueIdentifier>{019cba15-cb44-40c8-b7d6-aebbd0d04cf2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="NotifyIcon">
-      <UniqueIdentifier>{76d1df31-c498-4008-8ecb-d3f395004b32}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

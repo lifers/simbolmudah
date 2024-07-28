@@ -3,7 +3,10 @@
 use std::cell::RefCell;
 
 use windows::{
-    core::{h, w, Result, Weak, HSTRING, PCWSTR}, Foundation::EventRegistrationToken, Graphics::PointInt32, Win32::{
+    core::{h, w, Result, Weak, HSTRING, PCWSTR},
+    Foundation::EventRegistrationToken,
+    Graphics::PointInt32,
+    Win32::{
         Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM},
         System::SystemServices::IMAGE_DOS_HEADER,
         UI::{
@@ -14,16 +17,16 @@ use windows::{
             },
             WindowsAndMessaging::{
                 CreateWindowExW, DefWindowProcW, DestroyWindow, LoadIconW, RegisterClassW,
-                CW_USEDEFAULT, HICON, HMENU, IDI_WARNING, WNDCLASSW, WS_EX_LAYERED,
-                WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TRANSPARENT, WS_OVERLAPPED,
+                CW_USEDEFAULT, HICON, HMENU, HWND_MESSAGE, IDI_WARNING, WINDOW_EX_STYLE, WNDCLASSW,
+                WS_MINIMIZEBOX, WS_OVERLAPPEDWINDOW, WS_VISIBLE,
             },
         },
-    }
+    },
 };
 
 use crate::{bindings, delegate_storage::DelegateStorage, fail_message, get_strong_ref};
 
-use super::counter::GLOBAL_COUNTER;
+use super::{counter::GLOBAL_COUNTER, menu::NotifyIconMenu};
 
 const WM_USER_TRAYICON: u32 = 0x1772;
 // const WM_USER_UPDATE_TRAYMENU: u32 = 6003;
@@ -40,6 +43,7 @@ thread_local! {
 pub(super) struct NotifyIconInternal {
     h_wnd: HWND,
     internal_id: u32,
+    h_menu: Option<NotifyIconMenu>,
     pub(super) report_selected: DelegateStorage<bindings::NotifyIcon, PointInt32>,
     pub(super) on_state_changed_token: EventRegistrationToken,
     pub(super) parent: Weak<bindings::NotifyIcon>,
@@ -64,32 +68,27 @@ impl NotifyIconInternal {
 
         let h_wnd = unsafe {
             CreateWindowExW(
-                WS_EX_NOACTIVATE | WS_EX_TRANSPARENT | WS_EX_LAYERED |
-                    // WS_EX_TOOLWINDOW prevents this window from ever showing up in the taskbar, which
-                    // we want to avoid. If you remove this style, this window won't show up in the
-                    // taskbar *initially*, but it can show up at some later point. This can sometimes
-                    // happen on its own after several hours have passed, although this has proven
-                    // difficult to reproduce. Alternatively, it can be manually triggered by killing
-                    // `explorer.exe` and then starting the process back up.
-                    // It is unclear why the bug is triggered by waiting for several hours.
-                    WS_EX_TOOLWINDOW,
+                WINDOW_EX_STYLE::default(),
                 class_name,
                 PCWSTR::null(),
-                WS_OVERLAPPED,
+                WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_MINIMIZEBOX,
                 CW_USEDEFAULT,
                 0,
                 CW_USEDEFAULT,
                 0,
-                HWND::default(),
+                HWND_MESSAGE,
                 HMENU::default(),
                 h_instance,
                 None,
             )
         }?;
 
+        let h_menu = NotifyIconMenu::new(false)?;
+
         let res = Self {
             h_wnd,
             internal_id,
+            h_menu: Some(h_menu),
             report_selected: DelegateStorage::new(),
             on_state_changed_token: EventRegistrationToken::default(),
             parent,
@@ -207,10 +206,18 @@ extern "system" fn notify_proc(h_wnd: HWND, msg: u32, w_param: WPARAM, l_param: 
         if options == NIN_KEYSELECT || options == NIN_SELECT {
             INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
                 let internal = internal.as_mut().expect("global initialized");
-                internal.report_selected.invoke_all(
-                    &get_strong_ref(&internal.parent).expect("parent should stay valid"),
-                    Some(&decode_coord(w_param.0 as u32)),
-                ).expect("invoke_all should succeed");
+                internal
+                    .report_selected
+                    .invoke_all(
+                        &get_strong_ref(&internal.parent).expect("parent should stay valid"),
+                        Some(&decode_coord(w_param.0 as u32)),
+                    )
+                    .expect("invoke_all should succeed");
+
+                if let Some(ref menu) = internal.h_menu {
+                    menu.show_menu(internal.h_wnd)
+                        .expect("show_menu should succeed");
+                }
             });
 
             return LRESULT(0);

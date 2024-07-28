@@ -144,10 +144,6 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
       <DeploymentContent>true</DeploymentContent>
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="NotifyIconPopup.xaml.h">
-      <DependentUpon>NotifyIconPopup.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </ClInclude>
     <ClInclude Include="PopupWindow.xaml.h">
       <DependentUpon>PopupWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -183,9 +179,6 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml" />
-    <Page Include="NotifyIconPopup.xaml">
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="PopupWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
@@ -205,16 +198,6 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="NotifyIcon.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="NotifyIcon.ixx">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="NotifyIconPopup.xaml.cpp">
-      <DependentUpon>NotifyIconPopup.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </ClCompile>
     <ClCompile Include="PopupWindow.xaml.cpp">
       <DependentUpon>PopupWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -252,10 +235,6 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\debug\libsi
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="NotifyIconPopup.idl">
-      <DependentUpon>NotifyIconPopup.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Midl>
     <Midl Include="PopupWindow.idl">
       <DependentUpon>PopupWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

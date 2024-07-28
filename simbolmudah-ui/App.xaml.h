@@ -24,7 +24,7 @@ namespace winrt::simbolmudah_ui::implementation
 
         Microsoft::UI::Xaml::Window window{ nullptr };
         simbolmudah_ui::PopupWindow popup{ nullptr };
-        simbolmudah_ui::NotifyIconPopup notifyIcon{ nullptr };
-        std::optional<LibSimbolMudah::KeyboardHook> keyboardHook;
+        LibSimbolMudah::NotifyIcon notifyIcon{ nullptr };
+        LibSimbolMudah::KeyboardHook keyboardHook{ nullptr };
     };
 }

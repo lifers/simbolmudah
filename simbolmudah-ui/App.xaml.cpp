@@ -45,7 +45,7 @@ namespace winrt::simbolmudah_ui::implementation
         this->window.ExtendsContentIntoTitleBar(true);
         this->window.Activate();
 
-        this->notifyIcon = simbolmudah_ui::NotifyIconPopup();
+        this->notifyIcon = LibSimbolMudah::NotifyIcon();
     }
 
     /// <summary>
@@ -55,14 +55,14 @@ namespace winrt::simbolmudah_ui::implementation
     {
         if (isOn)
         {
-            this->keyboardHook.emplace(this->keyboardTranslator);
+            this->keyboardHook = LibSimbolMudah::KeyboardHook(this->keyboardTranslator);
             this->popup = simbolmudah_ui::PopupWindow(
-                this->keyboardTranslator, this->keyboardHook.value(), this->sequenceDefinition);
+                this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition);
         }
         else
         {
             this->popup = nullptr;
-            this->keyboardHook.reset();
+            this->keyboardHook = nullptr;
         }
     }
 
@@ -88,9 +88,9 @@ namespace winrt::simbolmudah_ui::implementation
         }
         else if (unbox_value<bool>(localSettings.Lookup(L"keyboardHookEnabled")))
         {
-            this->keyboardHook.emplace(this->keyboardTranslator);
+            this->keyboardHook = LibSimbolMudah::KeyboardHook(this->keyboardTranslator);
             this->popup = simbolmudah_ui::PopupWindow(
-                this->keyboardTranslator, this->keyboardHook.value(), this->sequenceDefinition);
+                this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition);
             this->hookState = true;
         }
     }

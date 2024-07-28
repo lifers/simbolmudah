@@ -1,5 +1,6 @@
 mod counter;
 mod internal;
+mod menu;
 
 use internal::{NotifyIconInternal, INTERNAL_NOTIFYICON};
 use windows::{
