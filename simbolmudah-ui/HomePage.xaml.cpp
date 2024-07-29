@@ -32,7 +32,7 @@ namespace winrt::simbolmudah_ui::implementation
 
 	void HomePage::OnUnloaded(const IInspectable&, const RoutedEventArgs&)
 	{
-		ApplicationData::Current().LocalSettings().Values().Insert(L"keyboardHookEnabled", box_value(this->app->hookState));	
+		ApplicationData::Current().LocalSettings().Values().Insert(L"keyboardHookEnabled", box_value(this->app->hookState));
 	}
 
 	void HomePage::HookEnabled(bool value)

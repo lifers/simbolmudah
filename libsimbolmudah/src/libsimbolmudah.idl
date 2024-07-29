@@ -22,6 +22,7 @@ namespace LibSimbolMudah
 
         void TranslateAndForward(UInt32 vkCode, UInt32 scanCode, Boolean hasCapsLock, Boolean hasShift, Boolean hasAltGr, UInt8 destination);
         void CheckLayoutAndUpdate();
+
         event Windows.Foundation.TypedEventHandler<KeyboardTranslator, String> OnTranslated;
         event Windows.Foundation.TypedEventHandler<KeyboardTranslator, String> OnInvalid;
         event Windows.Foundation.TypedEventHandler<KeyboardTranslator, String> OnKeyTranslated;
@@ -34,5 +35,14 @@ namespace LibSimbolMudah
 
         event Windows.Foundation.TypedEventHandler<KeyboardHook, UInt8> OnStateChanged;
         event Windows.Foundation.TypedEventHandler<KeyboardHook, String> OnKeyEvent;
+    }
+
+    runtimeclass NotifyIcon
+    {
+        NotifyIcon();
+
+        void SubscribeStateChanged(KeyboardHook hook);
+
+        event Windows.Foundation.TypedEventHandler<NotifyIcon, Boolean> OnOpenSettings;
     }
 }

@@ -3,6 +3,7 @@ namespace simbolmudah_ui
     [default_interface]
     runtimeclass MainWindow : Microsoft.UI.Xaml.Window
     {
-        MainWindow();
+        MainWindow(UInt8 page);
+        void OpenSettings();
     }
 }

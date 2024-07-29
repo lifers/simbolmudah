@@ -127,6 +127,32 @@ pub struct IKeyboardTranslatorFactory_Vtbl {
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
+    INotifyIcon,
+    INotifyIcon_Vtbl,
+    0xd6c8ea69_e680_5060_a24d_fe44c002b2c2
+);
+impl windows_core::RuntimeType for INotifyIcon {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+#[repr(C)]
+pub struct INotifyIcon_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    pub SubscribeStateChanged: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+    pub OnOpenSettings: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::HRESULT,
+    pub RemoveOnOpenSettings: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
     ISequenceDefinition,
     ISequenceDefinition_Vtbl,
     0x09f566ee_0de2_51b8_aef7_3d4bb720bff2
@@ -455,6 +481,88 @@ impl windows_core::RuntimeName for KeyboardTranslator {
 }
 unsafe impl Send for KeyboardTranslator {}
 unsafe impl Sync for KeyboardTranslator {}
+#[repr(transparent)]
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct NotifyIcon(windows_core::IUnknown);
+windows_core::imp::interface_hierarchy!(
+    NotifyIcon,
+    windows_core::IUnknown,
+    windows_core::IInspectable
+);
+impl NotifyIcon {
+    pub fn new() -> windows_core::Result<Self> {
+        Self::IActivationFactory(|f| f.ActivateInstance::<Self>())
+    }
+    fn IActivationFactory<
+        R,
+        F: FnOnce(&windows_core::imp::IGenericFactory) -> windows_core::Result<R>,
+    >(
+        callback: F,
+    ) -> windows_core::Result<R> {
+        static SHARED: windows_core::imp::FactoryCache<
+            NotifyIcon,
+            windows_core::imp::IGenericFactory,
+        > = windows_core::imp::FactoryCache::new();
+        SHARED.call(callback)
+    }
+    pub fn SubscribeStateChanged<P0>(&self, hook: P0) -> windows_core::Result<()>
+    where
+        P0: windows_core::Param<KeyboardHook>,
+    {
+        let this = self;
+        unsafe {
+            (windows_core::Interface::vtable(this).SubscribeStateChanged)(
+                windows_core::Interface::as_raw(this),
+                hook.param().abi(),
+            )
+            .ok()
+        }
+    }
+    pub fn OnOpenSettings<P0>(
+        &self,
+        handler: P0,
+    ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>
+    where
+        P0: windows_core::Param<windows::Foundation::TypedEventHandler<NotifyIcon, bool>>,
+    {
+        let this = self;
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).OnOpenSettings)(
+                windows_core::Interface::as_raw(this),
+                handler.param().abi(),
+                &mut result__,
+            )
+            .map(|| result__)
+        }
+    }
+    pub fn RemoveOnOpenSettings(
+        &self,
+        token: windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::Result<()> {
+        let this = self;
+        unsafe {
+            (windows_core::Interface::vtable(this).RemoveOnOpenSettings)(
+                windows_core::Interface::as_raw(this),
+                token,
+            )
+            .ok()
+        }
+    }
+}
+impl windows_core::RuntimeType for NotifyIcon {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_class::<Self, INotifyIcon>();
+}
+unsafe impl windows_core::Interface for NotifyIcon {
+    type Vtable = INotifyIcon_Vtbl;
+    const IID: windows_core::GUID = <INotifyIcon as windows_core::Interface>::IID;
+}
+impl windows_core::RuntimeName for NotifyIcon {
+    const NAME: &'static str = "LibSimbolMudah.NotifyIcon";
+}
+unsafe impl Send for NotifyIcon {}
+unsafe impl Sync for NotifyIcon {}
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct SequenceDefinition(windows_core::IUnknown);
@@ -1002,6 +1110,84 @@ impl IKeyboardTranslatorFactory_Vtbl {
     }
     pub fn matches(iid: &windows_core::GUID) -> bool {
         iid == &<IKeyboardTranslatorFactory as windows_core::Interface>::IID
+    }
+}
+pub trait INotifyIcon_Impl: Sized {
+    fn SubscribeStateChanged(&self, hook: Option<&KeyboardHook>) -> windows_core::Result<()>;
+    fn OnOpenSettings(
+        &self,
+        handler: Option<&windows::Foundation::TypedEventHandler<NotifyIcon, bool>>,
+    ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>;
+    fn RemoveOnOpenSettings(
+        &self,
+        token: &windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::Result<()>;
+}
+impl windows_core::RuntimeName for INotifyIcon {
+    const NAME: &'static str = "LibSimbolMudah.INotifyIcon";
+}
+impl INotifyIcon_Vtbl {
+    pub const fn new<Identity: windows_core::IUnknownImpl, const OFFSET: isize>() -> INotifyIcon_Vtbl
+    where
+        Identity: INotifyIcon_Impl,
+    {
+        unsafe extern "system" fn SubscribeStateChanged<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            hook: *mut core::ffi::c_void,
+        ) -> windows_core::HRESULT
+        where
+            Identity: INotifyIcon_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            INotifyIcon_Impl::SubscribeStateChanged(this, windows_core::from_raw_borrowed(&hook))
+                .into()
+        }
+        unsafe extern "system" fn OnOpenSettings<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            handler: *mut core::ffi::c_void,
+            result__: *mut windows::Foundation::EventRegistrationToken,
+        ) -> windows_core::HRESULT
+        where
+            Identity: INotifyIcon_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            match INotifyIcon_Impl::OnOpenSettings(this, windows_core::from_raw_borrowed(&handler))
+            {
+                Ok(ok__) => {
+                    result__.write(core::mem::transmute_copy(&ok__));
+                    windows_core::HRESULT(0)
+                }
+                Err(err) => err.into(),
+            }
+        }
+        unsafe extern "system" fn RemoveOnOpenSettings<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            token: windows::Foundation::EventRegistrationToken,
+        ) -> windows_core::HRESULT
+        where
+            Identity: INotifyIcon_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            INotifyIcon_Impl::RemoveOnOpenSettings(this, core::mem::transmute(&token)).into()
+        }
+        Self {
+            base__: windows_core::IInspectable_Vtbl::new::<Identity, INotifyIcon, OFFSET>(),
+            SubscribeStateChanged: SubscribeStateChanged::<Identity, OFFSET>,
+            OnOpenSettings: OnOpenSettings::<Identity, OFFSET>,
+            RemoveOnOpenSettings: RemoveOnOpenSettings::<Identity, OFFSET>,
+        }
+    }
+    pub fn matches(iid: &windows_core::GUID) -> bool {
+        iid == &<INotifyIcon as windows_core::Interface>::IID
     }
 }
 pub trait ISequenceDefinition_Impl: Sized {

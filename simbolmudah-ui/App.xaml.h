@@ -21,9 +21,12 @@ namespace winrt::simbolmudah_ui::implementation
     private:
         fire_and_forget BuildDefinition() const;
         void InitializeSettings();
+        fire_and_forget OnOpenSettings(LibSimbolMudah::NotifyIcon const&, bool);
 
-        Microsoft::UI::Xaml::Window window{ nullptr };
+        simbolmudah_ui::MainWindow window{ nullptr };
         simbolmudah_ui::PopupWindow popup{ nullptr };
-        std::optional<LibSimbolMudah::KeyboardHook> keyboardHook;
+        LibSimbolMudah::NotifyIcon notifyIcon{ nullptr };
+        event_token onSettingsOpenedToken;
+        LibSimbolMudah::KeyboardHook keyboardHook{ nullptr };
     };
 }

@@ -6,6 +6,7 @@
 
 namespace winrt::simbolmudah_ui::implementation
 {
+    using namespace LibSimbolMudah;
     using namespace Microsoft::UI::Xaml;
     using namespace Controls;
     using namespace Windows;
@@ -41,9 +42,14 @@ namespace winrt::simbolmudah_ui::implementation
         this->BuildDefinition();
         this->InitializeSettings();
         
-        this->window = simbolmudah_ui::MainWindow();
+        this->notifyIcon = LibSimbolMudah::NotifyIcon();
+
+        this->window = simbolmudah_ui::MainWindow(0ui8);
+        this->window.Closed([this](auto&&, auto&&) { this->window = nullptr; });
         this->window.ExtendsContentIntoTitleBar(true);
         this->window.Activate();
+
+        this->onSettingsOpenedToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
     }
 
     /// <summary>
@@ -53,15 +59,15 @@ namespace winrt::simbolmudah_ui::implementation
     {
         if (isOn)
         {
-            this->keyboardHook.emplace(this->keyboardTranslator);
+            this->keyboardHook = LibSimbolMudah::KeyboardHook(this->keyboardTranslator);
             this->popup = simbolmudah_ui::PopupWindow(
-                this->keyboardTranslator, this->keyboardHook.value(), this->sequenceDefinition);
+                this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition);
         }
-		else
-		{
+        else
+        {
             this->popup = nullptr;
-			this->keyboardHook.reset();
-		}
+            this->keyboardHook = nullptr;
+        }
     }
 
     /// <summary>
@@ -69,27 +75,47 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     /// <returns></returns>
     fire_and_forget App::BuildDefinition() const
-	{
+    {
         const auto keysymdef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.txt")) };
         const auto composedef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre")) };
-		this->sequenceDefinition.Build((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
-	}
+        this->sequenceDefinition.Build((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
+    }
 
     /// <summary>
-	/// Initializes the application settings.
-	/// </summary>
-	void App::InitializeSettings()
-	{
+    /// Initializes the application settings.
+    /// </summary>
+    void App::InitializeSettings()
+    {
         if (const auto& localSettings{ ApplicationData::Current().LocalSettings().Values() }; !localSettings.HasKey(L"keyboardHookEnabled"))
-		{
-			localSettings.Insert(L"keyboardHookEnabled", box_value(false));
-		}
+        {
+            localSettings.Insert(L"keyboardHookEnabled", box_value(false));
+        }
         else if (unbox_value<bool>(localSettings.Lookup(L"keyboardHookEnabled")))
-		{
-			this->keyboardHook.emplace(this->keyboardTranslator);
+        {
+            this->keyboardHook = LibSimbolMudah::KeyboardHook(this->keyboardTranslator);
             this->popup = simbolmudah_ui::PopupWindow(
-                this->keyboardTranslator, this->keyboardHook.value(), this->sequenceDefinition);
+                this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition);
             this->hookState = true;
-		}
-	}
+        }
+    }
+
+    /// <summary>
+    /// Invoked when the "Open setting" button in the notification menu is clicked.
+    /// </summary>
+    fire_and_forget App::OnOpenSettings(NotifyIcon const&, bool)
+    {
+        co_await this->main_thread;
+        if (!this->window)
+        {
+            this->window = simbolmudah_ui::MainWindow(1);
+            this->window.Closed([this](auto&&, auto&&) { this->window = nullptr; });
+            this->window.ExtendsContentIntoTitleBar(true);
+            this->window.Activate();
+        }
+        else
+        {
+            this->window.OpenSettings();
+            this->window.Activate();
+        }
+    }
 }
