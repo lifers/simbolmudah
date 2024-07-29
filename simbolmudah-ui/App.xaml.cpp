@@ -1,5 +1,6 @@
 #include "pch.hpp"
 #include "App.xaml.h"
+#include <wil/resource.h>
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -118,4 +119,42 @@ namespace winrt::simbolmudah_ui::implementation
             this->window.Activate();
         }
     }
+}
+
+namespace
+{
+    using namespace wil;
+    using namespace winrt::Microsoft::Windows::AppLifecycle;
+
+    winrt::fire_and_forget Redirect(AppInstance keyInstance, AppActivationArguments args, unique_event& redirectHandle)
+    {
+        const auto ensure_signaled{ SetEvent_scope_exit(redirectHandle.get()) };
+        co_await keyInstance.RedirectActivationToAsync(args);
+    }
+}
+
+int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
+{
+    using namespace winrt;
+    using namespace winrt::Microsoft::UI::Xaml;
+    using namespace winrt::Microsoft::Windows::AppLifecycle;
+    using namespace Windows::Foundation;
+
+    init_apartment(apartment_type::single_threaded);
+
+    if (const auto keyInstance{ AppInstance::FindOrRegisterForKey(L"simbolmudah") };
+        keyInstance.IsCurrent())
+    {
+        Application::Start([](auto&&) { make<simbolmudah_ui::implementation::App>(); });
+    }
+    else
+    {
+        wil::unique_event redirectHandle;
+        redirectHandle.create();
+        Redirect(keyInstance, AppInstance::GetCurrent().GetActivatedEventArgs(), redirectHandle);
+        DWORD handleIndex;
+        check_hresult(CoWaitForMultipleObjects(CWMO_DEFAULT, INFINITE, 1, redirectHandle.addressof(), &handleIndex));
+    }
+
+    return 0;
 }
