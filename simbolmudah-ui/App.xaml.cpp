@@ -6,6 +6,7 @@
 
 namespace winrt::simbolmudah_ui::implementation
 {
+    using namespace LibSimbolMudah;
     using namespace Microsoft::UI::Xaml;
     using namespace Controls;
     using namespace Windows;
@@ -41,11 +42,14 @@ namespace winrt::simbolmudah_ui::implementation
         this->BuildDefinition();
         this->InitializeSettings();
         
-        this->window = simbolmudah_ui::MainWindow();
+        this->notifyIcon = LibSimbolMudah::NotifyIcon();
+
+        this->window = simbolmudah_ui::MainWindow(0ui8);
+        this->window.Closed([this](auto&&, auto&&) { this->window = nullptr; });
         this->window.ExtendsContentIntoTitleBar(true);
         this->window.Activate();
 
-        this->notifyIcon = LibSimbolMudah::NotifyIcon();
+        this->onSettingsOpenedToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
     }
 
     /// <summary>
@@ -92,6 +96,26 @@ namespace winrt::simbolmudah_ui::implementation
             this->popup = simbolmudah_ui::PopupWindow(
                 this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition);
             this->hookState = true;
+        }
+    }
+
+    /// <summary>
+    /// Invoked when the "Open setting" button in the notification menu is clicked.
+    /// </summary>
+    fire_and_forget App::OnOpenSettings(NotifyIcon const&, bool)
+    {
+        co_await this->main_thread;
+        if (!this->window)
+        {
+            this->window = simbolmudah_ui::MainWindow(1);
+            this->window.Closed([this](auto&&, auto&&) { this->window = nullptr; });
+            this->window.ExtendsContentIntoTitleBar(true);
+            this->window.Activate();
+        }
+        else
+        {
+            this->window.OpenSettings();
+            this->window.Activate();
         }
     }
 }

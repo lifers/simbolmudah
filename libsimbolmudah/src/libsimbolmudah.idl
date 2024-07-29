@@ -43,6 +43,6 @@ namespace LibSimbolMudah
 
         void SubscribeStateChanged(KeyboardHook hook);
 
-        event Windows.Foundation.TypedEventHandler<NotifyIcon, Windows.Graphics.PointInt32> OnSelected;
+        event Windows.Foundation.TypedEventHandler<NotifyIcon, Boolean> OnOpenSettings;
     }
 }

@@ -29,7 +29,6 @@
         </Grid>
         
         <NavigationView x:Name="rootNavView"
-                        Loaded="NavigationViewControl_Loaded"
                         ItemInvoked="NavigationViewControl_ItemInvoked"
                         BackRequested="NavigationViewControl_BackRequested"
                         SelectedItem="HomePage"

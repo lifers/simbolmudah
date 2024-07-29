@@ -13,8 +13,8 @@ use windows::{
 
 use crate::fail_message;
 
-const WM_USER_SHOW_SETTINGS: usize = 0x1773;
-const WM_USER_LISTEN: usize = 0x1774;
+pub(super) const WM_USER_SHOW_SETTINGS: usize = 0x1773;
+pub(super) const WM_USER_LISTEN: usize = 0x1774;
 
 pub(super) struct NotifyIconMenu {
     h_menu: HMENU,

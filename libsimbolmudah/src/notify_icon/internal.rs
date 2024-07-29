@@ -5,7 +5,6 @@ use std::cell::RefCell;
 use windows::{
     core::{h, w, Result, Weak, HSTRING, PCWSTR},
     Foundation::EventRegistrationToken,
-    Graphics::PointInt32,
     Win32::{
         Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM},
         System::SystemServices::IMAGE_DOS_HEADER,
@@ -16,9 +15,10 @@ use windows::{
                 NOTIFYICON_VERSION_4,
             },
             WindowsAndMessaging::{
-                CreateWindowExW, DefWindowProcW, DestroyWindow, LoadIconW, RegisterClassW,
-                CW_USEDEFAULT, HICON, HMENU, HWND_MESSAGE, IDI_WARNING, WINDOW_EX_STYLE, WNDCLASSW,
-                WS_MINIMIZEBOX, WS_OVERLAPPEDWINDOW, WS_VISIBLE,
+                CreateWindowExW, DefWindowProcW, DestroyWindow, LoadIconW, PostQuitMessage,
+                RegisterClassW, CW_USEDEFAULT, HICON, HMENU, HWND_MESSAGE, IDI_WARNING,
+                WINDOW_EX_STYLE, WM_COMMAND, WM_DESTROY, WNDCLASSW, WS_MINIMIZEBOX,
+                WS_OVERLAPPEDWINDOW, WS_VISIBLE,
             },
         },
     },
@@ -26,7 +26,10 @@ use windows::{
 
 use crate::{bindings, delegate_storage::DelegateStorage, fail_message, get_strong_ref};
 
-use super::{counter::GLOBAL_COUNTER, menu::NotifyIconMenu};
+use super::{
+    counter::GLOBAL_COUNTER,
+    menu::{NotifyIconMenu, WM_USER_SHOW_SETTINGS},
+};
 
 const WM_USER_TRAYICON: u32 = 0x1772;
 // const WM_USER_UPDATE_TRAYMENU: u32 = 6003;
@@ -44,7 +47,7 @@ pub(super) struct NotifyIconInternal {
     h_wnd: HWND,
     internal_id: u32,
     h_menu: Option<NotifyIconMenu>,
-    pub(super) report_selected: DelegateStorage<bindings::NotifyIcon, PointInt32>,
+    pub(super) report_open_settings: DelegateStorage<bindings::NotifyIcon, bool>,
     pub(super) on_state_changed_token: EventRegistrationToken,
     pub(super) parent: Weak<bindings::NotifyIcon>,
 }
@@ -89,7 +92,7 @@ impl NotifyIconInternal {
             h_wnd,
             internal_id,
             h_menu: Some(h_menu),
-            report_selected: DelegateStorage::new(),
+            report_open_settings: DelegateStorage::new(),
             on_state_changed_token: EventRegistrationToken::default(),
             parent,
         };
@@ -181,47 +184,42 @@ fn get_instance_handle() -> HINSTANCE {
     HINSTANCE(&unsafe { __ImageBase } as *const _ as *mut _)
 }
 
-const fn loword(l: u32) -> u16 {
-    l as u16
-}
-
-const fn hiword(l: u32) -> u16 {
-    (l >> 16) as u16
-}
-
-const fn decode_coord(param: u32) -> PointInt32 {
-    PointInt32 {
-        X: loword(param) as i32,
-        Y: hiword(param) as i32,
-    }
-}
-
 extern "system" fn notify_proc(h_wnd: HWND, msg: u32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
-    if msg == WM_USER_TRAYICON {
-        // temporary workaround for https://github.com/microsoft/win32metadata/issues/1765
-        const NIN_SELECT: u32 = 1024;
-        const NIN_KEYSELECT: u32 = 1025;
+    match msg {
+        WM_USER_TRAYICON => {
+            // temporary workaround for https://github.com/microsoft/win32metadata/issues/1765
+            const NIN_SELECT: u32 = 1024;
+            const NIN_KEYSELECT: u32 = 1025;
 
-        let options = loword(l_param.0 as u32) as u32;
-        if options == NIN_KEYSELECT || options == NIN_SELECT {
-            INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
-                let internal = internal.as_mut().expect("global initialized");
-                internal
-                    .report_selected
-                    .invoke_all(
-                        &get_strong_ref(&internal.parent).expect("parent should stay valid"),
-                        Some(&decode_coord(w_param.0 as u32)),
-                    )
-                    .expect("invoke_all should succeed");
+            let options = (l_param.0 as u16).into();
+            if matches!(options, NIN_SELECT | NIN_KEYSELECT) {
+                INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
+                    let internal = internal.as_mut().expect("global initialized");
 
-                if let Some(ref menu) = internal.h_menu {
-                    menu.show_menu(internal.h_wnd)
-                        .expect("show_menu should succeed");
-                }
-            });
-
-            return LRESULT(0);
+                    if let Some(ref menu) = internal.h_menu {
+                        menu.show_menu(internal.h_wnd)
+                            .expect("show_menu should succeed");
+                    }
+                });
+            }
         }
+        WM_DESTROY => unsafe { PostQuitMessage(0) },
+        WM_COMMAND => match (w_param.0 as u16).into() {
+            WM_USER_SHOW_SETTINGS => {
+                INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
+                    let internal = internal.as_mut().expect("global initialized");
+                    internal
+                        .report_open_settings
+                        .invoke_all(
+                            &get_strong_ref(&internal.parent).expect("parent should stay valid"),
+                            None,
+                        )
+                        .expect("invoke_all should succeed");
+                });
+            }
+            _ => {}
+        },
+        _ => {}
     }
 
     unsafe { DefWindowProcW(h_wnd, msg, w_param, l_param) }

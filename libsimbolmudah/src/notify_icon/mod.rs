@@ -6,15 +6,13 @@ use internal::{NotifyIconInternal, INTERNAL_NOTIFYICON};
 use windows::{
     core::{implement, AgileReference, Error, IInspectable, Interface, Result},
     Foundation::{EventRegistrationToken, TypedEventHandler},
-    Graphics::PointInt32,
     Win32::{
         Foundation::E_POINTER,
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
     },
 };
 
-use crate::delegate_storage::get_token;
-use crate::{bindings, thread_handler::ThreadHandler};
+use crate::{bindings, delegate_storage::get_token, thread_handler::ThreadHandler};
 
 #[implement(bindings::NotifyIcon)]
 struct NotifyIcon {
@@ -55,9 +53,9 @@ impl bindings::INotifyIcon_Impl for NotifyIcon_Impl {
         }
     }
 
-    fn OnSelected(
+    fn OnOpenSettings(
         &self,
-        handler: Option<&TypedEventHandler<bindings::NotifyIcon, PointInt32>>,
+        handler: Option<&TypedEventHandler<bindings::NotifyIcon, bool>>,
     ) -> Result<EventRegistrationToken> {
         if let Some(handler) = handler {
             let handler_ref = AgileReference::new(handler)?;
@@ -67,7 +65,7 @@ impl bindings::INotifyIcon_Impl for NotifyIcon_Impl {
                     internal
                         .as_mut()
                         .expect("internal should be initialised")
-                        .report_selected
+                        .report_open_settings
                         .insert(token, handler_ref.clone());
 
                     Ok(())
@@ -80,14 +78,14 @@ impl bindings::INotifyIcon_Impl for NotifyIcon_Impl {
         }
     }
 
-    fn RemoveOnSelected(&self, token: &EventRegistrationToken) -> Result<()> {
+    fn RemoveOnOpenSettings(&self, token: &EventRegistrationToken) -> Result<()> {
         let value = token.Value;
         self.thread_controller.try_enqueue(move || {
             INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
                 internal
                     .as_mut()
                     .expect("internal should be initialised")
-                    .report_selected
+                    .report_open_settings
                     .remove(value);
 
                 Ok(())

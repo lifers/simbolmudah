@@ -129,7 +129,7 @@ pub struct IKeyboardTranslatorFactory_Vtbl {
 windows_core::imp::define_interface!(
     INotifyIcon,
     INotifyIcon_Vtbl,
-    0xa03d1fb1_ad9b_5217_8775_51bb02df4a37
+    0xd6c8ea69_e680_5060_a24d_fe44c002b2c2
 );
 impl windows_core::RuntimeType for INotifyIcon {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -142,12 +142,12 @@ pub struct INotifyIcon_Vtbl {
         *mut core::ffi::c_void,
         *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
-    pub OnSelected: unsafe extern "system" fn(
+    pub OnOpenSettings: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         *mut core::ffi::c_void,
         *mut windows::Foundation::EventRegistrationToken,
     ) -> windows_core::HRESULT,
-    pub RemoveOnSelected: unsafe extern "system" fn(
+    pub RemoveOnOpenSettings: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         windows::Foundation::EventRegistrationToken,
     ) -> windows_core::HRESULT,
@@ -518,19 +518,17 @@ impl NotifyIcon {
             .ok()
         }
     }
-    pub fn OnSelected<P0>(
+    pub fn OnOpenSettings<P0>(
         &self,
         handler: P0,
     ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>
     where
-        P0: windows_core::Param<
-            windows::Foundation::TypedEventHandler<NotifyIcon, windows::Graphics::PointInt32>,
-        >,
+        P0: windows_core::Param<windows::Foundation::TypedEventHandler<NotifyIcon, bool>>,
     {
         let this = self;
         unsafe {
             let mut result__ = core::mem::zeroed();
-            (windows_core::Interface::vtable(this).OnSelected)(
+            (windows_core::Interface::vtable(this).OnOpenSettings)(
                 windows_core::Interface::as_raw(this),
                 handler.param().abi(),
                 &mut result__,
@@ -538,13 +536,13 @@ impl NotifyIcon {
             .map(|| result__)
         }
     }
-    pub fn RemoveOnSelected(
+    pub fn RemoveOnOpenSettings(
         &self,
         token: windows::Foundation::EventRegistrationToken,
     ) -> windows_core::Result<()> {
         let this = self;
         unsafe {
-            (windows_core::Interface::vtable(this).RemoveOnSelected)(
+            (windows_core::Interface::vtable(this).RemoveOnOpenSettings)(
                 windows_core::Interface::as_raw(this),
                 token,
             )
@@ -1116,13 +1114,11 @@ impl IKeyboardTranslatorFactory_Vtbl {
 }
 pub trait INotifyIcon_Impl: Sized {
     fn SubscribeStateChanged(&self, hook: Option<&KeyboardHook>) -> windows_core::Result<()>;
-    fn OnSelected(
+    fn OnOpenSettings(
         &self,
-        handler: Option<
-            &windows::Foundation::TypedEventHandler<NotifyIcon, windows::Graphics::PointInt32>,
-        >,
+        handler: Option<&windows::Foundation::TypedEventHandler<NotifyIcon, bool>>,
     ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>;
-    fn RemoveOnSelected(
+    fn RemoveOnOpenSettings(
         &self,
         token: &windows::Foundation::EventRegistrationToken,
     ) -> windows_core::Result<()>;
@@ -1149,7 +1145,7 @@ impl INotifyIcon_Vtbl {
             INotifyIcon_Impl::SubscribeStateChanged(this, windows_core::from_raw_borrowed(&hook))
                 .into()
         }
-        unsafe extern "system" fn OnSelected<
+        unsafe extern "system" fn OnOpenSettings<
             Identity: windows_core::IUnknownImpl,
             const OFFSET: isize,
         >(
@@ -1161,7 +1157,8 @@ impl INotifyIcon_Vtbl {
             Identity: INotifyIcon_Impl,
         {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            match INotifyIcon_Impl::OnSelected(this, windows_core::from_raw_borrowed(&handler)) {
+            match INotifyIcon_Impl::OnOpenSettings(this, windows_core::from_raw_borrowed(&handler))
+            {
                 Ok(ok__) => {
                     result__.write(core::mem::transmute_copy(&ok__));
                     windows_core::HRESULT(0)
@@ -1169,7 +1166,7 @@ impl INotifyIcon_Vtbl {
                 Err(err) => err.into(),
             }
         }
-        unsafe extern "system" fn RemoveOnSelected<
+        unsafe extern "system" fn RemoveOnOpenSettings<
             Identity: windows_core::IUnknownImpl,
             const OFFSET: isize,
         >(
@@ -1180,13 +1177,13 @@ impl INotifyIcon_Vtbl {
             Identity: INotifyIcon_Impl,
         {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            INotifyIcon_Impl::RemoveOnSelected(this, core::mem::transmute(&token)).into()
+            INotifyIcon_Impl::RemoveOnOpenSettings(this, core::mem::transmute(&token)).into()
         }
         Self {
             base__: windows_core::IInspectable_Vtbl::new::<Identity, INotifyIcon, OFFSET>(),
             SubscribeStateChanged: SubscribeStateChanged::<Identity, OFFSET>,
-            OnSelected: OnSelected::<Identity, OFFSET>,
-            RemoveOnSelected: RemoveOnSelected::<Identity, OFFSET>,
+            OnOpenSettings: OnOpenSettings::<Identity, OFFSET>,
+            RemoveOnOpenSettings: RemoveOnOpenSettings::<Identity, OFFSET>,
         }
     }
     pub fn matches(iid: &windows_core::GUID) -> bool {
