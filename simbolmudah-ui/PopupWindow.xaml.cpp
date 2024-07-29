@@ -3,6 +3,7 @@
 #if __has_include("PopupWindow.g.cpp")
 #include "PopupWindow.g.cpp"
 #endif
+#include <Microsoft.UI.Xaml.Window.h>
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -188,15 +189,21 @@ namespace winrt::simbolmudah_ui::implementation
 
     fire_and_forget PopupWindow::DrawWindow() const
     {
-        const auto& appWindow{ this->AppWindow() };
-        const auto windowId{ appWindow.Id() };
-        
         co_await resume_background();
         const auto pos{ GetCaretPosition() };
-        const auto dpi{ static_cast<int32_t>(::GetDpiForWindow(GetWindowFromWindowId(windowId))) };
+        const auto dpi{ this->GetDpi() };
 
         co_await this->main_thread;
+        const auto& appWindow{ this->AppWindow() };
         appWindow.MoveAndResize({ .X = pos.x, .Y = pos.y, .Width = 400 * dpi / 96, .Height = 100 * dpi / 96 });
         appWindow.Show(false);
+    }
+
+    int32_t PopupWindow::GetDpi() const
+    {
+        const auto windowNative{ this->m_inner.as<::IWindowNative>() };
+        HWND hwnd{};
+        check_hresult(windowNative->get_WindowHandle(&hwnd));
+        return static_cast<int32_t>(::GetDpiForWindow(hwnd));
     }
 }
