@@ -1,7 +1,6 @@
 #pragma once
 
 #include "App.xaml.g.h"
-#include <optional>
 
 namespace winrt::simbolmudah_ui::implementation
 {

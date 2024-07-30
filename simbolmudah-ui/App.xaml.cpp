@@ -23,6 +23,9 @@ namespace winrt::simbolmudah_ui::implementation
         // Xaml objects should not call InitializeComponent during construction.
         // See https://github.com/microsoft/cppwinrt/tree/master/nuget#initializecomponent
 
+        // Do not close the application when the last window is closed.
+        Application::Current().DispatcherShutdownMode(DispatcherShutdownMode::OnExplicitShutdown);
+
 #if defined _DEBUG && !defined DISABLE_XAML_GENERATED_BREAK_ON_UNHANDLED_EXCEPTION
         UnhandledException([](IInspectable const&, UnhandledExceptionEventArgs const& e)
         {
@@ -133,7 +136,7 @@ namespace
     }
 }
 
-int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int)
+int WINAPI wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int)
 {
     using namespace winrt;
     using namespace winrt::Microsoft::UI::Xaml;
