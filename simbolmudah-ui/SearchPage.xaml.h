@@ -10,8 +10,10 @@ namespace winrt::simbolmudah_ui::implementation
             Microsoft::UI::Xaml::Controls::AutoSuggestBox const& sender,
             Microsoft::UI::Xaml::Controls::AutoSuggestBoxTextChangedEventArgs const& e);
 
+        void OnNavigatedTo(Microsoft::UI::Xaml::Navigation::NavigationEventArgs const& e);
+
     private:
-        const simbolmudah_ui::SearchPageViewModel mainViewModel;
+        simbolmudah_ui::SearchPageViewModel mainViewModel{ nullptr };
         Windows::Foundation::IAsyncAction currentSearch{ nullptr };
     };
 }

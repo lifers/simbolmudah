@@ -2,11 +2,11 @@ import "SearchPage/SequenceDetail.idl";
 
 namespace simbolmudah_ui
 {
-	[default_interface]
-	runtimeclass SearchPageViewModel
-	{
-		SearchPageViewModel();
-		Windows.Foundation.IAsyncAction Search(String keyword);
-		IObservableVector<SequenceDetail> SearchResults{ get; };
-	}
+    [default_interface]
+    runtimeclass SearchPageViewModel
+    {
+        SearchPageViewModel(LibSimbolMudah.SequenceDefinition seqdef);
+        Windows.Foundation.IAsyncAction Search(String keyword);
+        IObservableVector<SequenceDetail> SearchResults{ get; };
+    }
 }

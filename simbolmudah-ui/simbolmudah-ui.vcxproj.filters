@@ -5,7 +5,6 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="MainWindow.xaml" />
-    <Page Include="HomePage.xaml" />
     <Page Include="SettingsPage.xaml" />
     <Page Include="SearchPage.xaml">
       <Filter>SearchPage</Filter>
@@ -31,6 +30,9 @@
     <Midl Include="SearchPage.idl">
       <Filter>SearchPage</Filter>
     </Midl>
+    <Midl Include="AppManager.idl">
+      <Filter>AppManager</Filter>
+    </Midl>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -40,6 +42,14 @@
     </ClCompile>
     <ClCompile Include="SearchPage\SequenceDetail.cpp">
       <Filter>SearchPage</Filter>
+    </ClCompile>
+    <ClCompile Include="AppManager.cpp">
+      <Filter>AppManager</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="App.xaml.ixx" />
+    <ClCompile Include="precompiled.ixx">
+      <Filter>Modules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -52,6 +62,9 @@
     </ClInclude>
     <ClInclude Include="SearchPage\SequenceDetail.h">
       <Filter>SearchPage</Filter>
+    </ClInclude>
+    <ClInclude Include="AppManager.h">
+      <Filter>AppManager</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -69,6 +82,12 @@
     </Filter>
     <Filter Include="Popup">
       <UniqueIdentifier>{019cba15-cb44-40c8-b7d6-aebbd0d04cf2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AppManager">
+      <UniqueIdentifier>{dc0015a4-57d2-4212-b22c-ef83b8879fd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules">
+      <UniqueIdentifier>{edf7f6f5-f908-44dc-8de8-37881d6668e6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

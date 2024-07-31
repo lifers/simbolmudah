@@ -9,30 +9,38 @@
 
 namespace winrt::simbolmudah_ui::implementation
 {
-	using namespace Windows::Foundation;
-	using namespace Collections;
-	using namespace Microsoft::UI::Xaml::Controls;
+    using namespace Windows::Foundation;
+    using namespace Collections;
+    using namespace Microsoft::UI::Xaml;
+    using namespace Controls;
+    using namespace Navigation;
 
-	simbolmudah_ui::SearchPageViewModel SearchPage::MainViewModel() const
-	{
-		return this->mainViewModel;
-	}
+    simbolmudah_ui::SearchPageViewModel SearchPage::MainViewModel() const
+    {
+        return this->mainViewModel;
+    }
 
-	void SearchPage::SubmitSearch(AutoSuggestBox const& sender, AutoSuggestBoxTextChangedEventArgs const&)
-	{
-		// Cancel the previous search if it is still running
-		if (this->currentSearch != nullptr)
-		{
-			this->currentSearch.Cancel();
-		}
+    void SearchPage::SubmitSearch(AutoSuggestBox const& sender, AutoSuggestBoxTextChangedEventArgs const&)
+    {
+        // Cancel the previous search if it is still running
+        if (this->currentSearch != nullptr)
+        {
+            this->currentSearch.Cancel();
+        }
 
-		this->currentSearch = this->mainViewModel.Search(sender.Text());
-		this->currentSearch.Completed([weak_this{ this->get_weak() }](IAsyncAction const&, AsyncStatus const&)
-		{
-			if (auto strong_this{ weak_this.get() })
-			{
-				strong_this->currentSearch = nullptr;
-			}
-		});
-	}
+        this->currentSearch = this->mainViewModel.Search(sender.Text());
+        this->currentSearch.Completed([weak_this{ this->get_weak() }](IAsyncAction const&, AsyncStatus const&)
+        {
+            if (auto strong_this{ weak_this.get() })
+            {
+                strong_this->currentSearch = nullptr;
+            }
+        });
+    }
+
+    void SearchPage::OnNavigatedTo(NavigationEventArgs const& e)
+    {
+        const auto& seqdef{ e.Parameter().as<LibSimbolMudah::SequenceDefinition>() };
+        this->mainViewModel = simbolmudah_ui::SearchPageViewModel{ seqdef };
+    }
 }

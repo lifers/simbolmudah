@@ -9,35 +9,47 @@
 
 namespace winrt::simbolmudah_ui::implementation
 {
+    using namespace LibSimbolMudah;
     using namespace Microsoft::UI::Xaml;
     using namespace Navigation;
     using namespace Controls;
     using namespace Media::Animation;
     using namespace Windows::UI::Xaml::Interop;
 
-    MainWindow::MainWindow(uint8_t page) : main_thread{ apartment_context() }
+    MainWindow::MainWindow(
+        SequenceDefinition const& seqdef,
+        simbolmudah_ui::AppManager const& appManager,
+        NotifyIcon const& notifyIcon,
+        uint8_t page) :
+        main_thread{ apartment_context() },
+        sequenceDefinition{ seqdef },
+        appManager{ appManager }
     {
-        if (page == 1)
+        if (this->appManager.NotifyIconEnabled() && notifyIcon)
         {
-            this->Activated([weak_this{ this->get_weak() }](auto&&, auto&&) {
-                if (const auto& self{ weak_this.get() }; self)
-                {
-                    self->rootNavView().Loaded([self](auto&&, auto&&) {
-                        self->NavigateInternal(L"simbolmudah_ui.SettingsPage", EntranceNavigationTransitionInfo());
-                    });
-                }
-            });
+            this->openSettingsRevoker = notifyIcon.OnOpenSettings(
+                auto_revoke, { this->get_weak(), &MainWindow::OnOpenSettings });
+        }
+
+        this->ExtendsContentIntoTitleBar(true);
+        this->Closed({ this, &MainWindow::OnClosed });
+    }
+
+    /// <summary>
+    /// Subscribe to the OpenSettings event if the NotifyIcon is enabled,
+    /// otherwise unsubscribe from the event.
+    /// </summary>
+    /// <param name="notifyIcon">reference to the NotifyIcon (could be null)</param>
+    void MainWindow::UpdateOpenSettings(NotifyIcon const& notifyIcon)
+    {
+        if (this->appManager.NotifyIconEnabled() && notifyIcon)
+        {
+            this->openSettingsRevoker = notifyIcon.OnOpenSettings(
+                auto_revoke, { this->get_weak(), &MainWindow::OnOpenSettings });
         }
         else
         {
-            this->Activated([weak_this{ this->get_weak() }](auto&&, auto&&) {
-                if (const auto& self{ weak_this.get() }; self)
-                {
-                    self->rootNavView().Loaded([self](auto&&, auto&&) {
-                        self->NavigateInternal(L"simbolmudah_ui.HomePage", EntranceNavigationTransitionInfo());
-                    });
-                }
-            });
+            this->openSettingsRevoker.revoke();
         }
     }
 
@@ -73,20 +85,22 @@ namespace winrt::simbolmudah_ui::implementation
 
     void MainWindow::NavigationViewControl_Loaded(IInspectable const&, RoutedEventArgs const&)
     {
-        this->NavigateInternal(L"simbolmudah_ui.HomePage", EntranceNavigationTransitionInfo());
+        this->NavigateToSearch(EntranceNavigationTransitionInfo());
     }
 
     void MainWindow::NavigationViewControl_ItemInvoked(NavigationView const&, NavigationViewItemInvokedEventArgs const& args)
     {
         if (args.IsSettingsInvoked())
         {
-            this->NavigateInternal(L"simbolmudah_ui.SettingsPage", args.RecommendedNavigationTransitionInfo());
+            this->NavigateToSettings(args.RecommendedNavigationTransitionInfo());
         }
         else if (args.InvokedItemContainer())
         {
-            this->NavigateInternal(
-                unbox_value<hstring>(args.InvokedItemContainer().Tag()),
-                args.RecommendedNavigationTransitionInfo());
+            const auto& n{ unbox_value<hstring>(args.InvokedItemContainer().Tag()) };
+            if (n == L"simbolmudah_ui.SearchPage")
+            {
+                this->NavigateToSearch(args.RecommendedNavigationTransitionInfo());
+            }
         }
     }
 
@@ -113,19 +127,31 @@ namespace winrt::simbolmudah_ui::implementation
         }
     }
 
-    void MainWindow::NavigateInternal(hstring const& navPageName, NavigationTransitionInfo const& transitionInfo)
+    void MainWindow::NavigateToSearch(NavigationTransitionInfo const& transitionInfo)
     {
-        if (navPageName != L"")
+        if (const auto& f{ this->ContentFrame() }; f.CurrentSourcePageType().Name != L"simbolmudah_ui.SearchPage")
         {
-            if (const auto& contentFrame{ this->ContentFrame() }; contentFrame.CurrentSourcePageType().Name != navPageName)
-            {
-                contentFrame.Navigate({ navPageName, TypeKind::Metadata }, nullptr, transitionInfo);
-            }
+            f.Navigate({ L"simbolmudah_ui.SearchPage", TypeKind::Metadata }, this->sequenceDefinition, transitionInfo);
         }
     }
 
-    void MainWindow::OpenSettings()
+    void MainWindow::NavigateToSettings(NavigationTransitionInfo const& transitionInfo)
     {
-        this->NavigateInternal(L"simbolmudah_ui.SettingsPage", EntranceNavigationTransitionInfo());
+        if (const auto& f{ this->ContentFrame() }; f.CurrentSourcePageType().Name != L"simbolmudah_ui.SettingsPage")
+        {
+            f.Navigate({ L"simbolmudah_ui.SettingsPage", TypeKind::Metadata }, nullptr, transitionInfo);
+        }
+    }
+
+    fire_and_forget MainWindow::OnOpenSettings(NotifyIcon const&, bool)
+    {
+        co_await this->main_thread;
+        this->Activate();
+        this->NavigateToSettings(EntranceNavigationTransitionInfo());
+    }
+
+    void MainWindow::OnClosed(IInspectable const&, WindowEventArgs const&)
+    {
+        this->openSettingsRevoker.revoke();
     }
 }

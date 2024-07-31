@@ -1,7 +1,7 @@
 #pragma once
 
 #include "HomePage.g.h"
-#include "App.xaml.h"
+import App;
 
 namespace winrt::simbolmudah_ui::implementation
 {
@@ -23,7 +23,6 @@ namespace winrt::simbolmudah_ui::implementation
         fire_and_forget StateUpdater(const LibSimbolMudah::KeyboardHook&, const hstring& message);
         fire_and_forget ShowResult(const LibSimbolMudah::KeyboardTranslator&, const hstring& message);
 
-        const com_ptr<App> app;
         event_token showResultsToken;
         event_token infoUpdaterToken;
         event_token stateUpdaterToken;
