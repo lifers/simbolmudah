@@ -48,9 +48,6 @@
     </ClCompile>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="App.xaml.ixx" />
-    <ClCompile Include="precompiled.ixx">
-      <Filter>Modules</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.hpp" />
@@ -85,9 +82,6 @@
     </Filter>
     <Filter Include="AppManager">
       <UniqueIdentifier>{dc0015a4-57d2-4212-b22c-ef83b8879fd2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Modules">
-      <UniqueIdentifier>{edf7f6f5-f908-44dc-8de8-37881d6668e6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

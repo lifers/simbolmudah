@@ -1,9 +1,11 @@
+import "AppManager.idl";
+
 namespace simbolmudah_ui
 {
     [default_interface]
     runtimeclass SettingsPage : Microsoft.UI.Xaml.Controls.Page
     {
         SettingsPage();
-        Int32 MyProperty;
+        AppManager ViewModel{ get; };
     }
 }

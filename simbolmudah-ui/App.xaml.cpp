@@ -118,9 +118,9 @@ namespace winrt::simbolmudah_ui::implementation
         }
         else if (!this->appManager.NotifyIconEnabled() && this->notifyIcon)
         {
+            this->notifyIcon.OnOpenSettings(this->openSettingsToken);
             this->notifyIcon = nullptr;
             this->mainWindow.UpdateOpenSettings(this->notifyIcon);
-            this->notifyIcon.OnOpenSettings(this->openSettingsToken);
         }
     }
 

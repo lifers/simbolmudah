@@ -6,16 +6,13 @@ namespace winrt::simbolmudah_ui::implementation
 {
     struct SettingsPage : SettingsPageT<SettingsPage>
     {
-        SettingsPage()
-        {
-            // Xaml objects should not call InitializeComponent during construction.
-            // See https://github.com/microsoft/cppwinrt/tree/master/nuget#initializecomponent
-        }
+        simbolmudah_ui::AppManager ViewModel() const;
+        void OnNavigatedTo(Microsoft::UI::Xaml::Navigation::NavigationEventArgs const& e);
+        void OnSaveClick(IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
+        void OnCancelClick(IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
 
-        int32_t MyProperty();
-        void MyProperty(int32_t value);
-
-        void myButton_Click(IInspectable const& sender, Microsoft::UI::Xaml::RoutedEventArgs const& args);
+    private:
+        simbolmudah_ui::AppManager viewModel{ nullptr };
     };
 }
 

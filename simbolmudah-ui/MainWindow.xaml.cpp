@@ -139,7 +139,7 @@ namespace winrt::simbolmudah_ui::implementation
     {
         if (const auto& f{ this->ContentFrame() }; f.CurrentSourcePageType().Name != L"simbolmudah_ui.SettingsPage")
         {
-            f.Navigate({ L"simbolmudah_ui.SettingsPage", TypeKind::Metadata }, nullptr, transitionInfo);
+            f.Navigate({ L"simbolmudah_ui.SettingsPage", TypeKind::Metadata }, this->appManager, transitionInfo);
         }
     }
 
