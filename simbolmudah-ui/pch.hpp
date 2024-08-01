@@ -16,8 +16,6 @@
 // conflict with Storyboard::GetCurrentTime
 #undef GetCurrentTime
 
-#define WINRT_LEAN_AND_MEAN
-
 //#include <winrt/Windows.ApplicationModel.Activation.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Foundation.Collections.h>

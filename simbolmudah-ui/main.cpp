@@ -5,31 +5,32 @@
 
 
 using namespace winrt;
+using namespace winrt::Microsoft::UI::Xaml;
+using namespace winrt::Microsoft::Windows::AppLifecycle;
+using namespace simbolmudah_ui::implementation;
 
 namespace
 {
-    using namespace wil;
-    using namespace winrt::Microsoft::Windows::AppLifecycle;
-
-    fire_and_forget Redirect(AppInstance keyInstance, AppActivationArguments args, unique_event& redirectHandle)
+    void OnActivated(IInspectable const&, AppActivationArguments const&)
     {
-        const auto ensure_signaled{ SetEvent_scope_exit(redirectHandle.get()) };
+        Application::Current().as<App>()->OpenWindow();
+    }
+
+    fire_and_forget Redirect(AppInstance const& keyInstance, AppActivationArguments const& args, wil::unique_event const& redirectHandle)
+    {
+        const auto ensure_signaled{ wil::SetEvent_scope_exit(redirectHandle.get()) };
+        keyInstance.Activated({ OnActivated });
         co_await keyInstance.RedirectActivationToAsync(args);
     }
 }
 
 int WINAPI wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int)
 {
-    using namespace winrt::Microsoft::UI::Xaml;
-    using namespace winrt::Microsoft::Windows::AppLifecycle;
-    using namespace Windows::Foundation;
-
     init_apartment(apartment_type::single_threaded);
 
-    if (const auto keyInstance{ AppInstance::FindOrRegisterForKey(L"simbolmudah") };
-        keyInstance.IsCurrent())
+    if (const auto& keyInstance{ AppInstance::FindOrRegisterForKey(L"simbolmudah") }; keyInstance.IsCurrent())
     {
-        Application::Start([](auto&&) { make<simbolmudah_ui::implementation::App>(); });
+        Application::Start([](auto&&) { make<App>(); });
     }
     else
     {

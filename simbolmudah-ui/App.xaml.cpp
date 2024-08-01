@@ -64,10 +64,7 @@ namespace winrt::simbolmudah_ui::implementation
 
         if (this->appManager.MainWindowOpened())
         {
-            this->mainWindow = simbolmudah_ui::MainWindow{
-                this->sequenceDefinition, this->appManager, this->notifyIcon, 0 };
-            this->mainWindow.Closed({ this->get_weak(), &App::WindowClosed });
-            this->mainWindow.Activate();
+            this->OpenWindow();
         }
     }
 
@@ -126,6 +123,18 @@ namespace winrt::simbolmudah_ui::implementation
         }
     }
 
+    fire_and_forget App::OpenWindow()
+    {
+        co_await this->main_thread;
+        if (!this->mainWindow)
+        {
+            this->mainWindow = simbolmudah_ui::MainWindow{
+                this->sequenceDefinition, this->appManager, this->notifyIcon, 0 };
+            this->mainWindow.Closed({ this->get_weak(), &App::WindowClosed });
+        }
+        this->mainWindow.Activate();
+    }
+
     fire_and_forget App::OnOpenSettings(NotifyIcon const&, bool)
     {
         using namespace Microsoft::UI::Xaml::Media::Animation;
@@ -134,10 +143,7 @@ namespace winrt::simbolmudah_ui::implementation
         co_await this->main_thread;
         if (!this->mainWindow)
         {
-            this->mainWindow = simbolmudah_ui::MainWindow{
-                this->sequenceDefinition, this->appManager, this->notifyIcon, 1 };
-            this->mainWindow.Closed({ this->get_weak(), &App::WindowClosed });
-            this->mainWindow.Activate();
+            this->OpenWindow();
             co_await 500ms;
             co_await this->main_thread;
             this->mainWindow.NavigateToSettings(EntranceNavigationTransitionInfo());

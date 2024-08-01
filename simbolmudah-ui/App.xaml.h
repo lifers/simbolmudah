@@ -10,6 +10,7 @@ namespace winrt::simbolmudah_ui::implementation
         App& operator=(const App&) = delete;
 
         void OnLaunched(Microsoft::UI::Xaml::LaunchActivatedEventArgs const&);
+        fire_and_forget OpenWindow();
 
     private:
         void WindowClosed(IInspectable const&, Microsoft::UI::Xaml::WindowEventArgs const&);
