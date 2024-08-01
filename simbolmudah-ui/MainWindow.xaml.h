@@ -6,9 +6,15 @@ namespace winrt::simbolmudah_ui::implementation
 {
     struct MainWindow : MainWindowT<MainWindow>
     {
-        explicit MainWindow(uint8_t page);
+        explicit MainWindow(
+            LibSimbolMudah::SequenceDefinition const& seqdef,
+            simbolmudah_ui::AppManager const& appManager,
+            LibSimbolMudah::NotifyIcon const& notifyIcon,
+            uint8_t page);
         MainWindow(MainWindow const&) = delete;
         MainWindow& operator=(MainWindow const&) = delete;
+
+        void UpdateOpenSettings(LibSimbolMudah::NotifyIcon const& notifyIcon);
 
         void ContentFrame_Navigated(IInspectable const&, Microsoft::UI::Xaml::Navigation::NavigationEventArgs const&);
         void ContentFrame_NavigationFailed(IInspectable const&, Microsoft::UI::Xaml::Navigation::NavigationFailedEventArgs const& e);
@@ -20,14 +26,16 @@ namespace winrt::simbolmudah_ui::implementation
             Microsoft::UI::Xaml::Controls::NavigationView const&,
             Microsoft::UI::Xaml::Controls::NavigationViewBackRequestedEventArgs const&);
         void Window_SizeChanged(IInspectable const&, Microsoft::UI::Xaml::WindowSizeChangedEventArgs const& args);
-        void OpenSettings();
+        void NavigateToSettings(Microsoft::UI::Xaml::Media::Animation::NavigationTransitionInfo const& transitionInfo);
 
     private:
-        void NavigateInternal(
-            hstring const& navPageType,
-            Microsoft::UI::Xaml::Media::Animation::NavigationTransitionInfo const& transitionInfo);
+        void NavigateToSearch(Microsoft::UI::Xaml::Media::Animation::NavigationTransitionInfo const& transitionInfo);
+        fire_and_forget OnOpenSettings(LibSimbolMudah::NotifyIcon const&, bool);
+        void OnClosed(IInspectable const&, Microsoft::UI::Xaml::WindowEventArgs const&);
 
-        const apartment_context main_thread;
+        const LibSimbolMudah::SequenceDefinition sequenceDefinition;
+        const simbolmudah_ui::AppManager appManager;
+        LibSimbolMudah::NotifyIcon::OnOpenSettings_revoker openSettingsRevoker;
     };
 }
 

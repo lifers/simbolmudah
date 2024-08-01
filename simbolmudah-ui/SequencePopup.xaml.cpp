@@ -3,9 +3,7 @@
 #if __has_include("SequencePopup.g.cpp")
 #include "SequencePopup.g.cpp"
 #endif
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+#include <wil/cppwinrt_helpers.h>
 
 namespace winrt::simbolmudah_ui::implementation
 {
@@ -16,7 +14,7 @@ namespace winrt::simbolmudah_ui::implementation
     using namespace Collections;
 
     SequencePopup::SequencePopup(SequenceDefinition const& definition) :
-        sequenceDefinition{ definition }, main_thread{ apartment_context() },
+        sequenceDefinition{ definition },
         sequence{ single_threaded_observable_vector<hstring>() },
         searchResults{ single_threaded_observable_vector<simbolmudah_ui::SequenceDetail>() } {}
 
@@ -59,7 +57,7 @@ namespace winrt::simbolmudah_ui::implementation
         toShow.reserve(results.Size());
         for (const auto s: results) { toShow.emplace_back(s); }
 
-        co_await this->main_thread;
+        co_await wil::resume_foreground(this->DispatcherQueue());
         this->searchResults.ReplaceAll(toShow);
     }
 }

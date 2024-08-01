@@ -18,10 +18,11 @@ pub(super) const WM_USER_LISTEN: usize = 0x1774;
 
 pub(super) struct NotifyIconMenu {
     h_menu: HMENU,
+    is_listening: bool,
 }
 
 impl NotifyIconMenu {
-    pub(super) fn new(listening: bool) -> Result<Self> {
+    pub(super) fn new(is_listening: bool) -> Result<Self> {
         let h_menu = unsafe { CreatePopupMenu() }?;
 
         unsafe {
@@ -35,9 +36,9 @@ impl NotifyIconMenu {
         }?;
         unsafe { InsertMenuW(h_menu, 1, MF_BYPOSITION | MF_SEPARATOR, 0, w!("")) }?;
 
-        let state = MF_BYPOSITION | MF_STRING | if listening { MF_CHECKED } else { MF_UNCHECKED };
+        let state = MF_BYPOSITION | MF_STRING | if is_listening { MF_CHECKED } else { MF_UNCHECKED };
         unsafe { InsertMenuW(h_menu, 0, state, WM_USER_LISTEN, w!("Listen to compose")) }?;
-        Ok(Self { h_menu })
+        Ok(Self { h_menu, is_listening })
     }
 
     pub(super) fn show_menu(&self, h_wnd: HWND) -> Result<()> {
@@ -72,6 +73,10 @@ impl NotifyIconMenu {
         }
 
         Ok(())
+    }
+
+    pub(super) fn is_listening(&self) -> bool {
+        self.is_listening
     }
 }
 

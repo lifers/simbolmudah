@@ -1,0 +1,23 @@
+namespace simbolmudah_ui
+{
+    struct SettingsObject
+    {
+        Boolean HookEnabled;
+        Boolean NotifyIconEnabled;
+        Boolean MainWindowOpened;
+    };
+
+    [default_interface]
+    runtimeclass AppManager : Microsoft.UI.Xaml.Data.INotifyPropertyChanged
+    {
+        AppManager(Windows.Storage.ApplicationDataContainer localSettings);
+
+        void SaveSettings(SettingsObject settings);
+
+        Boolean HookEnabled;
+        Boolean NotifyIconEnabled;
+        Boolean MainWindowOpened;
+
+        event Windows.Foundation.EventHandler<LibSimbolMudah.NotifyIcon> NotifyIconChanged;
+    }
+}

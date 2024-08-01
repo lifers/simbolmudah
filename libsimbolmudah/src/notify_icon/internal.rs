@@ -28,7 +28,7 @@ use crate::{bindings, delegate_storage::DelegateStorage, fail_message, get_stron
 
 use super::{
     counter::GLOBAL_COUNTER,
-    menu::{NotifyIconMenu, WM_USER_SHOW_SETTINGS},
+    menu::{NotifyIconMenu, WM_USER_LISTEN, WM_USER_SHOW_SETTINGS},
 };
 
 const WM_USER_TRAYICON: u32 = 0x1772;
@@ -48,12 +48,16 @@ pub(super) struct NotifyIconInternal {
     internal_id: u32,
     h_menu: Option<NotifyIconMenu>,
     pub(super) report_open_settings: DelegateStorage<bindings::NotifyIcon, bool>,
+    pub(super) report_set_listening: DelegateStorage<bindings::NotifyIcon, bool>,
     pub(super) on_state_changed_token: EventRegistrationToken,
     pub(super) parent: Weak<bindings::NotifyIcon>,
 }
 
 impl NotifyIconInternal {
-    pub(super) fn create_for_thread(parent: Weak<bindings::NotifyIcon>) -> Result<()> {
+    pub(super) fn create_for_thread(
+        parent: Weak<bindings::NotifyIcon>,
+        hookenabled: bool,
+    ) -> Result<()> {
         let internal_id = GLOBAL_COUNTER.next();
 
         let class_name = w!("LibSimbolMudah.NotifyIcon");
@@ -86,13 +90,14 @@ impl NotifyIconInternal {
             )
         }?;
 
-        let h_menu = NotifyIconMenu::new(false)?;
+        let h_menu = NotifyIconMenu::new(hookenabled)?;
 
         let res = Self {
             h_wnd,
             internal_id,
             h_menu: Some(h_menu),
             report_open_settings: DelegateStorage::new(),
+            report_set_listening: DelegateStorage::new(),
             on_state_changed_token: EventRegistrationToken::default(),
             parent,
         };
@@ -156,6 +161,11 @@ impl NotifyIconInternal {
             ))
         }
     }
+
+    pub(super) fn update_listening_check(&mut self, listening: bool) -> Result<()> {
+        self.h_menu = Some(NotifyIconMenu::new(listening)?);
+        Ok(())
+    }
 }
 
 impl Drop for NotifyIconInternal {
@@ -213,6 +223,24 @@ extern "system" fn notify_proc(h_wnd: HWND, msg: u32, w_param: WPARAM, l_param: 
                         .invoke_all(
                             &get_strong_ref(&internal.parent).expect("parent should stay valid"),
                             None,
+                        )
+                        .expect("invoke_all should succeed");
+                });
+            }
+            WM_USER_LISTEN => {
+                INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
+                    let internal = internal.as_mut().expect("global initialized");
+                    internal
+                        .report_set_listening
+                        .invoke_all(
+                            &get_strong_ref(&internal.parent).expect("parent should stay valid"),
+                            Some(
+                                &!internal
+                                    .h_menu
+                                    .as_ref()
+                                    .expect("menu should stay valid")
+                                    .is_listening(),
+                            ),
                         )
                         .expect("invoke_all should succeed");
                 });

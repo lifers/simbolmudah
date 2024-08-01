@@ -1,5 +1,4 @@
 #pragma once
-
 #include "App.xaml.g.h"
 
 namespace winrt::simbolmudah_ui::implementation
@@ -11,21 +10,27 @@ namespace winrt::simbolmudah_ui::implementation
         App& operator=(const App&) = delete;
 
         void OnLaunched(Microsoft::UI::Xaml::LaunchActivatedEventArgs const&);
-        void OnHookToggle(bool isOn);
-        bool hookState{ false };
-        const LibSimbolMudah::SequenceDefinition sequenceDefinition;
-        const LibSimbolMudah::KeyboardTranslator keyboardTranslator;
-		const apartment_context main_thread;
+        fire_and_forget OpenWindow();
 
     private:
+        void WindowClosed(IInspectable const&, Microsoft::UI::Xaml::WindowEventArgs const&);
         fire_and_forget BuildDefinition() const;
-        void InitializeSettings();
+        void OnSettingsChanged(IInspectable const&, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs const&);
         fire_and_forget OnOpenSettings(LibSimbolMudah::NotifyIcon const&, bool);
+        fire_and_forget OnNotifyIconSetHook(LibSimbolMudah::NotifyIcon const&, bool status);
 
-        simbolmudah_ui::MainWindow window{ nullptr };
-        simbolmudah_ui::PopupWindow popup{ nullptr };
-        LibSimbolMudah::NotifyIcon notifyIcon{ nullptr };
-        event_token onSettingsOpenedToken;
+        const apartment_context main_thread;
+        const simbolmudah_ui::AppManager appManager;
+        const LibSimbolMudah::SequenceDefinition sequenceDefinition;
+        const LibSimbolMudah::KeyboardTranslator keyboardTranslator;
+
+        simbolmudah_ui::MainWindow mainWindow{ nullptr };
         LibSimbolMudah::KeyboardHook keyboardHook{ nullptr };
+        simbolmudah_ui::PopupWindow popupWindow{ nullptr };
+        LibSimbolMudah::NotifyIcon notifyIcon{ nullptr };
+
+        const simbolmudah_ui::AppManager::PropertyChanged_revoker settingsChangedRevoker;
+        event_token openSettingsToken;
+        event_token notifyIconSetHookToken;
     };
 }

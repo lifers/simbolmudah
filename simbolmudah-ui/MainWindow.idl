@@ -1,9 +1,17 @@
+import "AppManager.idl";
+
 namespace simbolmudah_ui
 {
     [default_interface]
     runtimeclass MainWindow : Microsoft.UI.Xaml.Window
     {
-        MainWindow(UInt8 page);
-        void OpenSettings();
+        MainWindow(
+            LibSimbolMudah.SequenceDefinition seqdef,
+            AppManager appManager,
+            LibSimbolMudah.NotifyIcon notifyIcon,
+            UInt8 page);
+
+        void UpdateOpenSettings(LibSimbolMudah.NotifyIcon notifyIcon);
+        void NavigateToSettings(Microsoft.UI.Xaml.Media.Animation.NavigationTransitionInfo transitionInfo);
     }
 }

@@ -3,22 +3,19 @@
 #if __has_include("SearchPopup.g.cpp")
 #include "SearchPopup.g.cpp"
 #endif
-
-using namespace winrt;
-using namespace Microsoft::UI::Xaml;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+#include <winrt/Microsoft.UI.Dispatching.h>
+#include <wil/cppwinrt_helpers.h>
 
 namespace winrt::simbolmudah_ui::implementation
 {
     using namespace LibSimbolMudah;
-    using namespace Microsoft::UI::Xaml::Controls;
+    using namespace Microsoft::UI::Xaml;
+    using namespace Controls;
     using namespace Windows::Foundation;
     using namespace Collections;
 
     SearchPopup::SearchPopup(const KeyboardHook& hook, const SequenceDefinition& definition) :
-        hook{ hook }, sequenceDefinition{ definition }, main_thread{ apartment_context() },
+        hook{ hook }, sequenceDefinition{ definition },
         searchResults{ single_threaded_observable_vector<simbolmudah_ui::SequenceDetail>() } {}
 
     IObservableVector<simbolmudah_ui::SequenceDetail> SearchPopup::SearchResults() const { return this->searchResults; }
@@ -65,7 +62,7 @@ namespace winrt::simbolmudah_ui::implementation
             toShow.emplace_back(s);
         }
         
-        co_await main_thread;
+        co_await wil::resume_foreground(this->DispatcherQueue());
         this->searchResults.ReplaceAll(toShow);
     }
 }

@@ -25,7 +25,6 @@ namespace winrt::simbolmudah_ui::implementation
     private:
         Windows::Foundation::IAsyncAction Search(hstring const& keyword);
 
-        const apartment_context main_thread;
         const LibSimbolMudah::KeyboardHook hook;
         const LibSimbolMudah::SequenceDefinition sequenceDefinition;
         const Windows::Foundation::Collections::IObservableVector<simbolmudah_ui::SequenceDetail> searchResults;

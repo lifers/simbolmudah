@@ -7,7 +7,7 @@ use windows::{
     core::{implement, AgileReference, Error, IInspectable, Interface, Result},
     Foundation::{EventRegistrationToken, TypedEventHandler},
     Win32::{
-        Foundation::E_POINTER,
+        Foundation::{E_NOTIMPL, E_POINTER},
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
     },
 };
@@ -53,6 +53,17 @@ impl bindings::INotifyIcon_Impl for NotifyIcon_Impl {
         }
     }
 
+    fn GetHookEnabled(&self, enabled: bool) -> Result<()> {
+        self.thread_controller.try_enqueue(move || {
+            INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
+                internal
+                    .as_mut()
+                    .expect("internal should be initialised")
+                    .update_listening_check(enabled)
+            })
+        })
+    }
+
     fn OnOpenSettings(
         &self,
         handler: Option<&TypedEventHandler<bindings::NotifyIcon, bool>>,
@@ -74,7 +85,7 @@ impl bindings::INotifyIcon_Impl for NotifyIcon_Impl {
 
             Ok(EventRegistrationToken { Value: token })
         } else {
-            Err(Error::new(E_POINTER, "hook is null"))
+            Err(Error::new(E_POINTER, "delegate is null"))
         }
     }
 
@@ -92,13 +103,59 @@ impl bindings::INotifyIcon_Impl for NotifyIcon_Impl {
             })
         })
     }
+
+    fn OnSetHookEnabled(
+        &self,
+        handler: Option<&TypedEventHandler<bindings::NotifyIcon, bool>>,
+    ) -> Result<EventRegistrationToken> {
+        if let Some(handler) = handler {
+            let handler_ref = AgileReference::new(handler)?;
+            let token = get_token(handler.as_raw());
+            self.thread_controller.try_enqueue(move || {
+                INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
+                    internal
+                        .as_mut()
+                        .expect("internal should be initialised")
+                        .report_set_listening
+                        .insert(token, handler_ref.clone());
+
+                    Ok(())
+                })
+            })?;
+
+            Ok(EventRegistrationToken { Value: token })
+        } else {
+            Err(Error::new(E_POINTER, "delegate is null"))
+        }
+    }
+
+    fn RemoveOnSetHookEnabled(&self, token: &EventRegistrationToken) -> Result<()> {
+        let value = token.Value;
+        self.thread_controller.try_enqueue(move || {
+            INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
+                internal
+                    .as_mut()
+                    .expect("internal should be initialised")
+                    .report_set_listening
+                    .remove(value);
+
+                Ok(())
+            })
+        })
+    }
 }
 
-#[implement(IActivationFactory)]
+#[implement(IActivationFactory, bindings::INotifyIconFactory)]
 pub(super) struct NotifyIconFactory;
 
 impl IActivationFactory_Impl for NotifyIconFactory_Impl {
     fn ActivateInstance(&self) -> Result<IInspectable> {
+        Err(E_NOTIMPL.into())
+    }
+}
+
+impl bindings::INotifyIconFactory_Impl for NotifyIconFactory_Impl {
+    fn CreateInstance(&self, hookenabled: bool) -> Result<bindings::NotifyIcon> {
         let res: bindings::NotifyIcon = NotifyIcon {
             thread_controller: ThreadHandler::new()?,
         }
@@ -108,8 +165,10 @@ impl IActivationFactory_Impl for NotifyIconFactory_Impl {
 
         res.cast_object_ref::<NotifyIcon>()?
             .thread_controller
-            .try_enqueue(move || NotifyIconInternal::create_for_thread(res_clone.downgrade()?))?;
+            .try_enqueue(move || {
+                NotifyIconInternal::create_for_thread(res_clone.downgrade()?, hookenabled)
+            })?;
 
-        Ok(res.into())
+        Ok(res)
     }
 }

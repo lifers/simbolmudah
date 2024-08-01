@@ -1,9 +1,0 @@
-namespace simbolmudah_ui
-{
-    [default_interface]
-    runtimeclass HomePage : Microsoft.UI.Xaml.Controls.Page
-    {
-        HomePage();
-        Boolean HookEnabled;
-    }
-}

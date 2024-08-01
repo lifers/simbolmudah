@@ -4,26 +4,32 @@
 #include "SettingsPage.g.cpp"
 #endif
 
-using namespace winrt;
-using namespace Microsoft::UI::Xaml;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace winrt::simbolmudah_ui::implementation
 {
-    int32_t SettingsPage::MyProperty()
+    using namespace Microsoft::UI::Xaml;
+    using namespace Navigation;
+
+    simbolmudah_ui::AppManager SettingsPage::ViewModel() const { return this->viewModel; }
+
+    void SettingsPage::OnNavigatedTo(NavigationEventArgs const& e)
     {
-        throw hresult_not_implemented();
+        const auto& appManager{ e.Parameter().as<simbolmudah_ui::AppManager>() };
+        this->viewModel = appManager;
     }
 
-    void SettingsPage::MyProperty(int32_t /* value */)
+    void SettingsPage::OnSaveClick(IInspectable const&, RoutedEventArgs const&)
     {
-        throw hresult_not_implemented();
+        this->viewModel.SaveSettings({
+            .HookEnabled = this->HookSwitch().IsOn(),
+            .NotifyIconEnabled = this->NotifyIconSwitch().IsOn(),
+            .MainWindowOpened = this->MainWindowSwitch().IsOn(),
+        });
     }
 
-    void SettingsPage::myButton_Click(IInspectable const&, RoutedEventArgs const&)
+    void SettingsPage::OnCancelClick(IInspectable const&, RoutedEventArgs const&)
     {
-        myButton().Content(box_value(L"Clicked"));
+        this->HookSwitch().IsOn(this->viewModel.HookEnabled());
+        this->NotifyIconSwitch().IsOn(this->viewModel.NotifyIconEnabled());
+        this->MainWindowSwitch().IsOn(this->viewModel.MainWindowOpened());
     }
 }

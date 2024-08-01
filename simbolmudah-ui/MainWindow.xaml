@@ -31,15 +31,18 @@
         <NavigationView x:Name="rootNavView"
                         ItemInvoked="NavigationViewControl_ItemInvoked"
                         BackRequested="NavigationViewControl_BackRequested"
-                        SelectedItem="HomePage"
+                        SelectedItem="SearchPage"
+                        PaneDisplayMode="Top"
+                        Loaded="NavigationViewControl_Loaded"
                         Grid.Row="1">
 
             <NavigationView.MenuItems>
-                <NavigationViewItem Content="Home" x:Name="HomePage" Tag="simbolmudah_ui.HomePage"/>
                 <NavigationViewItem Content="Search" x:Name="SearchPage" Tag="simbolmudah_ui.SearchPage" />
             </NavigationView.MenuItems>
 
-            <Frame x:Name="ContentFrame" Navigated="ContentFrame_Navigated" NavigationFailed="ContentFrame_NavigationFailed"/>
+            <Frame x:Name="ContentFrame"
+                   Navigated="ContentFrame_Navigated"
+                   NavigationFailed="ContentFrame_NavigationFailed"/>
         </NavigationView>
     </Grid>
     
