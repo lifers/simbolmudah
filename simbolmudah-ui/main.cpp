@@ -1,10 +1,8 @@
 #include "pch.hpp"
 #include <wil/resource.h>
-#include <XamlMetaDataProvider.g.h>
 #include <winrt/Microsoft.Windows.AppLifecycle.h>
+#include "App.xaml.h"
 
-//import precompiled;
-import App;
 
 using namespace winrt;
 

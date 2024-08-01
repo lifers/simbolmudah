@@ -4,6 +4,8 @@
 #include "PopupWindow.g.cpp"
 #endif
 #include <Microsoft.UI.Xaml.Window.h>
+#include <winrt/Microsoft.UI.Dispatching.h>
+#include <wil/cppwinrt_helpers.h>
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -135,7 +137,7 @@ namespace winrt::simbolmudah_ui::implementation
     using namespace std::chrono_literals;
 
     PopupWindow::PopupWindow(KeyboardTranslator const& translator, KeyboardHook const& hook, SequenceDefinition const& definition) :
-        translator{ translator }, hook{ hook }, main_thread{ apartment_context() },
+        translator{ translator }, hook{ hook },
         keyTranslatedToken{ this->translator.OnKeyTranslated(auto_revoke, { this->get_weak(), &PopupWindow::OnKeyTranslated }) },
         stateChangedToken{ this->hook.OnStateChanged(auto_revoke, { this->get_weak(), &PopupWindow::OnStateChanged }) },
         defaultPage{ Page() }, sequencePopup{ definition }, searchPopup{ hook, definition }
@@ -158,14 +160,14 @@ namespace winrt::simbolmudah_ui::implementation
     fire_and_forget PopupWindow::OnKeyTranslated(KeyboardTranslator const&, hstring const& message) const
     {
         const auto key{ message };
-        co_await this->main_thread;
+        co_await wil::resume_foreground(this->DispatcherQueue());
         this->sequencePopup.Sequence().Append(key);
         this->sequencePopup.FindPotentialPrefix();
     }
 
     fire_and_forget PopupWindow::OnStateChanged(KeyboardHook const&, uint8_t state) const
     {
-        co_await this->main_thread;
+        co_await wil::resume_foreground(this->DispatcherQueue());
         switch (state)
         {
         case 0: // Idle
@@ -193,7 +195,7 @@ namespace winrt::simbolmudah_ui::implementation
         const auto pos{ GetCaretPosition() };
         const auto dpi{ this->GetDpi() };
 
-        co_await this->main_thread;
+        co_await wil::resume_foreground(this->DispatcherQueue());
         const auto& appWindow{ this->AppWindow() };
         appWindow.MoveAndResize({ .X = pos.x, .Y = pos.y, .Width = 400 * dpi / 96, .Height = 100 * dpi / 96 });
         appWindow.Show(false);

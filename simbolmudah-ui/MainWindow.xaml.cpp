@@ -3,9 +3,8 @@
 #if __has_include("MainWindow.g.cpp")
 #include "MainWindow.g.cpp"
 #endif
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+#include <winrt/Microsoft.UI.Dispatching.h>
+#include <wil/cppwinrt_helpers.h>
 
 namespace winrt::simbolmudah_ui::implementation
 {
@@ -21,9 +20,7 @@ namespace winrt::simbolmudah_ui::implementation
         simbolmudah_ui::AppManager const& appManager,
         NotifyIcon const& notifyIcon,
         uint8_t page) :
-        main_thread{ apartment_context() },
-        sequenceDefinition{ seqdef },
-        appManager{ appManager }
+        sequenceDefinition{ seqdef }, appManager{ appManager }
     {
         if (this->appManager.NotifyIconEnabled() && notifyIcon)
         {
@@ -145,7 +142,7 @@ namespace winrt::simbolmudah_ui::implementation
 
     fire_and_forget MainWindow::OnOpenSettings(NotifyIcon const&, bool)
     {
-        co_await this->main_thread;
+        co_await wil::resume_foreground(this->DispatcherQueue());
         this->Activate();
         this->NavigateToSettings(EntranceNavigationTransitionInfo());
     }

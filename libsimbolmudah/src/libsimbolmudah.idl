@@ -39,10 +39,12 @@ namespace LibSimbolMudah
 
     runtimeclass NotifyIcon
     {
-        NotifyIcon();
+        NotifyIcon(Boolean hookEnabled);
 
         void SubscribeStateChanged(KeyboardHook hook);
+        void GetHookEnabled(Boolean enabled);
 
         event Windows.Foundation.TypedEventHandler<NotifyIcon, Boolean> OnOpenSettings;
+        event Windows.Foundation.TypedEventHandler<NotifyIcon, Boolean> OnSetHookEnabled;
     }
 }

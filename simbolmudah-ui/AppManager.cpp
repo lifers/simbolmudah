@@ -4,13 +4,7 @@
 
 namespace winrt::simbolmudah_ui::implementation
 {
-    using namespace LibSimbolMudah;
-    using namespace Microsoft::UI::Xaml::Data;
-    using namespace Windows;
-    using namespace Storage;
-    using namespace Foundation;
-
-    AppManager::AppManager(ApplicationDataContainer const& localSettings)
+    AppManager::AppManager(Windows::Storage::ApplicationDataContainer const& localSettings)
         : main_thread{ apartment_context() }, localSettings{ localSettings }
     {
         const auto& values{ localSettings.Values() };
@@ -47,7 +41,7 @@ namespace winrt::simbolmudah_ui::implementation
     {
         co_await this->main_thread;
 
-        const auto& values{ localSettings.Values() };
+        const auto& values{ this->localSettings.Values() };
 
         if (settings.HookEnabled != this->m_HookEnabled)
         {

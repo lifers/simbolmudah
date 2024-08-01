@@ -2,14 +2,11 @@
 #include "SearchPageViewModel.h"
 #include "SearchPageViewModel.g.cpp"
 
-import App;
-
 namespace winrt::simbolmudah_ui::implementation
 {
     using namespace Windows::Foundation;
     using namespace Collections;
     using namespace LibSimbolMudah;
-    using namespace Microsoft::UI::Xaml;
 
     SearchPageViewModel::SearchPageViewModel(SequenceDefinition const& seqdef)
         : searchResults{ single_threaded_observable_vector<simbolmudah_ui::SequenceDetail>({
@@ -22,18 +19,17 @@ namespace winrt::simbolmudah_ui::implementation
         return this->searchResults;
     }
 
-    IAsyncAction SearchPageViewModel::Search(hstring const& keyword)
+    IAsyncAction SearchPageViewModel::Search(hstring keyword)
     {
         const auto ui_thread{ apartment_context() };
-        const auto str_copy{ keyword };
         co_await resume_background();
-        const auto results{ this->sequenceDefinition.Search(str_copy, 2000) };
+        const auto results{ this->sequenceDefinition.Search(keyword, 2000) };
 
         const auto size{ results.Size() };
         std::vector<SequenceDetail> toShow;
         toShow.reserve(size);
 
-        for (const auto s: results)
+        for (const auto& s: results)
         {
             toShow.emplace_back(s);
         }

@@ -9,7 +9,7 @@ namespace winrt::simbolmudah_ui::implementation
         SearchPageViewModel(SearchPageViewModel const&) = delete;
         SearchPageViewModel& operator=(SearchPageViewModel const&) = delete;
         Windows::Foundation::Collections::IObservableVector<simbolmudah_ui::SequenceDetail> SearchResults() const;
-        Windows::Foundation::IAsyncAction Search(hstring const& keyword);
+        Windows::Foundation::IAsyncAction Search(hstring keyword);
 
     private:
         const LibSimbolMudah::SequenceDefinition sequenceDefinition;

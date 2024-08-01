@@ -1,7 +1,5 @@
-module;
 #include "pch.hpp"
-#include <winrt/simbolmudah_ui.h>
-module App;
+#include "App.xaml.h"
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -10,13 +8,9 @@ namespace winrt::simbolmudah_ui::implementation
 {
     using namespace LibSimbolMudah;
     using namespace Microsoft::UI::Xaml;
-    using namespace Controls;
     using namespace Data;
-    using namespace Media::Animation;
     using namespace Windows;
-    using namespace Foundation;
     using namespace Storage;
-    using namespace std::chrono_literals;
 
     /// <summary>
     /// Initializes the singleton application object.  This is the first line of authored code
@@ -56,13 +50,14 @@ namespace winrt::simbolmudah_ui::implementation
 
         if (this->appManager.NotifyIconEnabled())
         {
-            this->notifyIcon = LibSimbolMudah::NotifyIcon();
+            this->notifyIcon = NotifyIcon(this->appManager.HookEnabled());
             this->openSettingsToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
+            this->notifyIconSetHookToken = this->notifyIcon.OnSetHookEnabled({ this->get_weak(), &App::OnNotifyIconSetHook });
         }
 
         if (this->appManager.HookEnabled())
         {
-            this->keyboardHook = LibSimbolMudah::KeyboardHook{ this->keyboardTranslator };
+            this->keyboardHook = KeyboardHook{ this->keyboardTranslator };
             this->popupWindow = simbolmudah_ui::PopupWindow{
                 this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
         }
@@ -86,6 +81,8 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     fire_and_forget App::BuildDefinition() const
     {
+        using namespace Foundation;
+
         const auto keysymdef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.txt")) };
         const auto composedef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre")) };
         this->sequenceDefinition.Build((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
@@ -99,12 +96,15 @@ namespace winrt::simbolmudah_ui::implementation
         // Update the keyboard hook and popup window.
         if (this->appManager.HookEnabled() && !this->keyboardHook)
         {
-            this->keyboardHook = LibSimbolMudah::KeyboardHook{ this->keyboardTranslator };
+            this->keyboardHook = KeyboardHook{ this->keyboardTranslator };
             this->popupWindow = simbolmudah_ui::PopupWindow{
                 this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+
+            if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(true); }
         }
         else if (!this->appManager.HookEnabled() && this->keyboardHook)
         {
+            if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(false); }
             this->popupWindow = nullptr;
             this->keyboardHook = nullptr;
         }
@@ -112,20 +112,25 @@ namespace winrt::simbolmudah_ui::implementation
         // Update the notify icon and main window.
         if (this->appManager.NotifyIconEnabled() && !this->notifyIcon)
         {
-            this->notifyIcon = LibSimbolMudah::NotifyIcon();
+            this->notifyIcon = NotifyIcon(this->appManager.HookEnabled());
             this->mainWindow.UpdateOpenSettings(this->notifyIcon);
             this->openSettingsToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
+            this->notifyIconSetHookToken = this->notifyIcon.OnSetHookEnabled({ this->get_weak(), &App::OnNotifyIconSetHook });
         }
         else if (!this->appManager.NotifyIconEnabled() && this->notifyIcon)
         {
             this->notifyIcon.OnOpenSettings(this->openSettingsToken);
+            this->notifyIcon.OnSetHookEnabled(this->notifyIconSetHookToken);
             this->notifyIcon = nullptr;
             this->mainWindow.UpdateOpenSettings(this->notifyIcon);
         }
     }
 
-    fire_and_forget App::OnOpenSettings(LibSimbolMudah::NotifyIcon const&, bool)
+    fire_and_forget App::OnOpenSettings(NotifyIcon const&, bool)
     {
+        using namespace Microsoft::UI::Xaml::Media::Animation;
+        using namespace std::chrono_literals;
+
         co_await this->main_thread;
         if (!this->mainWindow)
         {
@@ -137,5 +142,11 @@ namespace winrt::simbolmudah_ui::implementation
             co_await this->main_thread;
             this->mainWindow.NavigateToSettings(EntranceNavigationTransitionInfo());
         }
+    }
+
+    fire_and_forget App::OnNotifyIconSetHook(NotifyIcon const&, bool status)
+    {
+        co_await this->main_thread;
+        this->appManager.HookEnabled(status);
     }
 }

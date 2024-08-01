@@ -33,7 +33,6 @@ namespace winrt::simbolmudah_ui::implementation
         fire_and_forget OnOpenSettings(LibSimbolMudah::NotifyIcon const&, bool);
         void OnClosed(IInspectable const&, Microsoft::UI::Xaml::WindowEventArgs const&);
 
-        const apartment_context main_thread;
         const LibSimbolMudah::SequenceDefinition sequenceDefinition;
         const simbolmudah_ui::AppManager appManager;
         LibSimbolMudah::NotifyIcon::OnOpenSettings_revoker openSettingsRevoker;
