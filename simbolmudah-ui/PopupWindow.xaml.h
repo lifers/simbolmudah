@@ -19,7 +19,6 @@ namespace winrt::simbolmudah_ui::implementation
         fire_and_forget DrawWindow() const;
         int32_t GetDpi() const;
 
-        const LibSimbolMudah::KeyboardTranslator translator;
         const LibSimbolMudah::KeyboardTranslator::OnKeyTranslated_revoker keyTranslatedToken;
         const LibSimbolMudah::KeyboardHook::OnStateChanged_revoker stateChangedToken;
         const Microsoft::UI::Xaml::Controls::Page defaultPage;
