@@ -98,7 +98,6 @@ namespace winrt::simbolmudah_ui::implementation
         else if (!this->appManager.HookEnabled() && this->keyboardHook)
         {
             if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(false); }
-            this->popupWindow = nullptr;
             this->keyboardHook = nullptr;
         }
 
