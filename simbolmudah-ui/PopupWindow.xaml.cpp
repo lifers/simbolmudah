@@ -135,8 +135,8 @@ namespace winrt::simbolmudah_ui::implementation
     using namespace Controls;
 
     PopupWindow::PopupWindow(KeyboardTranslator const& translator, KeyboardHook const& hook, SequenceDefinition const& definition) :
-        translator{ translator }, defaultPage{ Page() }, sequencePopup{ definition }, searchPopup{ hook, definition },
-        keyTranslatedToken{ this->translator.OnKeyTranslated(auto_revoke, { this->get_weak(), &PopupWindow::OnKeyTranslated }) },
+        defaultPage{ Page() }, sequencePopup{ definition }, searchPopup{ hook, definition },
+        keyTranslatedToken{ translator.OnKeyTranslated(auto_revoke, { this->get_weak(), &PopupWindow::OnKeyTranslated }) },
         stateChangedToken{ hook.OnStateChanged(auto_revoke, { this->get_weak(), &PopupWindow::OnStateChanged }) }
     {
         const auto presenter{ Windowing::OverlappedPresenter::CreateForContextMenu() };
