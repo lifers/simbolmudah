@@ -9,8 +9,8 @@
 
   <Identity
     Name="c5fddb92-078a-4bbf-a1ea-c9b5d913903c"
-    Publisher="CN=Nagata"
-    Version="1.0.0.0" />
+    Publisher="CN=Nagata Aptana"
+    Version="1.0.2.0" />
 
   <mp:PhoneIdentity PhoneProductId="c5fddb92-078a-4bbf-a1ea-c9b5d913903c" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
