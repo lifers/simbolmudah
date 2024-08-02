@@ -10,9 +10,7 @@ use windows::{
         System::SystemServices::IMAGE_DOS_HEADER,
         UI::{
             Shell::{
-                Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIM_ADD,
-                NIM_DELETE, NIM_SETVERSION, NOTIFYICONDATAW, NOTIFYICONDATAW_0,
-                NOTIFYICON_VERSION_4,
+                Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIM_ADD, NIM_DELETE, NIM_MODIFY, NIM_SETVERSION, NOTIFYICONDATAW, NOTIFYICONDATAW_0, NOTIFYICON_VERSION_4
             },
             WindowsAndMessaging::{
                 CreateWindowExW, DefWindowProcW, DestroyWindow, LoadIconW, PostQuitMessage,
@@ -46,6 +44,7 @@ thread_local! {
 pub(super) struct NotifyIconInternal {
     h_wnd: HWND,
     internal_id: u32,
+    h_icon: HICON,
     h_menu: Option<NotifyIconMenu>,
     pub(super) report_open_settings: DelegateStorage<bindings::NotifyIcon, bool>,
     pub(super) report_exit_app: DelegateStorage<bindings::NotifyIcon, bool>,
@@ -96,6 +95,7 @@ impl NotifyIconInternal {
         let res = Self {
             h_wnd,
             internal_id,
+            h_icon: unsafe { LoadIconW(None, IDI_WARNING) }?,
             h_menu: Some(h_menu),
             report_open_settings: DelegateStorage::new(),
             report_exit_app: DelegateStorage::new(),
@@ -104,32 +104,21 @@ impl NotifyIconInternal {
             parent,
         };
 
-        let h_icon = unsafe { LoadIconW(None, IDI_WARNING) }?;
-        res.register_notify_icon(h_icon, hookenabled)?;
+        res.register_notify_icon(hookenabled)?;
 
         INTERNAL_NOTIFYICON.set(Some(res));
         Ok(())
     }
 
-    fn register_notify_icon(&self, h_icon: HICON, listening: bool) -> Result<()> {
-        let mut sz_tip = [0; 128];
-        let tip = if listening {
-            "simbolmudah (listening)"
-        } else {
-            "simbolmudah (not listening)"
-        }
-        .encode_utf16()
-        .collect::<Vec<_>>();
-        sz_tip[..tip.len().min(128)].copy_from_slice(&tip[..tip.len().min(128)]);
-
+    fn register_notify_icon(&self, listening: bool) -> Result<()> {
         let nid = NOTIFYICONDATAW {
             cbSize: std::mem::size_of::<NOTIFYICONDATAW>() as u32,
             hWnd: self.h_wnd,
             uID: self.internal_id,
             uFlags: NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_SHOWTIP,
             uCallbackMessage: WM_USER_TRAYICON,
-            hIcon: h_icon,
-            szTip: sz_tip,
+            hIcon: self.h_icon,
+            szTip: get_tooltip(listening),
             Anonymous: NOTIFYICONDATAW_0 {
                 uVersion: NOTIFYICON_VERSION_4,
             },
@@ -148,6 +137,30 @@ impl NotifyIconInternal {
         } else {
             Err(fail_message(
                 "Failed to register notify icon (Shell_NotifyIconW)",
+            ))
+        }
+    }
+
+    fn update_notify_icon(&self, listening: bool) -> Result<()> {
+        let nid = NOTIFYICONDATAW {
+            cbSize: std::mem::size_of::<NOTIFYICONDATAW>() as u32,
+            hWnd: self.h_wnd,
+            uID: self.internal_id,
+            uFlags: NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_SHOWTIP,
+            uCallbackMessage: WM_USER_TRAYICON,
+            hIcon: self.h_icon,
+            szTip: get_tooltip(listening),
+            Anonymous: NOTIFYICONDATAW_0 {
+                uVersion: NOTIFYICON_VERSION_4,
+            },
+            ..Default::default()
+        };
+
+        if unsafe { Shell_NotifyIconW(NIM_MODIFY, &nid) }.into() {
+            Ok(())
+        } else {
+            Err(fail_message(
+                "Failed to update notify icon (Shell_NotifyIconW)",
             ))
         }
     }
@@ -172,8 +185,7 @@ impl NotifyIconInternal {
 
     pub(super) fn update_listening_check(&mut self, listening: bool) -> Result<()> {
         self.h_menu = Some(NotifyIconMenu::new(listening)?);
-        let h_icon = unsafe { LoadIconW(None, IDI_WARNING) }?;
-        self.register_notify_icon(h_icon, listening)?;
+        self.update_notify_icon(listening)?;
         Ok(())
     }
 }
@@ -202,6 +214,19 @@ fn get_instance_handle() -> HINSTANCE {
     }
 
     HINSTANCE(&unsafe { __ImageBase } as *const _ as *mut _)
+}
+
+fn get_tooltip(listening: bool) -> [u16; 128] {
+    let mut sz_tip = [0; 128];
+    let tip = if listening {
+        "simbolmudah (listening)"
+    } else {
+        "simbolmudah (not listening)"
+    }
+    .encode_utf16()
+    .collect::<Vec<_>>();
+    sz_tip[..tip.len().min(128)].copy_from_slice(&tip[..tip.len().min(128)]);
+    sz_tip
 }
 
 extern "system" fn notify_proc(h_wnd: HWND, msg: u32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
