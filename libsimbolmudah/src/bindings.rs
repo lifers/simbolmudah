@@ -129,7 +129,7 @@ pub struct IKeyboardTranslatorFactory_Vtbl {
 windows_core::imp::define_interface!(
     INotifyIcon,
     INotifyIcon_Vtbl,
-    0x7f129b8c_97e3_530f_8856_eefd665dd01a
+    0x420f4a30_8c8b_5574_8c3b_b361b6c6ceec
 );
 impl windows_core::RuntimeType for INotifyIcon {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -150,6 +150,15 @@ pub struct INotifyIcon_Vtbl {
         *mut windows::Foundation::EventRegistrationToken,
     ) -> windows_core::HRESULT,
     pub RemoveOnOpenSettings: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::HRESULT,
+    pub OnExitApp: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        *mut core::ffi::c_void,
+        *mut windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::HRESULT,
+    pub RemoveOnExitApp: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         windows::Foundation::EventRegistrationToken,
     ) -> windows_core::HRESULT,
@@ -567,6 +576,37 @@ impl NotifyIcon {
         let this = self;
         unsafe {
             (windows_core::Interface::vtable(this).RemoveOnOpenSettings)(
+                windows_core::Interface::as_raw(this),
+                token,
+            )
+            .ok()
+        }
+    }
+    pub fn OnExitApp<P0>(
+        &self,
+        handler: P0,
+    ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>
+    where
+        P0: windows_core::Param<windows::Foundation::TypedEventHandler<NotifyIcon, bool>>,
+    {
+        let this = self;
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).OnExitApp)(
+                windows_core::Interface::as_raw(this),
+                handler.param().abi(),
+                &mut result__,
+            )
+            .map(|| result__)
+        }
+    }
+    pub fn RemoveOnExitApp(
+        &self,
+        token: windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::Result<()> {
+        let this = self;
+        unsafe {
+            (windows_core::Interface::vtable(this).RemoveOnExitApp)(
                 windows_core::Interface::as_raw(this),
                 token,
             )
@@ -1197,6 +1237,14 @@ pub trait INotifyIcon_Impl: Sized {
         &self,
         token: &windows::Foundation::EventRegistrationToken,
     ) -> windows_core::Result<()>;
+    fn OnExitApp(
+        &self,
+        handler: Option<&windows::Foundation::TypedEventHandler<NotifyIcon, bool>>,
+    ) -> windows_core::Result<windows::Foundation::EventRegistrationToken>;
+    fn RemoveOnExitApp(
+        &self,
+        token: &windows::Foundation::EventRegistrationToken,
+    ) -> windows_core::Result<()>;
     fn OnSetHookEnabled(
         &self,
         handler: Option<&windows::Foundation::TypedEventHandler<NotifyIcon, bool>>,
@@ -1275,6 +1323,39 @@ impl INotifyIcon_Vtbl {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
             INotifyIcon_Impl::RemoveOnOpenSettings(this, core::mem::transmute(&token)).into()
         }
+        unsafe extern "system" fn OnExitApp<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            handler: *mut core::ffi::c_void,
+            result__: *mut windows::Foundation::EventRegistrationToken,
+        ) -> windows_core::HRESULT
+        where
+            Identity: INotifyIcon_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            match INotifyIcon_Impl::OnExitApp(this, windows_core::from_raw_borrowed(&handler)) {
+                Ok(ok__) => {
+                    result__.write(core::mem::transmute_copy(&ok__));
+                    windows_core::HRESULT(0)
+                }
+                Err(err) => err.into(),
+            }
+        }
+        unsafe extern "system" fn RemoveOnExitApp<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            token: windows::Foundation::EventRegistrationToken,
+        ) -> windows_core::HRESULT
+        where
+            Identity: INotifyIcon_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            INotifyIcon_Impl::RemoveOnExitApp(this, core::mem::transmute(&token)).into()
+        }
         unsafe extern "system" fn OnSetHookEnabled<
             Identity: windows_core::IUnknownImpl,
             const OFFSET: isize,
@@ -1317,6 +1398,8 @@ impl INotifyIcon_Vtbl {
             GetHookEnabled: GetHookEnabled::<Identity, OFFSET>,
             OnOpenSettings: OnOpenSettings::<Identity, OFFSET>,
             RemoveOnOpenSettings: RemoveOnOpenSettings::<Identity, OFFSET>,
+            OnExitApp: OnExitApp::<Identity, OFFSET>,
+            RemoveOnExitApp: RemoveOnExitApp::<Identity, OFFSET>,
             OnSetHookEnabled: OnSetHookEnabled::<Identity, OFFSET>,
             RemoveOnSetHookEnabled: RemoveOnSetHookEnabled::<Identity, OFFSET>,
         }

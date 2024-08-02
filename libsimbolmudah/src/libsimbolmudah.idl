@@ -45,6 +45,7 @@ namespace LibSimbolMudah
         void GetHookEnabled(Boolean enabled);
 
         event Windows.Foundation.TypedEventHandler<NotifyIcon, Boolean> OnOpenSettings;
+        event Windows.Foundation.TypedEventHandler<NotifyIcon, Boolean> OnExitApp;
         event Windows.Foundation.TypedEventHandler<NotifyIcon, Boolean> OnSetHookEnabled;
     }
 }

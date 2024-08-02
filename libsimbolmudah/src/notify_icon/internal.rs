@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 
 use windows::{
-    core::{h, w, Result, Weak, HSTRING, PCWSTR},
+    core::{w, Result, Weak, PCWSTR},
     Foundation::EventRegistrationToken,
     Win32::{
         Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM},
@@ -28,7 +28,7 @@ use crate::{bindings, delegate_storage::DelegateStorage, fail_message, get_stron
 
 use super::{
     counter::GLOBAL_COUNTER,
-    menu::{NotifyIconMenu, WM_USER_LISTEN, WM_USER_SHOW_SETTINGS},
+    menu::{NotifyIconMenu, WM_USER_EXIT, WM_USER_LISTEN, WM_USER_SHOW_SETTINGS},
 };
 
 const WM_USER_TRAYICON: u32 = 0x1772;
@@ -48,6 +48,7 @@ pub(super) struct NotifyIconInternal {
     internal_id: u32,
     h_menu: Option<NotifyIconMenu>,
     pub(super) report_open_settings: DelegateStorage<bindings::NotifyIcon, bool>,
+    pub(super) report_exit_app: DelegateStorage<bindings::NotifyIcon, bool>,
     pub(super) report_set_listening: DelegateStorage<bindings::NotifyIcon, bool>,
     pub(super) on_state_changed_token: EventRegistrationToken,
     pub(super) parent: Weak<bindings::NotifyIcon>,
@@ -97,21 +98,28 @@ impl NotifyIconInternal {
             internal_id,
             h_menu: Some(h_menu),
             report_open_settings: DelegateStorage::new(),
+            report_exit_app: DelegateStorage::new(),
             report_set_listening: DelegateStorage::new(),
             on_state_changed_token: EventRegistrationToken::default(),
             parent,
         };
 
         let h_icon = unsafe { LoadIconW(None, IDI_WARNING) }?;
-        res.register_notify_icon(h_icon, h!("simbolmudah (not listening)"))?;
+        res.register_notify_icon(h_icon, hookenabled)?;
 
         INTERNAL_NOTIFYICON.set(Some(res));
         Ok(())
     }
 
-    fn register_notify_icon(&self, h_icon: HICON, tooltip: &HSTRING) -> Result<()> {
+    fn register_notify_icon(&self, h_icon: HICON, listening: bool) -> Result<()> {
         let mut sz_tip = [0; 128];
-        let tip = tooltip.as_wide();
+        let tip = if listening {
+            "simbolmudah (listening)"
+        } else {
+            "simbolmudah (not listening)"
+        }
+        .encode_utf16()
+        .collect::<Vec<_>>();
         sz_tip[..tip.len().min(128)].copy_from_slice(&tip[..tip.len().min(128)]);
 
         let nid = NOTIFYICONDATAW {
@@ -164,6 +172,8 @@ impl NotifyIconInternal {
 
     pub(super) fn update_listening_check(&mut self, listening: bool) -> Result<()> {
         self.h_menu = Some(NotifyIconMenu::new(listening)?);
+        let h_icon = unsafe { LoadIconW(None, IDI_WARNING) }?;
+        self.register_notify_icon(h_icon, listening)?;
         Ok(())
     }
 }
@@ -241,6 +251,18 @@ extern "system" fn notify_proc(h_wnd: HWND, msg: u32, w_param: WPARAM, l_param: 
                                     .expect("menu should stay valid")
                                     .is_listening(),
                             ),
+                        )
+                        .expect("invoke_all should succeed");
+                });
+            }
+            WM_USER_EXIT => {
+                INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
+                    let internal = internal.as_mut().expect("global initialized");
+                    internal
+                        .report_exit_app
+                        .invoke_all(
+                            &get_strong_ref(&internal.parent).expect("parent should stay valid"),
+                            None,
                         )
                         .expect("invoke_all should succeed");
                 });

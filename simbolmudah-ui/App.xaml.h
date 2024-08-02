@@ -13,18 +13,18 @@ namespace winrt::simbolmudah_ui::implementation
         fire_and_forget OpenWindow();
 
     private:
-        void WindowClosed(IInspectable const&, Microsoft::UI::Xaml::WindowEventArgs const&);
         fire_and_forget BuildDefinition() const;
         void OnSettingsChanged(IInspectable const&, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs const&);
         fire_and_forget OnOpenSettings(LibSimbolMudah::NotifyIcon const&, bool);
         fire_and_forget OnNotifyIconSetHook(LibSimbolMudah::NotifyIcon const&, bool status);
+        fire_and_forget OnAppExit(LibSimbolMudah::NotifyIcon const&, bool);
 
         const apartment_context main_thread;
         const simbolmudah_ui::AppManager appManager;
         const LibSimbolMudah::SequenceDefinition sequenceDefinition;
         const LibSimbolMudah::KeyboardTranslator keyboardTranslator;
 
-        simbolmudah_ui::MainWindow mainWindow{ nullptr };
+        weak_ref<simbolmudah_ui::MainWindow> mainWindow;
         LibSimbolMudah::KeyboardHook keyboardHook{ nullptr };
         simbolmudah_ui::PopupWindow popupWindow{ nullptr };
         LibSimbolMudah::NotifyIcon notifyIcon{ nullptr };
@@ -32,5 +32,6 @@ namespace winrt::simbolmudah_ui::implementation
         const simbolmudah_ui::AppManager::PropertyChanged_revoker settingsChangedRevoker;
         event_token openSettingsToken;
         event_token notifyIconSetHookToken;
+        event_token appExitToken;
     };
 }

@@ -133,16 +133,13 @@ namespace winrt::simbolmudah_ui::implementation
     using namespace Microsoft::UI;
     using namespace Xaml;
     using namespace Controls;
-    using namespace Windowing;
-    using namespace std::chrono_literals;
 
     PopupWindow::PopupWindow(KeyboardTranslator const& translator, KeyboardHook const& hook, SequenceDefinition const& definition) :
-        translator{ translator }, hook{ hook },
+        translator{ translator }, defaultPage{ Page() }, sequencePopup{ definition }, searchPopup{ hook, definition },
         keyTranslatedToken{ this->translator.OnKeyTranslated(auto_revoke, { this->get_weak(), &PopupWindow::OnKeyTranslated }) },
-        stateChangedToken{ this->hook.OnStateChanged(auto_revoke, { this->get_weak(), &PopupWindow::OnStateChanged }) },
-        defaultPage{ Page() }, sequencePopup{ definition }, searchPopup{ hook, definition }
+        stateChangedToken{ hook.OnStateChanged(auto_revoke, { this->get_weak(), &PopupWindow::OnStateChanged }) }
     {
-        const auto presenter{ OverlappedPresenter::CreateForContextMenu() };
+        const auto presenter{ Windowing::OverlappedPresenter::CreateForContextMenu() };
         presenter.IsAlwaysOnTop(true);
         
         const auto& appWindow{ this->AppWindow() };
