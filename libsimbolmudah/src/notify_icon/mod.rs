@@ -104,6 +104,46 @@ impl bindings::INotifyIcon_Impl for NotifyIcon_Impl {
         })
     }
 
+    fn OnExitApp(
+        &self,
+        handler: Option<&TypedEventHandler<bindings::NotifyIcon, bool>>,
+    ) -> Result<EventRegistrationToken> {
+        if let Some(handler) = handler {
+            let handler_ref = AgileReference::new(handler)?;
+            let token = get_token(handler.as_raw());
+            self.thread_controller.try_enqueue(move || {
+                INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
+                    internal
+                        .as_mut()
+                        .expect("internal should be initialised")
+                        .report_exit_app
+                        .insert(token, handler_ref.clone());
+
+                    Ok(())
+                })
+            })?;
+
+            Ok(EventRegistrationToken { Value: token })
+        } else {
+            Err(Error::new(E_POINTER, "delegate is null"))
+        }
+    }
+
+    fn RemoveOnExitApp(&self, token: &EventRegistrationToken) -> Result<()> {
+        let value = token.Value;
+        self.thread_controller.try_enqueue(move || {
+            INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
+                internal
+                    .as_mut()
+                    .expect("internal should be initialised")
+                    .report_exit_app
+                    .remove(value);
+
+                Ok(())
+            })
+        })
+    }
+
     fn OnSetHookEnabled(
         &self,
         handler: Option<&TypedEventHandler<bindings::NotifyIcon, bool>>,

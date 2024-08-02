@@ -21,7 +21,6 @@ namespace winrt::simbolmudah_ui::implementation
 
         const LibSimbolMudah::KeyboardTranslator translator;
         const LibSimbolMudah::KeyboardTranslator::OnKeyTranslated_revoker keyTranslatedToken;
-        const LibSimbolMudah::KeyboardHook hook;
         const LibSimbolMudah::KeyboardHook::OnStateChanged_revoker stateChangedToken;
         const Microsoft::UI::Xaml::Controls::Page defaultPage;
         const simbolmudah_ui::SequencePopup sequencePopup;

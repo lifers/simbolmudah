@@ -53,6 +53,7 @@ namespace winrt::simbolmudah_ui::implementation
             this->notifyIcon = NotifyIcon(this->appManager.HookEnabled());
             this->openSettingsToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
             this->notifyIconSetHookToken = this->notifyIcon.OnSetHookEnabled({ this->get_weak(), &App::OnNotifyIconSetHook });
+            this->appExitToken = this->notifyIcon.OnExitApp({ this->get_weak(), &App::OnAppExit });
         }
 
         if (this->appManager.HookEnabled())
@@ -67,11 +68,6 @@ namespace winrt::simbolmudah_ui::implementation
             this->OpenWindow();
         }
     }
-
-    /// <summary>
-    /// Callback for when the main window is closed.
-    /// </summary>
-    void App::WindowClosed(IInspectable const&, WindowEventArgs const&) { this->mainWindow = nullptr; }
 
     /// <summary>
     /// Builds the keyboard translator finite state automaton.
@@ -110,29 +106,32 @@ namespace winrt::simbolmudah_ui::implementation
         if (this->appManager.NotifyIconEnabled() && !this->notifyIcon)
         {
             this->notifyIcon = NotifyIcon(this->appManager.HookEnabled());
-            this->mainWindow.UpdateOpenSettings(this->notifyIcon);
+            if (const auto& w{ this->mainWindow.get() }; w) { w.UpdateOpenSettings(this->notifyIcon); }
             this->openSettingsToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
             this->notifyIconSetHookToken = this->notifyIcon.OnSetHookEnabled({ this->get_weak(), &App::OnNotifyIconSetHook });
+            this->appExitToken = this->notifyIcon.OnExitApp({ this->get_weak(), &App::OnAppExit });
         }
         else if (!this->appManager.NotifyIconEnabled() && this->notifyIcon)
         {
             this->notifyIcon.OnOpenSettings(this->openSettingsToken);
             this->notifyIcon.OnSetHookEnabled(this->notifyIconSetHookToken);
+            this->notifyIcon.OnExitApp(this->appExitToken);
             this->notifyIcon = nullptr;
-            this->mainWindow.UpdateOpenSettings(this->notifyIcon);
+            if (const auto& w{ this->mainWindow.get() }; w) { w.UpdateOpenSettings(this->notifyIcon); }
         }
     }
 
     fire_and_forget App::OpenWindow()
     {
         co_await this->main_thread;
-        if (!this->mainWindow)
+        auto w{ this->mainWindow.get() };
+        if (!w)
         {
-            this->mainWindow = simbolmudah_ui::MainWindow{
+            w = simbolmudah_ui::MainWindow{
                 this->sequenceDefinition, this->appManager, this->notifyIcon, 0 };
-            this->mainWindow.Closed({ this->get_weak(), &App::WindowClosed });
+            this->mainWindow = make_weak(w);
         }
-        this->mainWindow.Activate();
+        w.Activate();
     }
 
     fire_and_forget App::OnOpenSettings(NotifyIcon const&, bool)
@@ -141,12 +140,13 @@ namespace winrt::simbolmudah_ui::implementation
         using namespace std::chrono_literals;
 
         co_await this->main_thread;
-        if (!this->mainWindow)
+        this->OpenWindow();
+        co_await 500ms;
+
+        co_await this->main_thread;
+        if (const auto& w{ this->mainWindow.get() }; w)
         {
-            this->OpenWindow();
-            co_await 500ms;
-            co_await this->main_thread;
-            this->mainWindow.NavigateToSettings(EntranceNavigationTransitionInfo());
+            w.NavigateToSettings(EntranceNavigationTransitionInfo());
         }
     }
 
@@ -154,5 +154,11 @@ namespace winrt::simbolmudah_ui::implementation
     {
         co_await this->main_thread;
         this->appManager.HookEnabled(status);
+    }
+
+    fire_and_forget App::OnAppExit(NotifyIcon const&, bool)
+    {
+        co_await this->main_thread;
+        this->Exit();
     }
 }

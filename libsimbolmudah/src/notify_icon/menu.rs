@@ -15,6 +15,7 @@ use crate::fail_message;
 
 pub(super) const WM_USER_SHOW_SETTINGS: usize = 0x1773;
 pub(super) const WM_USER_LISTEN: usize = 0x1774;
+pub(super) const WM_USER_EXIT: usize = 0x1775;
 
 pub(super) struct NotifyIconMenu {
     h_menu: HMENU,
@@ -25,20 +26,38 @@ impl NotifyIconMenu {
     pub(super) fn new(is_listening: bool) -> Result<Self> {
         let h_menu = unsafe { CreatePopupMenu() }?;
 
+        let state = MF_BYPOSITION
+            | MF_STRING
+            | if is_listening {
+                MF_CHECKED
+            } else {
+                MF_UNCHECKED
+            };
+        unsafe { InsertMenuW(h_menu, 0, state, WM_USER_LISTEN, w!("Listen to compose")) }?;
         unsafe {
             InsertMenuW(
                 h_menu,
-                0,
+                1,
                 MF_BYPOSITION | MF_STRING,
                 WM_USER_SHOW_SETTINGS,
                 w!("Open settings"),
             )
         }?;
-        unsafe { InsertMenuW(h_menu, 1, MF_BYPOSITION | MF_SEPARATOR, 0, w!("")) }?;
+        unsafe { InsertMenuW(h_menu, 2, MF_BYPOSITION | MF_SEPARATOR, 0, w!("")) }?;
+        unsafe {
+            InsertMenuW(
+                h_menu,
+                3,
+                MF_BYPOSITION | MF_STRING,
+                WM_USER_EXIT,
+                w!("Exit simbolmudah"),
+            )
+        }?;
 
-        let state = MF_BYPOSITION | MF_STRING | if is_listening { MF_CHECKED } else { MF_UNCHECKED };
-        unsafe { InsertMenuW(h_menu, 0, state, WM_USER_LISTEN, w!("Listen to compose")) }?;
-        Ok(Self { h_menu, is_listening })
+        Ok(Self {
+            h_menu,
+            is_listening,
+        })
     }
 
     pub(super) fn show_menu(&self, h_wnd: HWND) -> Result<()> {
