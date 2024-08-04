@@ -1,7 +1,7 @@
 use super::{
     internal::SequenceDefinitionInternal, keysym_reader::KeySymDef, mapped_string::MappedString,
 };
-use crate::{fail, fail_message};
+use crate::utils::functions::{fail, fail_message};
 use regex::Regex;
 use smol_str::ToSmolStr;
 use std::{

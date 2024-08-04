@@ -20,19 +20,9 @@ namespace winrt::simbolmudah_ui::implementation
 
     void SequencePopup::FindPotentialPrefix()
     {
-        if (this->pendingSearch != nullptr)
-        {
-            this->pendingSearch.Cancel();
-        }
-
+        if (this->pendingSearch != nullptr) { this->pendingSearch.Cancel(); }
         this->pendingSearch = this->FindPotentialPrefixAsync();
-        this->pendingSearch.Completed([weak_this{ this->get_weak() }](IAsyncAction const&, AsyncStatus const&)
-        {
-            if (auto strong_this{ weak_this.get() })
-            {
-                strong_this->pendingSearch = nullptr;
-            }
-        });
+        this->pendingSearch.Completed({ this->get_weak(), &SequencePopup::Find_Completed });
     }
     
     IObservableVector<hstring> SequencePopup::Sequence() const { return this->sequence; }
@@ -60,4 +50,6 @@ namespace winrt::simbolmudah_ui::implementation
         co_await wil::resume_foreground(this->DispatcherQueue());
         this->searchResults.ReplaceAll(toShow);
     }
+
+    void SequencePopup::Find_Completed(IAsyncAction const&, AsyncStatus const&) { this->pendingSearch = nullptr; }
 }

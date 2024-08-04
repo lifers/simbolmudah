@@ -1,4 +1,4 @@
-use crate::{fail, fail_message};
+use crate::utils::functions::{fail, fail_message};
 use regex::Regex;
 use std::{
     cell::{LazyCell, RefCell},

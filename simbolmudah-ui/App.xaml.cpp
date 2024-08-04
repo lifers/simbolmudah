@@ -1,8 +1,6 @@
 #include "pch.hpp"
 #include "App.xaml.h"
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace winrt::simbolmudah_ui::implementation
 {
@@ -26,15 +24,15 @@ namespace winrt::simbolmudah_ui::implementation
         // See https://github.com/microsoft/cppwinrt/tree/master/nuget#initializecomponent
 
         // Do not close the application when the last window is closed.
-        Application::Current().DispatcherShutdownMode(DispatcherShutdownMode::OnExplicitShutdown);
+        this->DispatcherShutdownMode(DispatcherShutdownMode::OnExplicitShutdown);
 
 #if defined _DEBUG && !defined DISABLE_XAML_GENERATED_BREAK_ON_UNHANDLED_EXCEPTION
-        UnhandledException([](IInspectable const&, UnhandledExceptionEventArgs const& e)
+        this->UnhandledException([](IInspectable const&, UnhandledExceptionEventArgs const& e)
         {
-            if (IsDebuggerPresent())
+            if (::IsDebuggerPresent())
             {
-                auto errorMessage = e.Message();
-                __debugbreak();
+                const auto errorMessage = e.Message();
+                ::__debugbreak();
             }
         });
 #endif
