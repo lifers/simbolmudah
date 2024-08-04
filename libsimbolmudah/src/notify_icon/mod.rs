@@ -12,7 +12,10 @@ use windows::{
     },
 };
 
-use crate::{bindings, delegate_storage::get_token, thread_handler::ThreadHandler};
+use crate::{
+    bindings,
+    utils::{delegate_storage::get_token, thread_handler::ThreadHandler},
+};
 
 #[implement(bindings::NotifyIcon)]
 struct NotifyIcon {

@@ -3,26 +3,31 @@
 use std::cell::RefCell;
 
 use windows::{
-    core::{w, Result, Weak, PCWSTR},
+    core::{w, Result, Weak},
     Foundation::EventRegistrationToken,
     Win32::{
-        Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM},
-        System::SystemServices::IMAGE_DOS_HEADER,
+        Foundation::{HWND, LPARAM, LRESULT, WPARAM},
         UI::{
             Shell::{
-                Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIM_ADD, NIM_DELETE, NIM_MODIFY, NIM_SETVERSION, NOTIFYICONDATAW, NOTIFYICONDATAW_0, NOTIFYICON_VERSION_4
+                Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_SHOWTIP, NIF_TIP, NIM_ADD,
+                NIM_DELETE, NIM_MODIFY, NIM_SETVERSION, NOTIFYICONDATAW, NOTIFYICONDATAW_0,
+                NOTIFYICON_VERSION_4,
             },
             WindowsAndMessaging::{
-                CreateWindowExW, DefWindowProcW, DestroyWindow, LoadIconW, PostQuitMessage,
-                RegisterClassW, CW_USEDEFAULT, HICON, HMENU, HWND_MESSAGE, IDI_WARNING,
-                WINDOW_EX_STYLE, WM_COMMAND, WM_DESTROY, WNDCLASSW, WS_MINIMIZEBOX,
-                WS_OVERLAPPEDWINDOW, WS_VISIBLE,
+                DefWindowProcW, DestroyWindow, LoadIconW, PostQuitMessage, HICON, IDI_WARNING,
+                WM_COMMAND, WM_DESTROY,
             },
         },
     },
 };
 
-use crate::{bindings, delegate_storage::DelegateStorage, fail_message, get_strong_ref};
+use crate::{
+    bindings,
+    utils::{
+        delegate_storage::DelegateStorage,
+        functions::{create_message_only_window, fail_message, get_strong_ref},
+    },
+};
 
 use super::{
     counter::GLOBAL_COUNTER,
@@ -59,37 +64,7 @@ impl NotifyIconInternal {
         hookenabled: bool,
     ) -> Result<()> {
         let internal_id = GLOBAL_COUNTER.next();
-
-        let class_name = w!("LibSimbolMudah.NotifyIcon");
-        let h_instance = get_instance_handle();
-        let wnd_class = WNDCLASSW {
-            lpfnWndProc: Some(notify_proc),
-            lpszClassName: class_name,
-            hInstance: h_instance,
-            ..Default::default()
-        };
-
-        if unsafe { RegisterClassW(&wnd_class) } == 0 {
-            return Err(fail_message("Failed to register window class"));
-        }
-
-        let h_wnd = unsafe {
-            CreateWindowExW(
-                WINDOW_EX_STYLE::default(),
-                class_name,
-                PCWSTR::null(),
-                WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_MINIMIZEBOX,
-                CW_USEDEFAULT,
-                0,
-                CW_USEDEFAULT,
-                0,
-                HWND_MESSAGE,
-                HMENU::default(),
-                h_instance,
-                None,
-            )
-        }?;
-
+        let h_wnd = create_message_only_window(w!("LibSimbolMudah.NotifyIcon"), Some(notify_proc))?;
         let h_menu = NotifyIconMenu::new(hookenabled)?;
 
         let res = Self {
@@ -198,24 +173,6 @@ impl Drop for NotifyIconInternal {
     }
 }
 
-/// Get the library instance handle.
-/// Taken from https://github.com/rust-windowing/winit/blob/4e2e764e4a29305d612b7978b22583319c0458a0/src/platform_impl/windows/util.rs#L140
-/// with slight modification.
-fn get_instance_handle() -> HINSTANCE {
-    // Gets the instance handle by taking the address of the
-    // pseudo-variable created by the microsoft linker:
-    // https://devblogs.microsoft.com/oldnewthing/20041025-00/?p=37483
-
-    // This is preferred over GetModuleHandle(NULL) because it also works in DLLs:
-    // https://stackoverflow.com/questions/21718027/getmodulehandlenull-vs-hinstance
-
-    extern "C" {
-        static __ImageBase: IMAGE_DOS_HEADER;
-    }
-
-    HINSTANCE(&unsafe { __ImageBase } as *const _ as *mut _)
-}
-
 fn get_tooltip(listening: bool) -> [u16; 128] {
     let mut sz_tip = [0; 128];
     let tip = if listening {
@@ -224,7 +181,7 @@ fn get_tooltip(listening: bool) -> [u16; 128] {
         "simbolmudah (not listening)"
     }
     .encode_utf16()
-    .collect::<Vec<_>>();
+    .collect::<Box<_>>();
     sz_tip[..tip.len().min(128)].copy_from_slice(&tip[..tip.len().min(128)]);
     sz_tip
 }

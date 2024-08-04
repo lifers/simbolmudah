@@ -16,8 +16,8 @@ use windows::{
 
 use crate::{
     bindings,
-    delegate_storage::DelegateStorage,
     sequence_definition::{SequenceDefinition, SequenceDefinitionError},
+    utils::{delegate_storage::DelegateStorage, sender::send_text_clipboard},
 };
 
 enum VKToUnicodeError {
@@ -143,9 +143,12 @@ impl KeyboardTranslatorInternal {
         result: std::result::Result<String, SequenceDefinitionError>,
     ) -> Result<()> {
         match result {
-            Ok(s) => self
-                .report_translated
-                .invoke_all(&self.get_parent_ref()?, Some(&s.into())),
+            Ok(s) => {
+                let _ = send_text_clipboard(s.clone())?;
+                self.report_translated
+                    .invoke_all(&self.get_parent_ref()?, Some(&s.into()))?;
+                Ok(())
+            }
             Err(SequenceDefinitionError::ValueNotFound) => self
                 .report_invalid
                 .invoke_all(&self.get_parent_ref()?, Some(h!("Value not found"))),

@@ -1,6 +1,9 @@
 mod internal;
 
-use crate::{bindings, delegate_storage::get_token, fail, thread_handler::ThreadHandler};
+use crate::{
+    bindings,
+    utils::{delegate_storage::get_token, functions::fail, thread_handler::ThreadHandler},
+};
 use internal::KeyboardTranslatorInternal;
 use std::sync::{
     atomic::Ordering::{Acquire, Release},

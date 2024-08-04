@@ -1,6 +1,11 @@
 mod internal;
 
-use crate::{bindings, delegate_storage::get_token, get_strong_ref, thread_handler::ThreadHandler};
+use crate::{
+    bindings,
+    utils::{
+        delegate_storage::get_token, functions::get_strong_ref, thread_handler::ThreadHandler,
+    },
+};
 use internal::KeyboardHookInternal;
 use std::{
     cell::Cell,

@@ -5,7 +5,7 @@ mod mapped_string;
 
 use std::sync::RwLock;
 
-use crate::{bindings, fail};
+use crate::{bindings, utils::functions::fail};
 use internal::SequenceDefinitionInternal;
 use windows::{
     core::{implement, Error, IInspectable, Result, Weak, HSTRING},

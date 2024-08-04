@@ -11,7 +11,7 @@ use windows::{
     },
 };
 
-use crate::fail_message;
+use crate::utils::functions::fail_message;
 
 pub(super) const WM_USER_SHOW_SETTINGS: usize = 0x1773;
 pub(super) const WM_USER_LISTEN: usize = 0x1774;

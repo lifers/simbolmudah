@@ -18,6 +18,7 @@ namespace winrt::simbolmudah_ui::implementation
 
     private:
         Windows::Foundation::IAsyncAction FindPotentialPrefixAsync();
+        void Find_Completed(Windows::Foundation::IAsyncAction const&, Windows::Foundation::AsyncStatus const&);
 
         const LibSimbolMudah::SequenceDefinition sequenceDefinition;
         const Windows::Foundation::Collections::IObservableVector<hstring> sequence;

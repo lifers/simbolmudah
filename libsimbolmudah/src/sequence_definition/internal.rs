@@ -6,7 +6,7 @@ use windows::{
     Win32::Globalization::{u_charName, UErrorCode, U_EXTENDED_CHAR_NAME},
 };
 
-use crate::{bindings, fail};
+use crate::{bindings, utils::functions::fail};
 
 use super::{
     compose_reader::ComposeDef, keysym_reader::KeySymDef, mapped_string::MappedString,

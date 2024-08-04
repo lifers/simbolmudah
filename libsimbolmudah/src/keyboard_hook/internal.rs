@@ -1,8 +1,20 @@
 use std::fmt::Debug;
 
-use windows::{core::{Weak, HSTRING}, Foundation::EventRegistrationToken, Win32::UI::Input::KeyboardAndMouse::{GetKeyState, KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_KEYUP, VK_CAPITAL, VK_LSHIFT, VK_RMENU, VK_RSHIFT, VK_SHIFT, VK_U}};
+use windows::{
+    core::{Weak, HSTRING},
+    Foundation::EventRegistrationToken,
+    Win32::UI::Input::KeyboardAndMouse::{
+        GetKeyState, KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_KEYUP, VK_CAPITAL, VK_LSHIFT,
+        VK_RMENU, VK_RSHIFT, VK_SHIFT, VK_U,
+    },
+};
 
-use crate::{bindings, delegate_storage::DelegateStorage, get_strong_ref, sender::send_keybdinput};
+use crate::{
+    bindings,
+    utils::{
+        delegate_storage::DelegateStorage, functions::get_strong_ref, sender::send_keybdinput,
+    },
+};
 
 use super::Stage;
 
@@ -143,7 +155,7 @@ impl KeyboardHookInternal {
                 }
                 true
             }
-            Stage::SearchMode => false
+            Stage::SearchMode => false,
         }
     }
 
