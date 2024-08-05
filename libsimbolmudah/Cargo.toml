@@ -39,7 +39,7 @@ features = [
 [dependencies]
 windows-core = "0.58.0"
 smol_str = "0.2.2"
-regex = "1.10.5"
+regex = "1.10.6"
 fst = "0.4.7"
 
 [build-dependencies]
