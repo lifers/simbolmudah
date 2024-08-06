@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+    <defs>
+        <radialGradient id="a" cx="0" cy="0" gradientUnits="userSpaceOnUse" r="50">
+            <stop offset=".3" stop-color="#f82"/>
+            <stop offset="1" stop-color="#e62"/>
+        </radialGradient>
+
+        <radialGradient id="b" cx="0" cy="0" gradientUnits="userSpaceOnUse" r="60">
+            <stop offset=".4" stop-color="#c33"/>
+            <stop offset="1" stop-color="#811"/>
+        </radialGradient>
+
+        <radialGradient id="c" cx="0" cy="0" r="2">
+            <stop offset="0" stop-color="#fff"/>
+            <stop offset="1" stop-color="#ccc"/>
+        </radialGradient>
+
+        <filter id="s">
+            <feDropShadow dx=".2" dy=".3" stdDeviation=".5" flood-opacity=".6"/>
+        </filter>
+
+        <filter id="t">
+            <feDropShadow dx="0" dy="0" stdDeviation=".2" flood-opacity=".5"/>
+        </filter>
+    </defs>
+
+
+    <rect width="28" height="24" rx="2" x="5" y="12" fill="url(#a)" filter="url(#s)"/>
+    <g fill="url(#c)" filter="url(#t)">
+        <rect width="5" height="4" rx=".5" x="7" y="15"/>
+        <rect width="4" height="4" rx=".5" x="13" y="15"/>
+        <rect width="4" height="4" rx=".5" x="18" y="15"/>
+        <rect width="6" height="4" rx=".5" x="7" y="20"/>
+        <rect width="4" height="4" rx=".5" x="14" y="20"/>
+        <rect width="4" height="4" rx=".5" x="19" y="20"/>
+        <rect width="8" height="4" rx=".5" x="7" y="25"/>
+        <rect width="4" height="4" rx=".5" x="16" y="25"/>
+        <rect width="6" height="4" rx=".5" x="7" y="30"/>
+        <rect width="4" height="4" rx=".5" x="14" y="30"/>
+        <rect width="8" height="4" rx=".5" x="19" y="30"/>
+    </g>
+
+    <ellipse rx="12" fill="url(#b)" cx="31" cy="24" filter="url(#s)"/>
+</svg>

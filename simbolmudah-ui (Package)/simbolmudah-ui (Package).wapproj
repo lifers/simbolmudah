@@ -38,7 +38,7 @@
   <PropertyGroup>
     <ProjectGuid>a1ac50b1-111d-4c9d-856e-672d7ebe4335</ProjectGuid>
     <TargetPlatformVersion>10.0.22621.0</TargetPlatformVersion>
-    <TargetPlatformMinVersion>10.0.22621.0</TargetPlatformMinVersion>
+    <TargetPlatformMinVersion>10.0.22000.0</TargetPlatformMinVersion>
     <DefaultLanguage>en-US</DefaultLanguage>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <EntryPointProjectUniqueName>..\simbolmudah-ui\simbolmudah-ui.vcxproj</EntryPointProjectUniqueName>
@@ -75,19 +75,39 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Images\AppList.scale-100.png" />
+    <Content Include="Images\AppList.scale-125.png" />
+    <Content Include="Images\AppList.scale-150.png" />
+    <Content Include="Images\AppList.scale-200.png" />
+    <Content Include="Images\AppList.scale-400.png" />
+    <Content Include="Images\AppList.targetsize-16.png" />
+    <Content Include="Images\AppList.targetsize-16_altform-unplated.png" />
+    <Content Include="Images\AppList.targetsize-24.png" />
+    <Content Include="Images\AppList.targetsize-24_altform-unplated.png" />
+    <Content Include="Images\AppList.targetsize-256.png" />
+    <Content Include="Images\AppList.targetsize-256_altform-unplated.png" />
+    <Content Include="Images\AppList.targetsize-32.png" />
+    <Content Include="Images\AppList.targetsize-32_altform-unplated.png" />
+    <Content Include="Images\AppList.targetsize-48.png" />
+    <Content Include="Images\AppList.targetsize-48_altform-unplated.png" />
     <Content Include="Images\favicon.ico" />
+    <Content Include="Images\favicon.svg" />
+    <Content Include="Images\MedTile.scale-100.png" />
     <Content Include="Images\SplashScreen.scale-200.png" />
     <Content Include="Images\LockScreenLogo.scale-200.png" />
     <Content Include="Images\Square150x150Logo.scale-200.png" />
-    <Content Include="Images\Square44x44Logo.scale-200.png" />
-    <Content Include="Images\Square44x44Logo.targetsize-24_altform-unplated.png" />
-    <Content Include="Images\StoreLogo.png" />
+    <Content Include="Images\StoreLogo.scale-100.png" />
+    <Content Include="Images\StoreLogo.scale-125.png" />
+    <Content Include="Images\StoreLogo.scale-150.png" />
+    <Content Include="Images\StoreLogo.scale-200.png" />
+    <Content Include="Images\StoreLogo.scale-400.png" />
     <Content Include="Images\Wide310x150Logo.scale-200.png" />
     <None Include="simbolmudah-ui %28Package%29_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\simbolmudah-ui\simbolmudah-ui.vcxproj">
       <SkipGetTargetFrameworkProperties>True</SkipGetTargetFrameworkProperties>
+      <TrustLevel>Full</TrustLevel>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
