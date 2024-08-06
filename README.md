@@ -22,10 +22,10 @@ This is inspired by the Compose Key mechanism from Freedesktop's X project.
   - [ ] Use fuzzy text search engine
   - [x] Implement recommendations
   - [ ] Implement Emoji variants
-- [ ] Tray menu
-  - [ ] Add exit button
-  - [ ] Add hover info
-- [ ] Settings UI
+- [x] Tray menu
+  - [x] Add exit button
+  - [x] Add hover info
+- [x] Settings UI
 - [ ] Custom compose rules
   - [ ] Custom compose key
 - [ ] Internationalisation
