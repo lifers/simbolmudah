@@ -3,8 +3,29 @@
 #if __has_include("MainWindow.g.cpp")
 #include "MainWindow.g.cpp"
 #endif
-#include <winrt/Microsoft.UI.Dispatching.h>
+#include <CommCtrl.h>
+#include <Microsoft.UI.Xaml.Window.h>
 #include <wil/cppwinrt_helpers.h>
+
+
+namespace
+{
+    // Limit the minimum window size to 480x360.
+    LRESULT MinimumSizeSubclass(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, UINT_PTR, DWORD_PTR)
+    {
+        if (message == WM_GETMINMAXINFO)
+        {
+            const auto mmi{ reinterpret_cast<MINMAXINFO*>(lParam) };
+            mmi->ptMinTrackSize.x = 480;
+            mmi->ptMinTrackSize.y = 360;
+            return 0;
+        }
+        else
+        {
+            return ::DefSubclassProc(hwnd, message, wParam, lParam);
+        }
+    }
+}
 
 namespace winrt::simbolmudah_ui::implementation
 {
@@ -30,6 +51,18 @@ namespace winrt::simbolmudah_ui::implementation
 
         this->ExtendsContentIntoTitleBar(true);
         this->Closed({ this, &MainWindow::OnClosed });
+        this->SetMinimumWindowSize();
+    }
+
+    /// <summary>
+    /// Set the minimum window size using subclassing.
+    /// </summary>
+    void MainWindow::SetMinimumWindowSize()
+    {
+        const auto windowNative{ this->m_inner.as<::IWindowNative>() };
+        HWND hwnd{};
+        check_hresult(windowNative->get_WindowHandle(&hwnd));
+        check_bool(SetWindowSubclass(hwnd, MinimumSizeSubclass, 0, 0));
     }
 
     /// <summary>
@@ -114,13 +147,14 @@ namespace winrt::simbolmudah_ui::implementation
 
     void MainWindow::Window_SizeChanged(IInspectable const&, WindowSizeChangedEventArgs const& args)
     {
+        using enum NavigationViewPaneDisplayMode;
         if (const auto& n{ this->rootNavView() }; args.Size().Width <= n.CompactModeThresholdWidth())
         {
-            n.PaneDisplayMode(NavigationViewPaneDisplayMode::Auto);
+            n.PaneDisplayMode(Auto);
         }
         else
         {
-            n.PaneDisplayMode(NavigationViewPaneDisplayMode::Top);
+            n.PaneDisplayMode(Top);
         }
     }
 

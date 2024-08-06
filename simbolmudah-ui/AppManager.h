@@ -14,6 +14,7 @@ namespace winrt::simbolmudah_ui::implementation
         fire_and_forget SaveSettings(simbolmudah_ui::SettingsObject settings);
 
         WIL_NOTIFYING_PROPERTY(bool, HookEnabled, false);
+        WIL_NOTIFYING_PROPERTY(bool, UseHookPopup, false);
         WIL_NOTIFYING_PROPERTY(bool, NotifyIconEnabled, true);
         WIL_NOTIFYING_PROPERTY(bool, MainWindowOpened, true);
 

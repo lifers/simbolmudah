@@ -57,8 +57,12 @@ namespace winrt::simbolmudah_ui::implementation
         if (this->appManager.HookEnabled())
         {
             this->keyboardHook = KeyboardHook{ this->keyboardTranslator };
-            this->popupWindow = simbolmudah_ui::PopupWindow{
-                this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+
+            if (this->appManager.UseHookPopup())
+            {
+                this->popupWindow = simbolmudah_ui::PopupWindow{
+                    this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+            }
         }
 
         if (this->appManager.MainWindowOpened())
@@ -78,7 +82,7 @@ namespace winrt::simbolmudah_ui::implementation
         const auto composedef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre")) };
         this->sequenceDefinition.Build((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
     }
-    
+
     /// <summary>
     /// Callback for when the settings change.
     /// </summary>
@@ -88,17 +92,37 @@ namespace winrt::simbolmudah_ui::implementation
         if (this->appManager.HookEnabled() && !this->keyboardHook)
         {
             this->keyboardHook = KeyboardHook{ this->keyboardTranslator };
-            this->popupWindow = simbolmudah_ui::PopupWindow{
-                this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+
+            if (this->appManager.UseHookPopup())
+            {
+                this->popupWindow = simbolmudah_ui::PopupWindow{
+                    this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+            }
 
             if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(true); }
         }
         else if (!this->appManager.HookEnabled() && this->keyboardHook)
         {
             if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(false); }
+
+            if (this->popupWindow)
+            {
+                this->popupWindow.Close();
+                this->popupWindow = nullptr;
+            }
+            this->keyboardHook = nullptr;
+        }
+
+        // Update the popup window, given the hook is enabled.
+        if (this->appManager.HookEnabled() && this->appManager.UseHookPopup() && !this->popupWindow)
+        {
+            this->popupWindow = simbolmudah_ui::PopupWindow{
+                this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+        }
+        else if (!this->appManager.UseHookPopup() && this->popupWindow)
+        {
             this->popupWindow.Close();
             this->popupWindow = nullptr;
-            this->keyboardHook = nullptr;
         }
 
         // Update the notify icon and main window.

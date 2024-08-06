@@ -3,7 +3,6 @@
 #if __has_include("SearchPopup.g.cpp")
 #include "SearchPopup.g.cpp"
 #endif
-#include <winrt/Microsoft.UI.Dispatching.h>
 #include <wil/cppwinrt_helpers.h>
 
 namespace winrt::simbolmudah_ui::implementation
@@ -61,7 +60,7 @@ namespace winrt::simbolmudah_ui::implementation
         {
             toShow.emplace_back(s);
         }
-        
+
         co_await wil::resume_foreground(this->DispatcherQueue());
         this->searchResults.ReplaceAll(toShow);
     }
