@@ -18,6 +18,15 @@ namespace winrt::simbolmudah_ui::implementation
             values.Insert(L"keyboardHookEnabled", box_value(this->m_HookEnabled));
         }
 
+        if (values.HasKey(L"useHookPopup"))
+        {
+            this->m_UseHookPopup = unbox_value<bool>(values.Lookup(L"useHookPopup"));
+        }
+        else
+        {
+            values.Insert(L"useHookPopup", box_value(this->m_UseHookPopup));
+        }
+
         if (values.HasKey(L"notifyIconEnabled"))
         {
             this->m_NotifyIconEnabled = unbox_value<bool>(values.Lookup(L"notifyIconEnabled"));
@@ -47,6 +56,12 @@ namespace winrt::simbolmudah_ui::implementation
         {
             this->m_HookEnabled = settings.HookEnabled;
             values.Insert(L"keyboardHookEnabled", box_value(this->m_HookEnabled));
+        }
+
+        if (settings.UseHookPopup != this->m_UseHookPopup)
+        {
+            this->m_UseHookPopup = settings.UseHookPopup;
+            values.Insert(L"useHookPopup", box_value(this->m_UseHookPopup));
         }
 
         if (settings.NotifyIconEnabled != this->m_NotifyIconEnabled)

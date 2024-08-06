@@ -16,7 +16,7 @@ use windows::{
     },
 };
 
-use super::{clipboard::Clipboard, functions::create_message_only_window};
+use super::{clipboard::Clipboard, message_window::MessageWindow};
 
 fn send(sent: &[INPUT]) -> Result<()> {
     unsafe {
@@ -58,11 +58,16 @@ pub(crate) fn send_text_clipboard(text: String) -> Result<IAsyncAction> {
                 return Err(Error::new(E_ABORT, "Operation canceled"));
             }
 
-            // Create message only window
-            let h_wnd = create_message_only_window(w!("LibSimbolMudah.Clipboard"), Some(wnd_proc))?;
+            {
+                // Create message only window
+                let h_wnd = MessageWindow::new(w!("LibSimbolMudah.Clipboard"), Some(wnd_proc))?;
 
-            // Copy text to clipboard
-            Clipboard::new(h_wnd)?.set_text(&text)?;
+                // Get clipboard access
+                let clipboard = Clipboard::new(h_wnd.handle())?;
+
+                // Copy text to clipboard
+                clipboard.set_text(&text)?;
+            }
 
             // Simulate Ctrl+V
             let ctrl_down = KEYBDINPUT {

@@ -4,7 +4,6 @@
 #include "PopupWindow.g.cpp"
 #endif
 #include <Microsoft.UI.Xaml.Window.h>
-#include <winrt/Microsoft.UI.Dispatching.h>
 #include <wil/cppwinrt_helpers.h>
 
 // To learn more about WinUI, the WinUI project structure,
@@ -141,7 +140,7 @@ namespace winrt::simbolmudah_ui::implementation
     {
         const auto presenter{ Windowing::OverlappedPresenter::CreateForContextMenu() };
         presenter.IsAlwaysOnTop(true);
-        
+
         const auto& appWindow{ this->AppWindow() };
         appWindow.SetPresenter(presenter);
         appWindow.Hide();

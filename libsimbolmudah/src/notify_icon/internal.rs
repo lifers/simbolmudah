@@ -14,8 +14,8 @@ use windows::{
                 NOTIFYICON_VERSION_4,
             },
             WindowsAndMessaging::{
-                DefWindowProcW, DestroyWindow, LoadIconW, PostQuitMessage, HICON, IDI_WARNING,
-                WM_COMMAND, WM_DESTROY,
+                DefWindowProcW, LoadIconW, PostQuitMessage, HICON, IDI_WARNING, WM_COMMAND,
+                WM_DESTROY,
             },
         },
     },
@@ -25,7 +25,8 @@ use crate::{
     bindings,
     utils::{
         delegate_storage::DelegateStorage,
-        functions::{create_message_only_window, fail_message, get_strong_ref},
+        functions::{fail_message, get_strong_ref},
+        message_window::MessageWindow,
     },
 };
 
@@ -47,7 +48,7 @@ thread_local! {
 }
 
 pub(super) struct NotifyIconInternal {
-    h_wnd: HWND,
+    h_wnd: MessageWindow,
     internal_id: u32,
     h_icon: HICON,
     h_menu: Option<NotifyIconMenu>,
@@ -64,7 +65,7 @@ impl NotifyIconInternal {
         hookenabled: bool,
     ) -> Result<()> {
         let internal_id = GLOBAL_COUNTER.next();
-        let h_wnd = create_message_only_window(w!("LibSimbolMudah.NotifyIcon"), Some(notify_proc))?;
+        let h_wnd = MessageWindow::new(w!("LibSimbolMudah.NotifyIcon"), Some(notify_proc))?;
         let h_menu = NotifyIconMenu::new(hookenabled)?;
 
         let res = Self {
@@ -88,7 +89,7 @@ impl NotifyIconInternal {
     fn register_notify_icon(&self, listening: bool) -> Result<()> {
         let nid = NOTIFYICONDATAW {
             cbSize: std::mem::size_of::<NOTIFYICONDATAW>() as u32,
-            hWnd: self.h_wnd,
+            hWnd: self.h_wnd.handle(),
             uID: self.internal_id,
             uFlags: NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_SHOWTIP,
             uCallbackMessage: WM_USER_TRAYICON,
@@ -119,7 +120,7 @@ impl NotifyIconInternal {
     fn update_notify_icon(&self, listening: bool) -> Result<()> {
         let nid = NOTIFYICONDATAW {
             cbSize: std::mem::size_of::<NOTIFYICONDATAW>() as u32,
-            hWnd: self.h_wnd,
+            hWnd: self.h_wnd.handle(),
             uID: self.internal_id,
             uFlags: NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_SHOWTIP,
             uCallbackMessage: WM_USER_TRAYICON,
@@ -143,7 +144,7 @@ impl NotifyIconInternal {
     fn remove_tray_icon(&self) -> Result<()> {
         let nid = NOTIFYICONDATAW {
             cbSize: std::mem::size_of::<NOTIFYICONDATAW>() as u32,
-            hWnd: self.h_wnd,
+            hWnd: self.h_wnd.handle(),
             uID: self.internal_id,
             uFlags: NIF_ICON,
             ..Default::default()
@@ -169,7 +170,6 @@ impl Drop for NotifyIconInternal {
     fn drop(&mut self) {
         self.remove_tray_icon()
             .expect("Notify icon should be removed");
-        unsafe { DestroyWindow(self.h_wnd) }.expect("Window should be destroyed");
     }
 }
 
@@ -195,11 +195,11 @@ extern "system" fn notify_proc(h_wnd: HWND, msg: u32, w_param: WPARAM, l_param: 
 
             let options = (l_param.0 as u16).into();
             if matches!(options, NIN_SELECT | NIN_KEYSELECT) {
-                INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
-                    let internal = internal.as_mut().expect("global initialized");
+                INTERNAL_NOTIFYICON.with_borrow(|internal: &Option<NotifyIconInternal>| {
+                    let internal = internal.as_ref().expect("global initialized");
 
                     if let Some(ref menu) = internal.h_menu {
-                        menu.show_menu(internal.h_wnd)
+                        menu.show_menu(internal.h_wnd.handle())
                             .expect("show_menu should succeed");
                     }
                 });

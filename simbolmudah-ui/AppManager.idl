@@ -3,6 +3,7 @@ namespace simbolmudah_ui
     struct SettingsObject
     {
         Boolean HookEnabled;
+        Boolean UseHookPopup;
         Boolean NotifyIconEnabled;
         Boolean MainWindowOpened;
     };
@@ -15,6 +16,7 @@ namespace simbolmudah_ui
         void SaveSettings(SettingsObject settings);
 
         Boolean HookEnabled;
+        Boolean UseHookPopup;
         Boolean NotifyIconEnabled;
         Boolean MainWindowOpened;
 
