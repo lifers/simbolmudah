@@ -9,9 +9,9 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="c5fddb92-078a-4bbf-a1ea-c9b5d913903c"
-    Publisher="CN=Nagata Aptana"
-    Version="1.0.2.0" />
+    Name="NagataAptana.simbolmudah"
+    Publisher="CN=AF85BA48-FC91-4A94-9204-8A1B58A2CEC8"
+    Version="0.4.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="c5fddb92-078a-4bbf-a1ea-c9b5d913903c" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
@@ -39,9 +39,10 @@
         Description="Easily input Unicode characters and more."
         BackgroundColor="transparent"
         Square150x150Logo="Images\MedTile.png" Square44x44Logo="Images\AppList.png">
-        <uap:DefaultTile Wide310x150Logo="Images\Wide310x150Logo.png" >
+        <uap:DefaultTile Wide310x150Logo="Images\Wide310x150Logo.png"  Square310x310Logo="Images\LargeTile.png" Square71x71Logo="Images\SmallTile.png">
           <uap:ShowNameOnTiles>
             <uap:ShowOn Tile="square150x150Logo"/>
+            <uap:ShowOn Tile="square310x310Logo"/>
           </uap:ShowNameOnTiles>
         </uap:DefaultTile >
         <uap:SplashScreen Image="Images\SplashScreen.png" />
