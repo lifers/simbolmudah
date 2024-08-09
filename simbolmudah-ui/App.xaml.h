@@ -15,11 +15,15 @@ namespace winrt::simbolmudah_ui::implementation
     private:
         fire_and_forget BuildDefinition() const;
         void OnSettingsChanged(IInspectable const&, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs const&);
+        fire_and_forget OnNotifyIconPathInitialized(
+            Windows::Foundation::IAsyncOperation<Windows::Storage::StorageFile> const& op,
+            Windows::Foundation::AsyncStatus);
+        void InitializeNotifyIcon();
         fire_and_forget OnOpenSettings(LibSimbolMudah::NotifyIcon const&, bool);
         fire_and_forget OnNotifyIconSetHook(LibSimbolMudah::NotifyIcon const&, bool status);
         fire_and_forget OnAppExit(LibSimbolMudah::NotifyIcon const&, bool);
 
-        const apartment_context main_thread;
+        const Microsoft::UI::Dispatching::DispatcherQueue main_thread;
         const simbolmudah_ui::AppManager appManager;
         const LibSimbolMudah::SequenceDefinition sequenceDefinition;
         const LibSimbolMudah::KeyboardTranslator keyboardTranslator;
@@ -33,5 +37,8 @@ namespace winrt::simbolmudah_ui::implementation
         event_token openSettingsToken;
         event_token notifyIconSetHookToken;
         event_token appExitToken;
+
+        hstring notifyIconPath;
+        bool delayNotifyIcon{ false };
     };
 }

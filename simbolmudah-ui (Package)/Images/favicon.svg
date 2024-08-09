@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+    <defs>
+        <radialGradient id="a" cx="0" cy="0" gradientUnits="userSpaceOnUse" r="120">
+            <stop offset=".3" stop-color="#f82"/>
+            <stop offset="1" stop-color="#e62"/>
+        </radialGradient>
+
+        <radialGradient id="b" cx="0" cy="0" gradientUnits="userSpaceOnUse" r="120">
+            <stop offset=".4" stop-color="#c33"/>
+            <stop offset="1" stop-color="#811"/>
+        </radialGradient>
+
+        <radialGradient id="c" cx="0" cy="0" r="2">
+            <stop offset="0" stop-color="#fff"/>
+            <stop offset="1" stop-color="#ccc"/>
+        </radialGradient>
+
+        <filter id="s">
+            <feDropShadow dx="0" dy="0"/>
+        </filter>
+
+        <filter id="t">
+            <feDropShadow dx="0" dy="0" stdDeviation=".4" flood-opacity=".4"/>
+        </filter>
+    </defs>
+
+    <rect width="76" height="80" rx="5" x="3" y="20" fill="url(#a)" filter="url(#s)"/>
+    <g fill="url(#c)" filter="url(#t)">
+        <rect width="20" height="15" rx="2" x="7" y="27"/>
+        <rect width="16" height="15" rx="2" x="29" y="27"/>
+        <rect width="10" height="15" rx="2" x="47" y="27"/>
+        <rect width="24" height="15" rx="2" x="7" y="44"/>
+        <rect width="10" height="15" rx="2" x="33" y="44"/>
+        <rect width="32" height="15" rx="2" x="7" y="61"/>
+        <rect width="24" height="15" rx="2" x="7" y="78"/>
+        <rect width="16" height="15" rx="2" x="33" y="78"/>
+        <rect width="6" height="15" rx="2" x="51" y="78"/>
+    </g>
+
+    <ellipse rx="40" fill="url(#b)" cx="77" cy="60" filter="url(#s)"/>
+</svg>

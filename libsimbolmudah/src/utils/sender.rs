@@ -1,7 +1,7 @@
 use std::mem::size_of;
 
 use windows::{
-    core::{w, Error, Result},
+    core::{h, Error, Result},
     Foundation::{AsyncStatus, IAsyncAction},
     System::Threading::{ThreadPool, WorkItemHandler},
     Win32::{
@@ -60,7 +60,7 @@ pub(crate) fn send_text_clipboard(text: String) -> Result<IAsyncAction> {
 
             {
                 // Create message only window
-                let h_wnd = MessageWindow::new(w!("LibSimbolMudah.Clipboard"), Some(wnd_proc))?;
+                let h_wnd = MessageWindow::new(h!("LibSimbolMudah.Clipboard"), Some(wnd_proc))?;
 
                 // Get clipboard access
                 let clipboard = Clipboard::new(h_wnd.handle())?;

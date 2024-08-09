@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 
 use windows::{
-    core::{w, Result, Weak},
+    core::{h, Owned, Result, Weak, HSTRING},
     Foundation::EventRegistrationToken,
     Win32::{
         Foundation::{HWND, LPARAM, LRESULT, WPARAM},
@@ -14,8 +14,8 @@ use windows::{
                 NOTIFYICON_VERSION_4,
             },
             WindowsAndMessaging::{
-                DefWindowProcW, LoadIconW, PostQuitMessage, HICON, IDI_WARNING, WM_COMMAND,
-                WM_DESTROY,
+                DefWindowProcW, LoadImageW, PostQuitMessage, HICON, IMAGE_ICON, LR_DEFAULTSIZE,
+                LR_LOADFROMFILE, WM_COMMAND, WM_DESTROY,
             },
         },
     },
@@ -24,9 +24,7 @@ use windows::{
 use crate::{
     bindings,
     utils::{
-        delegate_storage::DelegateStorage,
-        functions::{fail_message, get_strong_ref},
-        message_window::MessageWindow,
+        delegate_storage::DelegateStorage, functions::get_strong_ref, message_window::MessageWindow,
     },
 };
 
@@ -50,7 +48,7 @@ thread_local! {
 pub(super) struct NotifyIconInternal {
     h_wnd: MessageWindow,
     internal_id: u32,
-    h_icon: HICON,
+    h_icon: Owned<HICON>,
     h_menu: Option<NotifyIconMenu>,
     pub(super) report_open_settings: DelegateStorage<bindings::NotifyIcon, bool>,
     pub(super) report_exit_app: DelegateStorage<bindings::NotifyIcon, bool>,
@@ -61,17 +59,52 @@ pub(super) struct NotifyIconInternal {
 
 impl NotifyIconInternal {
     pub(super) fn create_for_thread(
-        parent: Weak<bindings::NotifyIcon>,
+        iconpath: HSTRING,
         hookenabled: bool,
+        parent: Weak<bindings::NotifyIcon>,
     ) -> Result<()> {
-        let internal_id = GLOBAL_COUNTER.next();
-        let h_wnd = MessageWindow::new(w!("LibSimbolMudah.NotifyIcon"), Some(notify_proc))?;
-        let h_menu = NotifyIconMenu::new(hookenabled)?;
+        let res = Self::new(iconpath, hookenabled, parent)?;
+        INTERNAL_NOTIFYICON.set(Some(res));
+        Ok(())
+    }
 
+    fn new(iconpath: HSTRING, listening: bool, parent: Weak<bindings::NotifyIcon>) -> Result<Self> {
+        let internal_id = GLOBAL_COUNTER.next();
+        let h_wnd = MessageWindow::new(h!("LibSimbolMudah.NotifyIcon"), Some(notify_proc))?;
+        let h_menu = NotifyIconMenu::new(listening)?;
+        let h_icon = unsafe {
+            Owned::new(HICON(
+                LoadImageW(
+                    None,
+                    &iconpath,
+                    IMAGE_ICON,
+                    0,
+                    0,
+                    LR_DEFAULTSIZE | LR_LOADFROMFILE,
+                )?
+                .0,
+            ))
+        };
+
+        let nid = NOTIFYICONDATAW {
+            cbSize: std::mem::size_of::<NOTIFYICONDATAW>() as u32,
+            hWnd: h_wnd.handle(),
+            uID: internal_id,
+            uFlags: NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_SHOWTIP,
+            uCallbackMessage: WM_USER_TRAYICON,
+            hIcon: *h_icon,
+            szTip: get_tooltip(listening),
+            Anonymous: NOTIFYICONDATAW_0 {
+                uVersion: NOTIFYICON_VERSION_4,
+            },
+            ..Default::default()
+        };
+
+        unsafe { Shell_NotifyIconW(NIM_ADD, &nid) }.ok()?;
         let res = Self {
             h_wnd,
             internal_id,
-            h_icon: unsafe { LoadIconW(None, IDI_WARNING) }?,
+            h_icon,
             h_menu: Some(h_menu),
             report_open_settings: DelegateStorage::new(),
             report_exit_app: DelegateStorage::new(),
@@ -80,41 +113,9 @@ impl NotifyIconInternal {
             parent,
         };
 
-        res.register_notify_icon(hookenabled)?;
+        unsafe { Shell_NotifyIconW(NIM_SETVERSION, &nid) }.ok()?;
 
-        INTERNAL_NOTIFYICON.set(Some(res));
-        Ok(())
-    }
-
-    fn register_notify_icon(&self, listening: bool) -> Result<()> {
-        let nid = NOTIFYICONDATAW {
-            cbSize: std::mem::size_of::<NOTIFYICONDATAW>() as u32,
-            hWnd: self.h_wnd.handle(),
-            uID: self.internal_id,
-            uFlags: NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_SHOWTIP,
-            uCallbackMessage: WM_USER_TRAYICON,
-            hIcon: self.h_icon,
-            szTip: get_tooltip(listening),
-            Anonymous: NOTIFYICONDATAW_0 {
-                uVersion: NOTIFYICON_VERSION_4,
-            },
-            ..Default::default()
-        };
-
-        if unsafe { Shell_NotifyIconW(NIM_ADD, &nid) }.into() {
-            if unsafe { Shell_NotifyIconW(NIM_SETVERSION, &nid) }.into() {
-                Ok(())
-            } else {
-                let _ = unsafe { Shell_NotifyIconW(NIM_DELETE, &nid) };
-                Err(fail_message(
-                    "Failed to set notify icon version, deleting icon (Shell_NotifyIconW)",
-                ))
-            }
-        } else {
-            Err(fail_message(
-                "Failed to register notify icon (Shell_NotifyIconW)",
-            ))
-        }
+        Ok(res)
     }
 
     fn update_notify_icon(&self, listening: bool) -> Result<()> {
@@ -124,7 +125,7 @@ impl NotifyIconInternal {
             uID: self.internal_id,
             uFlags: NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_SHOWTIP,
             uCallbackMessage: WM_USER_TRAYICON,
-            hIcon: self.h_icon,
+            hIcon: *self.h_icon,
             szTip: get_tooltip(listening),
             Anonymous: NOTIFYICONDATAW_0 {
                 uVersion: NOTIFYICON_VERSION_4,
@@ -132,13 +133,7 @@ impl NotifyIconInternal {
             ..Default::default()
         };
 
-        if unsafe { Shell_NotifyIconW(NIM_MODIFY, &nid) }.into() {
-            Ok(())
-        } else {
-            Err(fail_message(
-                "Failed to update notify icon (Shell_NotifyIconW)",
-            ))
-        }
+        unsafe { Shell_NotifyIconW(NIM_MODIFY, &nid) }.ok()
     }
 
     fn remove_tray_icon(&self) -> Result<()> {
@@ -150,19 +145,12 @@ impl NotifyIconInternal {
             ..Default::default()
         };
 
-        if unsafe { Shell_NotifyIconW(NIM_DELETE, &nid) }.into() {
-            Ok(())
-        } else {
-            Err(fail_message(
-                "Failed to remove notify icon (Shell_NotifyIconW)",
-            ))
-        }
+        unsafe { Shell_NotifyIconW(NIM_DELETE, &nid) }.ok()
     }
 
     pub(super) fn update_listening_check(&mut self, listening: bool) -> Result<()> {
         self.h_menu = Some(NotifyIconMenu::new(listening)?);
-        self.update_notify_icon(listening)?;
-        Ok(())
+        self.update_notify_icon(listening)
     }
 }
 

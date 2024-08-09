@@ -4,9 +4,9 @@ use std::{
 };
 
 use windows::{
-    core::{Result, PCWSTR},
+    core::{Result, HSTRING, PCWSTR},
     Win32::{
-        Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, WPARAM},
+        Foundation::{HWND, LPARAM, LRESULT, WPARAM},
         System::LibraryLoader::GetModuleHandleW,
         UI::WindowsAndMessaging::{
             CreateWindowExW, DestroyWindow, RegisterClassW, CW_USEDEFAULT, HMENU, HWND_MESSAGE,
@@ -24,19 +24,20 @@ pub(crate) struct MessageWindow {
 
 impl MessageWindow {
     pub(crate) fn new(
-        class_name: PCWSTR,
+        class_name: &HSTRING,
         wnd_proc: Option<unsafe extern "system" fn(HWND, u32, WPARAM, LPARAM) -> LRESULT>,
     ) -> Result<Self> {
         static REGISTERED: LazyLock<RwLock<HashSet<String>>> =
             LazyLock::new(|| RwLock::new(HashSet::new()));
 
-        let h_instance = HINSTANCE(unsafe { GetModuleHandleW(None) }?.0);
-        let string_name = unsafe { class_name.to_string() }?;
+        // Do not free this handle.
+        let h_instance = unsafe { GetModuleHandleW(None) }?.into();
+        let string_name = class_name.to_string();
 
         if !REGISTERED.read().map_err(fail)?.contains(&string_name) {
             let wnd_class = WNDCLASSW {
                 lpfnWndProc: wnd_proc,
-                lpszClassName: class_name,
+                lpszClassName: PCWSTR::from_raw(class_name.as_ptr()),
                 hInstance: h_instance,
                 ..Default::default()
             };

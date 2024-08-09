@@ -104,5 +104,6 @@
         "xtree": "cpp",
         "xutility": "cpp",
         "*.ipp": "cpp"
-    }
+    },
+    "svg.preview.background": "transparent"
 }
