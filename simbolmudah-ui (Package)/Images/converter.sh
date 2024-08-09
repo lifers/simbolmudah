@@ -42,6 +42,10 @@ for size in $sizes; do
   generate_image "$size" "AppList.targetsize-${size}_altform-lightunplated.png"
 done
 
+# Generate an .ico file from all AppList.targetsize-${size}_altform-unplated.png
+convert AppList.targetsize-*_altform-unplated.png -colors 256 -compress Zip favicon.ico
+echo "Generated favicon.ico"
+
 # Loop through each scale and run rsvg-convert
 for scale in $scales; do
   size=$((scale * 44 / 100))
