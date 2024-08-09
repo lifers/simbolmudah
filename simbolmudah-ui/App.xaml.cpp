@@ -1,13 +1,17 @@
 #include "pch.hpp"
 #include "App.xaml.h"
+#include <wil/cppwinrt_helpers.h>
 
 
 namespace winrt::simbolmudah_ui::implementation
 {
     using namespace LibSimbolMudah;
-    using namespace Microsoft::UI::Xaml;
+    using namespace Microsoft::UI;
+    using namespace Dispatching;
+    using namespace Xaml;
     using namespace Data;
     using namespace Windows;
+    using namespace Foundation;
     using namespace Storage;
 
     /// <summary>
@@ -15,7 +19,7 @@ namespace winrt::simbolmudah_ui::implementation
     /// executed, and as such is the logical equivalent of main() or WinMain().
     /// </summary>
     App::App() :
-        main_thread{ apartment_context() },
+        main_thread{ DispatcherQueue::GetForCurrentThread() },
         appManager{ ApplicationData::Current().LocalSettings() },
         keyboardTranslator{ sequenceDefinition },
         settingsChangedRevoker{ appManager.PropertyChanged(auto_revoke, { this->get_weak(), &App::OnSettingsChanged }) }
@@ -25,6 +29,14 @@ namespace winrt::simbolmudah_ui::implementation
 
         // Do not close the application when the last window is closed.
         this->DispatcherShutdownMode(DispatcherShutdownMode::OnExplicitShutdown);
+
+        // Load the tray icon path.
+        StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Images/favicon.ico")).Completed({
+            this->get_weak(), &App::OnNotifyIconPathInitialized
+        });
+
+        // Build the keyboard translator finite state automaton.
+        this->BuildDefinition();
 
 #if defined _DEBUG && !defined DISABLE_XAML_GENERATED_BREAK_ON_UNHANDLED_EXCEPTION
         this->UnhandledException([](IInspectable const&, UnhandledExceptionEventArgs const& e)
@@ -43,15 +55,14 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     void App::OnLaunched(LaunchActivatedEventArgs const&)
     {
-        // Build the keyboard translator finite state automaton.
-        this->BuildDefinition();
+        if (this->appManager.MainWindowOpened())
+        {
+            this->OpenWindow();
+        }
 
         if (this->appManager.NotifyIconEnabled())
         {
-            this->notifyIcon = NotifyIcon(this->appManager.HookEnabled());
-            this->openSettingsToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
-            this->notifyIconSetHookToken = this->notifyIcon.OnSetHookEnabled({ this->get_weak(), &App::OnNotifyIconSetHook });
-            this->appExitToken = this->notifyIcon.OnExitApp({ this->get_weak(), &App::OnAppExit });
+            this->InitializeNotifyIcon();
         }
 
         if (this->appManager.HookEnabled())
@@ -64,11 +75,6 @@ namespace winrt::simbolmudah_ui::implementation
                     this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
             }
         }
-
-        if (this->appManager.MainWindowOpened())
-        {
-            this->OpenWindow();
-        }
     }
 
     /// <summary>
@@ -76,8 +82,6 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     fire_and_forget App::BuildDefinition() const
     {
-        using namespace Foundation;
-
         const auto keysymdef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.txt")) };
         const auto composedef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre")) };
         this->sequenceDefinition.Build((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
@@ -128,11 +132,7 @@ namespace winrt::simbolmudah_ui::implementation
         // Update the notify icon and main window.
         if (this->appManager.NotifyIconEnabled() && !this->notifyIcon)
         {
-            this->notifyIcon = NotifyIcon(this->appManager.HookEnabled());
-            if (const auto& w{ this->mainWindow.get() }; w) { w.UpdateOpenSettings(this->notifyIcon); }
-            this->openSettingsToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
-            this->notifyIconSetHookToken = this->notifyIcon.OnSetHookEnabled({ this->get_weak(), &App::OnNotifyIconSetHook });
-            this->appExitToken = this->notifyIcon.OnExitApp({ this->get_weak(), &App::OnAppExit });
+            this->InitializeNotifyIcon();
         }
         else if (!this->appManager.NotifyIconEnabled() && this->notifyIcon)
         {
@@ -144,9 +144,44 @@ namespace winrt::simbolmudah_ui::implementation
         }
     }
 
+    fire_and_forget App::OnNotifyIconPathInitialized(IAsyncOperation<StorageFile> const& op, AsyncStatus)
+    {
+        const auto filepath{ op.GetResults().Path() };
+        co_await wil::resume_foreground(this->main_thread);
+        this->notifyIconPath = filepath;
+
+        if (this->delayNotifyIcon)
+        {
+            this->InitializeNotifyIcon();
+        }
+    }
+
+    /// <summary>
+    /// Initializes the notify icon. Must be called on the UI thread.
+    /// </summary>
+    void App::InitializeNotifyIcon()
+    {
+        if (!this->main_thread.HasThreadAccess())
+        {
+            throw hresult_wrong_thread();
+        }
+        else if (this->notifyIconPath != L"")
+        {
+            this->notifyIcon = NotifyIcon(this->notifyIconPath, this->appManager.HookEnabled());
+            if (const auto& w{ this->mainWindow.get() }; w) { w.UpdateOpenSettings(this->notifyIcon); }
+            this->openSettingsToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
+            this->notifyIconSetHookToken = this->notifyIcon.OnSetHookEnabled({ this->get_weak(), &App::OnNotifyIconSetHook });
+            this->appExitToken = this->notifyIcon.OnExitApp({ this->get_weak(), &App::OnAppExit });
+        }
+        else
+        {
+            this->delayNotifyIcon = true;
+        }
+    }
+
     fire_and_forget App::OpenWindow()
     {
-        co_await this->main_thread;
+        co_await wil::resume_foreground(this->main_thread);
         auto w{ this->mainWindow.get() };
         if (!w)
         {
@@ -162,11 +197,11 @@ namespace winrt::simbolmudah_ui::implementation
         using namespace Microsoft::UI::Xaml::Media::Animation;
         using namespace std::chrono_literals;
 
-        co_await this->main_thread;
+        co_await wil::resume_foreground(this->main_thread);
         this->OpenWindow();
         co_await 500ms;
 
-        co_await this->main_thread;
+        co_await wil::resume_foreground(this->main_thread);
         if (const auto& w{ this->mainWindow.get() }; w)
         {
             w.NavigateToSettings(EntranceNavigationTransitionInfo());
@@ -175,13 +210,13 @@ namespace winrt::simbolmudah_ui::implementation
 
     fire_and_forget App::OnNotifyIconSetHook(NotifyIcon const&, bool status)
     {
-        co_await this->main_thread;
+        co_await wil::resume_foreground(this->main_thread);
         this->appManager.HookEnabled(status);
     }
 
     fire_and_forget App::OnAppExit(NotifyIcon const&, bool)
     {
-        co_await this->main_thread;
+        co_await wil::resume_foreground(this->main_thread);
         this->Exit();
     }
 }

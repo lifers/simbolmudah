@@ -4,7 +4,7 @@ mod menu;
 
 use internal::{NotifyIconInternal, INTERNAL_NOTIFYICON};
 use windows::{
-    core::{implement, AgileReference, Error, IInspectable, Interface, Result},
+    core::{implement, AgileReference, Error, IInspectable, Interface, Result, HSTRING},
     Foundation::{EventRegistrationToken, TypedEventHandler},
     Win32::{
         Foundation::{E_NOTIMPL, E_POINTER},
@@ -198,18 +198,19 @@ impl IActivationFactory_Impl for NotifyIconFactory_Impl {
 }
 
 impl bindings::INotifyIconFactory_Impl for NotifyIconFactory_Impl {
-    fn CreateInstance(&self, hookenabled: bool) -> Result<bindings::NotifyIcon> {
+    fn CreateInstance(&self, iconpath: &HSTRING, hookenabled: bool) -> Result<bindings::NotifyIcon> {
         let res: bindings::NotifyIcon = NotifyIcon {
             thread_controller: ThreadHandler::new()?,
         }
         .into();
 
         let res_clone = res.clone();
+        let iconpath = iconpath.to_owned();
 
         res.cast_object_ref::<NotifyIcon>()?
             .thread_controller
             .try_enqueue(move || {
-                NotifyIconInternal::create_for_thread(res_clone.downgrade()?, hookenabled)
+                NotifyIconInternal::create_for_thread(iconpath.clone(), hookenabled, res_clone.downgrade()?)
             })?;
 
         Ok(res)

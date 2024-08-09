@@ -175,7 +175,7 @@ pub struct INotifyIcon_Vtbl {
 windows_core::imp::define_interface!(
     INotifyIconFactory,
     INotifyIconFactory_Vtbl,
-    0x30092014_645b_5d02_8afd_b0f0168d66b6
+    0xd44fcb41_b50a_55af_adc2_29544e272962
 );
 impl windows_core::RuntimeType for INotifyIconFactory {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -186,6 +186,7 @@ pub struct INotifyIconFactory_Vtbl {
     pub base__: windows_core::IInspectable_Vtbl,
     pub CreateInstance: unsafe extern "system" fn(
         *mut core::ffi::c_void,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
         bool,
         *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
@@ -644,11 +645,15 @@ impl NotifyIcon {
             .ok()
         }
     }
-    pub fn CreateInstance(hookenabled: bool) -> windows_core::Result<NotifyIcon> {
+    pub fn CreateInstance(
+        iconpath: &windows_core::HSTRING,
+        hookenabled: bool,
+    ) -> windows_core::Result<NotifyIcon> {
         Self::INotifyIconFactory(|this| unsafe {
             let mut result__ = core::mem::zeroed();
             (windows_core::Interface::vtable(this).CreateInstance)(
                 windows_core::Interface::as_raw(this),
+                core::mem::transmute_copy(iconpath),
                 hookenabled,
                 &mut result__,
             )
@@ -1409,7 +1414,11 @@ impl INotifyIcon_Vtbl {
     }
 }
 pub trait INotifyIconFactory_Impl: Sized {
-    fn CreateInstance(&self, hookenabled: bool) -> windows_core::Result<NotifyIcon>;
+    fn CreateInstance(
+        &self,
+        iconpath: &windows_core::HSTRING,
+        hookenabled: bool,
+    ) -> windows_core::Result<NotifyIcon>;
 }
 impl windows_core::RuntimeName for INotifyIconFactory {
     const NAME: &'static str = "LibSimbolMudah.INotifyIconFactory";
@@ -1425,6 +1434,7 @@ impl INotifyIconFactory_Vtbl {
             const OFFSET: isize,
         >(
             this: *mut core::ffi::c_void,
+            iconpath: core::mem::MaybeUninit<windows_core::HSTRING>,
             hookenabled: bool,
             result__: *mut *mut core::ffi::c_void,
         ) -> windows_core::HRESULT
@@ -1432,7 +1442,11 @@ impl INotifyIconFactory_Vtbl {
             Identity: INotifyIconFactory_Impl,
         {
             let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            match INotifyIconFactory_Impl::CreateInstance(this, hookenabled) {
+            match INotifyIconFactory_Impl::CreateInstance(
+                this,
+                core::mem::transmute(&iconpath),
+                hookenabled,
+            ) {
                 Ok(ok__) => {
                     result__.write(core::mem::transmute_copy(&ok__));
                     core::mem::forget(ok__);

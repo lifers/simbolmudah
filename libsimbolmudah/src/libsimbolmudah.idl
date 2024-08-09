@@ -39,7 +39,7 @@ namespace LibSimbolMudah
 
     runtimeclass NotifyIcon
     {
-        NotifyIcon(Boolean hookEnabled);
+        NotifyIcon(String iconPath, Boolean hookEnabled);
 
         void SubscribeStateChanged(KeyboardHook hook);
         void GetHookEnabled(Boolean enabled);
