@@ -1,10 +1,4 @@
-use std::{
-    collections::HashMap,
-    ffi::c_void,
-    fmt::Debug,
-    ptr::null_mut,
-    sync::atomic::{AtomicPtr, Ordering::Acquire},
-};
+use std::{collections::HashMap, fmt::Debug, ptr::null_mut};
 
 use windows::{
     core::{h, Error, Interface, Result, Weak, HRESULT, HSTRING},
@@ -17,8 +11,15 @@ use windows::{
 use crate::{
     bindings,
     sequence_definition::{SequenceDefinition, SequenceDefinitionError},
-    utils::{delegate_storage::DelegateStorage, sender::send_text_clipboard},
+    utils::{
+        delegate_storage::DelegateStorage,
+        sender::send_text_clipboard,
+        single_threaded::{single_threaded, SingleThreaded},
+    },
 };
+
+pub(super) static INTERNAL: SingleThreaded<KeyboardTranslatorInternal> =
+    single_threaded!(KeyboardTranslatorInternal);
 
 enum VKToUnicodeError {
     InvalidReturn,
@@ -41,7 +42,7 @@ impl Into<String> for StringVariant {
 }
 
 pub(super) struct KeyboardTranslatorInternal {
-    pub(super) keyboard_layout: AtomicPtr<c_void>,
+    pub(super) keyboard_layout: HKL,
     pub(super) report_invalid: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
     pub(super) report_translated: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
     pub(super) report_key_translated: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
@@ -58,7 +59,7 @@ impl KeyboardTranslatorInternal {
         parent: Weak<bindings::KeyboardTranslator>,
     ) -> Self {
         Self {
-            keyboard_layout: AtomicPtr::new(null_mut()),
+            keyboard_layout: HKL(null_mut()),
             report_invalid: DelegateStorage::new(),
             report_translated: DelegateStorage::new(),
             report_key_translated: DelegateStorage::new(),
@@ -76,12 +77,7 @@ impl KeyboardTranslatorInternal {
         scancode: u32,
         keystate: &[u8; 256],
     ) -> Result<String> {
-        match vk_to_unicode(
-            vkcode,
-            scancode,
-            &keystate,
-            HKL(self.keyboard_layout.load(Acquire)),
-        ) {
+        match vk_to_unicode(vkcode, scancode, &keystate, self.keyboard_layout) {
             Ok(s) => Ok(s.into()),
             Err(e) => {
                 self.report_invalid.invoke_all(
@@ -188,12 +184,7 @@ impl KeyboardTranslatorInternal {
                 keystate[VK_MENU.0 as usize] = 0;
             }
 
-            if let Ok(s) = vk_to_unicode(
-                vk_code,
-                0,
-                &keystate,
-                HKL(self.keyboard_layout.load(Acquire)),
-            ) {
+            if let Ok(s) = vk_to_unicode(vk_code, 0, &keystate, self.keyboard_layout) {
                 if has_altgr {
                     self.possible_altgr
                         .insert(s.clone().into(), no_altgr[i as usize - 0x200].clone());

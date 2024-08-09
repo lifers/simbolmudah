@@ -1,7 +1,5 @@
 /// Taken from https://github.com/tauri-apps/tray-icon/blob/d4078696edba67b0ab42cef67e6a421a0332c96f/src/platform_impl/windows/mod.rs
 /// with modifications.
-use std::cell::RefCell;
-
 use windows::{
     core::{h, Owned, Result, Weak, HSTRING},
     Foundation::EventRegistrationToken,
@@ -24,7 +22,10 @@ use windows::{
 use crate::{
     bindings,
     utils::{
-        delegate_storage::DelegateStorage, functions::get_strong_ref, message_window::MessageWindow,
+        delegate_storage::DelegateStorage,
+        functions::get_strong_ref,
+        message_window::MessageWindow,
+        single_threaded::{single_threaded, SingleThreaded},
     },
 };
 
@@ -41,15 +42,14 @@ const WM_USER_TRAYICON: u32 = 0x1772;
 // const WM_USER_UPDATE_TRAYTOOLTIP: u32 = 6007;
 // const WM_USER_LEAVE_TIMER_ID: u32 = 6008;
 
-thread_local! {
-    pub(super) static INTERNAL_NOTIFYICON: RefCell<Option<NotifyIconInternal>> = const { RefCell::new(None) };
-}
+pub(super) static INTERNAL: SingleThreaded<NotifyIconInternal> =
+    single_threaded!(NotifyIconInternal);
 
 pub(super) struct NotifyIconInternal {
     h_wnd: MessageWindow,
     internal_id: u32,
     h_icon: Owned<HICON>,
-    h_menu: Option<NotifyIconMenu>,
+    h_menu: NotifyIconMenu,
     pub(super) report_open_settings: DelegateStorage<bindings::NotifyIcon, bool>,
     pub(super) report_exit_app: DelegateStorage<bindings::NotifyIcon, bool>,
     pub(super) report_set_listening: DelegateStorage<bindings::NotifyIcon, bool>,
@@ -58,17 +58,11 @@ pub(super) struct NotifyIconInternal {
 }
 
 impl NotifyIconInternal {
-    pub(super) fn create_for_thread(
+    pub(super) fn new(
         iconpath: HSTRING,
-        hookenabled: bool,
+        listening: bool,
         parent: Weak<bindings::NotifyIcon>,
-    ) -> Result<()> {
-        let res = Self::new(iconpath, hookenabled, parent)?;
-        INTERNAL_NOTIFYICON.set(Some(res));
-        Ok(())
-    }
-
-    fn new(iconpath: HSTRING, listening: bool, parent: Weak<bindings::NotifyIcon>) -> Result<Self> {
+    ) -> Result<Self> {
         let internal_id = GLOBAL_COUNTER.next();
         let h_wnd = MessageWindow::new(h!("LibSimbolMudah.NotifyIcon"), Some(notify_proc))?;
         let h_menu = NotifyIconMenu::new(listening)?;
@@ -105,7 +99,7 @@ impl NotifyIconInternal {
             h_wnd,
             internal_id,
             h_icon,
-            h_menu: Some(h_menu),
+            h_menu,
             report_open_settings: DelegateStorage::new(),
             report_exit_app: DelegateStorage::new(),
             report_set_listening: DelegateStorage::new(),
@@ -149,7 +143,7 @@ impl NotifyIconInternal {
     }
 
     pub(super) fn update_listening_check(&mut self, listening: bool) -> Result<()> {
-        self.h_menu = Some(NotifyIconMenu::new(listening)?);
+        self.h_menu = NotifyIconMenu::new(listening)?;
         self.update_notify_icon(listening)
     }
 }
@@ -183,59 +177,42 @@ extern "system" fn notify_proc(h_wnd: HWND, msg: u32, w_param: WPARAM, l_param: 
 
             let options = (l_param.0 as u16).into();
             if matches!(options, NIN_SELECT | NIN_KEYSELECT) {
-                INTERNAL_NOTIFYICON.with_borrow(|internal: &Option<NotifyIconInternal>| {
-                    let internal = internal.as_ref().expect("global initialized");
-
-                    if let Some(ref menu) = internal.h_menu {
-                        menu.show_menu(internal.h_wnd.handle())
-                            .expect("show_menu should succeed");
-                    }
-                });
+                INTERNAL
+                    .with_borrow(|internal| internal.h_menu.show_menu(internal.h_wnd.handle()))
+                    .expect("INTERNAL is accessible");
             }
         }
         WM_DESTROY => unsafe { PostQuitMessage(0) },
         WM_COMMAND => match (w_param.0 as u16).into() {
             WM_USER_SHOW_SETTINGS => {
-                INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
-                    let internal = internal.as_mut().expect("global initialized");
-                    internal
-                        .report_open_settings
-                        .invoke_all(
+                INTERNAL
+                    .with_borrow_mut(|internal| {
+                        internal.report_open_settings.invoke_all(
                             &get_strong_ref(&internal.parent).expect("parent should stay valid"),
                             None,
                         )
-                        .expect("invoke_all should succeed");
-                });
+                    })
+                    .expect("invoke_all should succeed");
             }
             WM_USER_LISTEN => {
-                INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
-                    let internal = internal.as_mut().expect("global initialized");
-                    internal
-                        .report_set_listening
-                        .invoke_all(
+                INTERNAL
+                    .with_borrow_mut(|internal| {
+                        internal.report_set_listening.invoke_all(
                             &get_strong_ref(&internal.parent).expect("parent should stay valid"),
-                            Some(
-                                &!internal
-                                    .h_menu
-                                    .as_ref()
-                                    .expect("menu should stay valid")
-                                    .is_listening(),
-                            ),
+                            Some(&!internal.h_menu.is_listening()),
                         )
-                        .expect("invoke_all should succeed");
-                });
+                    })
+                    .expect("invoke_all should succeed");
             }
             WM_USER_EXIT => {
-                INTERNAL_NOTIFYICON.with_borrow_mut(|internal: &mut Option<NotifyIconInternal>| {
-                    let internal = internal.as_mut().expect("global initialized");
-                    internal
-                        .report_exit_app
-                        .invoke_all(
+                INTERNAL
+                    .with_borrow_mut(|internal| {
+                        internal.report_exit_app.invoke_all(
                             &get_strong_ref(&internal.parent).expect("parent should stay valid"),
                             None,
                         )
-                        .expect("invoke_all should succeed");
-                });
+                    })
+                    .expect("invoke_all should succeed");
             }
             _ => {}
         },
