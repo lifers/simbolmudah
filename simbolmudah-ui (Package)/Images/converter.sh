@@ -48,7 +48,7 @@ echo "Generated favicon.ico"
 
 # Loop through each scale and run rsvg-convert
 for scale in $scales; do
-  size=$((scale * 44 / 100))
+  size=$(((scale * 44 + 99) / 100))
   generate_image "$size" "AppList.scale-${scale}.png"
 done
 
@@ -57,7 +57,7 @@ rm -f SmallTile*
 
 # Loop through each scale and run rsvg-convert
 for scale in $scales; do
-  size=$((scale * 71 / 100))
+  size=$(((scale * 71 + 99) / 100))
   generate_image "$size" "SmallTile.scale-${scale}.png"
 done
 
@@ -66,7 +66,7 @@ rm -f MedTile*
 
 # Loop through each scale and run rsvg-convert
 for scale in $scales; do
-  size=$((scale * 150 / 100))
+  size=$(((scale * 150 + 99) / 100))
   generate_image "$size" "MedTile.scale-${scale}.png"
 done
 
@@ -75,7 +75,7 @@ rm -f LargeTile*
 
 # Loop through each scale and run rsvg-convert
 for scale in $scales; do
-  size=$((scale * 310 / 100))
+  size=$(((scale * 310 + 99) / 100))
   generate_image "$size" "LargeTile.scale-${scale}.png"
 done
 
@@ -84,6 +84,6 @@ rm -f StoreLogo*
 
 # Loop through each scale and run rsvg-convert
 for scale in $scales; do
-  size=$((scale * 75 / 100))
+  size=$(((scale * 50 + 99) / 100))
   generate_image "$size" "StoreLogo.scale-${scale}.png"
 done
