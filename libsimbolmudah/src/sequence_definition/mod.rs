@@ -112,16 +112,23 @@ mod tests {
     use super::*;
     use windows_core::Interface;
 
-    use crate::bindings;
+    use crate::bindings::ISequenceDefinition_Impl;
 
     const KEYSYMDEF: &str = "tests/keysymdef.txt";
     const COMPOSEDEF: &str = "tests/Compose.pre";
 
     #[test]
     fn test_build_success() {
-        let seqdef =
-            bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
+        let factory: IActivationFactory = SequenceDefinitionFactory.into();
+        let seqdef = factory
+            .cast_object_ref::<SequenceDefinitionFactory>()
+            .unwrap()
+            .ActivateInstance()
+            .expect("SequenceDefinition should be created");
+
         seqdef
+            .cast_object_ref::<SequenceDefinition>()
+            .expect("SequenceDefinition should be casted")
             .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
     }
@@ -129,9 +136,15 @@ mod tests {
     #[test]
     fn test_translate_incomplete_sequence() {
         // Create and build the SequenceDefinition
-        let seqdef =
-            bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
+        let factory: IActivationFactory = SequenceDefinitionFactory.into();
+        let seqdef = factory
+            .cast_object_ref::<SequenceDefinitionFactory>()
+            .unwrap()
+            .ActivateInstance()
+            .expect("SequenceDefinition should be created");
         seqdef
+            .cast_object_ref::<SequenceDefinition>()
+            .expect("SequenceDefinition should be casted")
             .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 
@@ -148,9 +161,15 @@ mod tests {
     #[test]
     fn test_translate_value_not_found() {
         // Create and build the SequenceDefinition
-        let seqdef =
-            bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
+        let factory: IActivationFactory = SequenceDefinitionFactory.into();
+        let seqdef = factory
+            .cast_object_ref::<SequenceDefinitionFactory>()
+            .unwrap()
+            .ActivateInstance()
+            .expect("SequenceDefinition should be created");
         seqdef
+            .cast_object_ref::<SequenceDefinition>()
+            .expect("SequenceDefinition should be casted")
             .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 
@@ -170,9 +189,15 @@ mod tests {
     #[test]
     fn test_translate_valid_sequence() {
         // Create and build the SequenceDefinition
-        let seqdef =
-            bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
+        let factory: IActivationFactory = SequenceDefinitionFactory.into();
+        let seqdef = factory
+            .cast_object_ref::<SequenceDefinitionFactory>()
+            .unwrap()
+            .ActivateInstance()
+            .expect("SequenceDefinition should be created");
         seqdef
+            .cast_object_ref::<SequenceDefinition>()
+            .expect("SequenceDefinition should be casted")
             .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 

@@ -213,6 +213,8 @@ mod tests {
                 Ok(())
             })
             .expect("Internal should be borrowed");
+
+        INTERNAL.destroy().expect("Internal should be destroyed");
     }
 
     #[test]
@@ -233,18 +235,13 @@ mod tests {
 
         let factory: IActivationFactory = KeyboardTranslatorFactory.into();
         // Create a new instance of KeyboardTranslator
-        let instance = factory
+        let _instance = factory
             .cast_object_ref::<KeyboardTranslatorFactory>()
             .unwrap()
             .CreateInstance(Some(
                 &seqdef.cast::<bindings::SequenceDefinition>().unwrap(),
             ))
             .expect("Instance should be created");
-
-        // Cast KeyboardTranslator to its object
-        let instance = instance
-            .cast_object_ref::<KeyboardTranslator>()
-            .expect("Should be castable");
 
         // Assuming "omg" is an invalid sequence for this test
         INTERNAL
@@ -257,6 +254,8 @@ mod tests {
                 Ok(())
             })
             .expect("Internal should be borrowed");
+
+        INTERNAL.destroy().expect("Internal should be destroyed");
 
         sleep(std::time::Duration::from_secs(5));
     }
@@ -278,18 +277,13 @@ mod tests {
 
         // Create a new instance of KeyboardTranslator
         let factory: IActivationFactory = KeyboardTranslatorFactory.into();
-        let instance = factory
+        let _instance = factory
             .cast_object_ref::<KeyboardTranslatorFactory>()
             .unwrap()
             .CreateInstance(Some(
                 &seqdef.cast::<bindings::SequenceDefinition>().unwrap(),
             ))
             .expect("Instance should be created");
-
-        // Cast KeyboardTranslator to its object
-        let instance = instance
-            .cast_object_ref::<KeyboardTranslator>()
-            .expect("Should be castable");
 
         INTERNAL
             .with_borrow_mut(|internal| {
@@ -302,6 +296,8 @@ mod tests {
                 Ok(())
             })
             .expect("Internal should be borrowed");
+
+        INTERNAL.destroy().expect("Internal should be destroyed");
 
         sleep(std::time::Duration::from_secs(5));
     }
