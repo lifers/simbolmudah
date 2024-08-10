@@ -222,14 +222,14 @@ impl KeyboardHookInternal {
 
     pub(super) fn report_state(&mut self) -> Result<()> {
         self.OnStateChanged.invoke_all(
-            &get_strong_ref(&self.parent).unwrap(),
+            &get_strong_ref(&self.parent)?,
             Some(&(self.stage as u8)),
         )
     }
 
     pub(super) fn report_key_event(&mut self, input: KEYBDINPUT) -> Result<()> {
         self.OnKeyEvent.invoke_all(
-            &get_strong_ref(&self.parent).unwrap(),
+            &get_strong_ref(&self.parent)?,
             Some(&keybdinput_to_hstring(input)),
         )
     }
@@ -261,6 +261,7 @@ fn keybdinput_to_hstring(input: KEYBDINPUT) -> HSTRING {
         input.wVk.0, input.wScan, input.dwFlags.0, input.time, input.dwExtraInfo).into()
 }
 
+#[no_mangle]
 extern "system" fn keyboard_procedure(ncode: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     if ncode == HC_ACTION as i32 {
         let kb_hook = lparam.0 as *const KBDLLHOOKSTRUCT;
