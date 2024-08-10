@@ -32,10 +32,15 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator_Impl {
     ) -> Result<()> {
         INTERNAL.with_borrow_mut(move |internal| {
             let keystate = calculate_bg_keystate(hascapslock, hasshift, hasaltgr);
-            let value = internal.translate(vkcode, scancode, &keystate)?;
-            internal.report_key(&value)?;
-            let result = internal.forward(destination, value);
-            internal.report(result)
+            if let Ok(value) = internal.translate(vkcode, scancode, &keystate) {
+                internal.report_key(&value)?;
+                let result = internal.forward(destination, value);
+                internal.report(result)
+            } else {
+                // Even though the translation failed, the state might be stored inside ToUnicodeEx's internal buffer.
+                // Do not reset the hook state.
+                Ok(())
+            }
         })
     }
 

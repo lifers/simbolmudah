@@ -39,8 +39,7 @@ namespace winrt::simbolmudah_ui::implementation
     MainWindow::MainWindow(
         SequenceDefinition const& seqdef,
         simbolmudah_ui::AppManager const& appManager,
-        NotifyIcon const& notifyIcon,
-        uint8_t page) :
+        NotifyIcon const& notifyIcon) :
         sequenceDefinition{ seqdef }, appManager{ appManager }
     {
         if (this->appManager.NotifyIconEnabled() && notifyIcon)
@@ -50,6 +49,7 @@ namespace winrt::simbolmudah_ui::implementation
         }
 
         this->ExtendsContentIntoTitleBar(true);
+        this->AppWindow().Resize({ 800, 600 });
         this->Closed({ this, &MainWindow::OnClosed });
         this->SetMinimumWindowSize();
     }

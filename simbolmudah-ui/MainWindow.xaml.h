@@ -9,8 +9,7 @@ namespace winrt::simbolmudah_ui::implementation
         explicit MainWindow(
             LibSimbolMudah::SequenceDefinition const& seqdef,
             simbolmudah_ui::AppManager const& appManager,
-            LibSimbolMudah::NotifyIcon const& notifyIcon,
-            uint8_t page);
+            LibSimbolMudah::NotifyIcon const& notifyIcon);
         MainWindow(MainWindow const&) = delete;
         MainWindow& operator=(MainWindow const&) = delete;
 

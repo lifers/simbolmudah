@@ -13,6 +13,7 @@ use crate::{
     sequence_definition::{SequenceDefinition, SequenceDefinitionError},
     utils::{
         delegate_storage::DelegateStorage,
+        functions::get_strong_ref,
         sender::send_text_clipboard,
         single_threaded::{single_threaded, SingleThreaded},
     },
@@ -72,6 +73,11 @@ impl KeyboardTranslatorInternal {
         }
     }
 
+    fn report_invalid(&mut self, message: &HSTRING) -> Result<()> {
+        self.OnInvalid
+            .invoke_all(&get_strong_ref(&self.parent)?, Some(message))
+    }
+
     pub(super) fn translate(
         &mut self,
         vkcode: u32,
@@ -81,13 +87,7 @@ impl KeyboardTranslatorInternal {
         match vk_to_unicode(vkcode, scancode, &keystate, self.keyboard_layout) {
             Ok(s) => Ok(s.into()),
             Err(e) => {
-                self.OnInvalid.invoke_all(
-                    &self
-                        .parent
-                        .upgrade()
-                        .ok_or(Error::new(E_POINTER, "Invalid pointer"))?,
-                    Some(h!("Invalid VK code")),
-                )?;
+                self.report_invalid(h!("Invalid VK code"))?;
 
                 match e {
                     VKToUnicodeError::NoTranslation => Err(E_INVALIDARG.into()),
@@ -146,9 +146,9 @@ impl KeyboardTranslatorInternal {
                     .invoke_all(&self.get_parent_ref()?, Some(&s.into()))?;
                 Ok(())
             }
-            Err(SequenceDefinitionError::ValueNotFound) => self
-                .OnInvalid
-                .invoke_all(&self.get_parent_ref()?, Some(h!("Value not found"))),
+            Err(SequenceDefinitionError::ValueNotFound) => {
+                self.report_invalid(h!("Value not found"))
+            }
             Err(SequenceDefinitionError::Incomplete) => {
                 // Do nothing
                 Ok(())

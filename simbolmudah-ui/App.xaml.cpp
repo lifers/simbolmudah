@@ -186,7 +186,7 @@ namespace winrt::simbolmudah_ui::implementation
         if (!w)
         {
             w = simbolmudah_ui::MainWindow{
-                this->sequenceDefinition, this->appManager, this->notifyIcon, 0 };
+                this->sequenceDefinition, this->appManager, this->notifyIcon };
             this->mainWindow = make_weak(w);
         }
         w.Activate();
