@@ -60,21 +60,14 @@ impl<T: 'static> SingleThreaded<T> {
     where
         F: FnOnce() -> Result<T> + Send + 'static,
     {
-        let new_thread = DispatcherQueueController::CreateOnDedicatedThread()?;
-        new_thread
-            .DispatcherQueue()?
-            .TryEnqueue(&DispatcherQueueHandler::new(move || {
-                if let Some(t) = self
-                    .thread
-                    .write()
-                    .map_err(fail)?
-                    .replace(new_thread.clone())
-                {
-                    Err(fail_message(&format!("Already initialized: {:?}", t)))
-                } else {
-                    Ok(())
-                }
-            }))?;
+        if let Some(t) = self
+            .thread
+            .write()
+            .map_err(fail)?
+            .replace(DispatcherQueueController::CreateOnDedicatedThread()?)
+        {
+            return Err(fail_message(&format!("Already initialized: {:?}", t)));
+        }
 
         let (tx, rx) = channel();
         tx.send(init).map_err(fail)?;

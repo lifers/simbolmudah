@@ -4,7 +4,9 @@ use windows::{
     core::{Owned, Result, Weak, HSTRING},
     Foundation::{EventRegistrationToken, TypedEventHandler},
     Win32::{
-        Foundation::{LPARAM, LRESULT, WPARAM}, System::LibraryLoader::GetModuleHandleW, UI::{
+        Foundation::{LPARAM, LRESULT, WPARAM},
+        System::LibraryLoader::GetModuleHandleW,
+        UI::{
             Input::KeyboardAndMouse::{
                 GetKeyState, KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP,
                 KEYEVENTF_SCANCODE, VIRTUAL_KEY, VK_CAPITAL, VK_LSHIFT, VK_RMENU, VK_RSHIFT,
@@ -15,7 +17,7 @@ use windows::{
                 LLKHF_EXTENDED, LLKHF_INJECTED, LLKHF_UP, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP,
                 WM_SYSKEYDOWN, WM_SYSKEYUP,
             },
-        }
+        },
     },
 };
 
@@ -71,9 +73,10 @@ enum Stage {
 pub(super) static INTERNAL: SingleThreaded<KeyboardHookInternal> =
     single_threaded!(KeyboardHookInternal);
 
+#[allow(non_snake_case)]
 pub(super) struct KeyboardHookInternal {
-    pub(super) state_changed: DelegateStorage<bindings::KeyboardHook, u8>,
-    pub(super) key_event: DelegateStorage<bindings::KeyboardHook, HSTRING>,
+    pub(super) OnStateChanged: DelegateStorage<bindings::KeyboardHook, u8>,
+    pub(super) OnKeyEvent: DelegateStorage<bindings::KeyboardHook, HSTRING>,
     pub(super) keyboard_translator: Weak<bindings::KeyboardTranslator>,
     pub(super) on_invalid_token: EventRegistrationToken,
     pub(super) on_translated_token: EventRegistrationToken,
@@ -119,8 +122,8 @@ impl KeyboardHookInternal {
         let translator_ref = get_strong_ref(&keyboard_translator)?;
 
         Ok(Self {
-            state_changed: DelegateStorage::new(),
-            key_event: DelegateStorage::new(),
+            OnStateChanged: DelegateStorage::new(),
+            OnKeyEvent: DelegateStorage::new(),
             keyboard_translator,
             on_invalid_token: translator_ref.OnInvalid(&reset_handler)?,
             on_translated_token: translator_ref.OnTranslated(&reset_handler)?,
@@ -218,14 +221,14 @@ impl KeyboardHookInternal {
     }
 
     pub(super) fn report_state(&mut self) -> Result<()> {
-        self.state_changed.invoke_all(
+        self.OnStateChanged.invoke_all(
             &get_strong_ref(&self.parent).unwrap(),
             Some(&(self.stage as u8)),
         )
     }
 
     pub(super) fn report_key_event(&mut self, input: KEYBDINPUT) -> Result<()> {
-        self.key_event.invoke_all(
+        self.OnKeyEvent.invoke_all(
             &get_strong_ref(&self.parent).unwrap(),
             Some(&keybdinput_to_hstring(input)),
         )

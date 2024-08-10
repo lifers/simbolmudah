@@ -45,3 +45,35 @@ pub(crate) fn get_token(handler: *mut c_void) -> i64 {
     handler.hash(&mut hasher);
     hasher.finish() as i64
 }
+
+macro_rules! event_registration {
+    ($name:ident, $source_type:ty, $result_type:ty) => {
+        fn $name(
+            &self,
+            handler: Option<&windows::Foundation::TypedEventHandler<$source_type, $result_type>>,
+        ) -> windows_core::Result<windows::Foundation::EventRegistrationToken> {
+            if let Some(handler) = handler {
+                let handler_ref = windows_core::AgileReference::new(handler)?;
+                let token = crate::utils::delegate_storage::get_token(handler.as_raw());
+                internal::INTERNAL.with_borrow_mut(move |internal| {
+                    internal.$name.insert(token, handler_ref);
+                    Ok(())
+                })?;
+                Ok(windows::Foundation::EventRegistrationToken { Value: token })
+            } else {
+                Err(windows_core::Error::new(windows::Win32::Foundation::E_POINTER, "delegate is null"))
+            }
+        }
+
+        concat_idents::concat_idents!(fn_name = Remove, $name {
+            fn fn_name(&self, token: &windows::Foundation::EventRegistrationToken) -> windows_core::Result<()> {
+                let value = token.Value;
+                internal::INTERNAL.with_borrow_mut(move |internal| {
+                    internal.$name.remove(value);
+                    Ok(())
+                })
+            }
+        });
+    };
+}
+pub(crate) use event_registration;

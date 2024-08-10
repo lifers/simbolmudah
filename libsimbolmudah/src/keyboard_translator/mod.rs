@@ -1,10 +1,9 @@
 mod internal;
 
-use crate::{bindings, utils::delegate_storage::get_token};
+use crate::{bindings, utils::delegate_storage::event_registration};
 use internal::{KeyboardTranslatorInternal, INTERNAL};
 use windows::{
-    core::{implement, AgileReference, Error, IInspectable, Interface, Result, HSTRING},
-    Foundation::{EventRegistrationToken, TypedEventHandler},
+    core::{implement, Error, IInspectable, Interface, Result, HSTRING},
     Win32::{
         Foundation::{E_NOTIMPL, E_POINTER},
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
@@ -17,59 +16,9 @@ use windows::{
     },
 };
 
-type H = TypedEventHandler<bindings::KeyboardTranslator, HSTRING>;
-
-enum Reporter {
-    Invalid,
-    Translated,
-    KeyTranslated,
-}
-
 #[implement(bindings::KeyboardTranslator)]
 #[derive(Debug)]
 pub(crate) struct KeyboardTranslator;
-
-impl KeyboardTranslator {
-    fn register_reporter(
-        &self,
-        handler: Option<&H>,
-        reporter: Reporter,
-    ) -> Result<EventRegistrationToken> {
-        if let Some(handler) = handler {
-            let token = get_token(handler.as_raw());
-            let handler_ref = AgileReference::new(handler)?;
-
-            INTERNAL.with_borrow_mut(move |internal| {
-                Ok(match reporter {
-                    Reporter::Invalid => &mut internal.report_invalid,
-                    Reporter::Translated => &mut internal.report_translated,
-                    Reporter::KeyTranslated => &mut internal.report_key_translated,
-                }
-                .insert(token, handler_ref.clone()))
-            })?;
-
-            Ok(EventRegistrationToken { Value: token })
-        } else {
-            Err(E_POINTER.into())
-        }
-    }
-
-    fn unregister_reporter(
-        &self,
-        reporter: Reporter,
-        token: &EventRegistrationToken,
-    ) -> Result<()> {
-        let value = token.Value;
-        INTERNAL.with_borrow_mut(move |internal| {
-            Ok(match reporter {
-                Reporter::Invalid => &mut internal.report_invalid,
-                Reporter::Translated => &mut internal.report_translated,
-                Reporter::KeyTranslated => &mut internal.report_key_translated,
-            }
-            .remove(value))
-        })
-    }
-}
 
 impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator_Impl {
     fn TranslateAndForward(
@@ -105,29 +54,9 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator_Impl {
         })
     }
 
-    fn OnInvalid(&self, handler: Option<&H>) -> Result<EventRegistrationToken> {
-        self.register_reporter(handler, Reporter::Invalid)
-    }
-
-    fn OnTranslated(&self, handler: Option<&H>) -> Result<EventRegistrationToken> {
-        self.register_reporter(handler, Reporter::Translated)
-    }
-
-    fn OnKeyTranslated(&self, handler: Option<&H>) -> Result<EventRegistrationToken> {
-        self.register_reporter(handler, Reporter::KeyTranslated)
-    }
-
-    fn RemoveOnInvalid(&self, token: &EventRegistrationToken) -> Result<()> {
-        self.unregister_reporter(Reporter::Invalid, token)
-    }
-
-    fn RemoveOnTranslated(&self, token: &EventRegistrationToken) -> Result<()> {
-        self.unregister_reporter(Reporter::Translated, token)
-    }
-
-    fn RemoveOnKeyTranslated(&self, token: &EventRegistrationToken) -> Result<()> {
-        self.unregister_reporter(Reporter::KeyTranslated, token)
-    }
+    event_registration!(OnInvalid, bindings::KeyboardTranslator, HSTRING);
+    event_registration!(OnTranslated, bindings::KeyboardTranslator, HSTRING);
+    event_registration!(OnKeyTranslated, bindings::KeyboardTranslator, HSTRING);
 }
 
 const fn calculate_bg_keystate(has_capslock: bool, has_shift: bool, has_altgr: bool) -> [u8; 256] {

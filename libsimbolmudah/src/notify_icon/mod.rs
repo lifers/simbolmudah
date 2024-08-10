@@ -4,15 +4,15 @@ mod menu;
 
 use internal::{NotifyIconInternal, INTERNAL};
 use windows::{
-    core::{implement, AgileReference, Error, IInspectable, Interface, Result, HSTRING},
-    Foundation::{EventRegistrationToken, TypedEventHandler},
+    core::{implement, Error, IInspectable, Interface, Result, HSTRING},
+    Foundation::TypedEventHandler,
     Win32::{
         Foundation::{E_NOTIMPL, E_POINTER},
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
     },
 };
 
-use crate::{bindings, utils::delegate_storage::get_token};
+use crate::{bindings, utils::delegate_storage::event_registration};
 
 #[implement(bindings::NotifyIcon)]
 struct NotifyIcon;
@@ -47,89 +47,9 @@ impl bindings::INotifyIcon_Impl for NotifyIcon_Impl {
         INTERNAL.with_borrow_mut(move |internal| internal.update_listening_check(enabled))
     }
 
-    fn OnOpenSettings(
-        &self,
-        handler: Option<&TypedEventHandler<bindings::NotifyIcon, bool>>,
-    ) -> Result<EventRegistrationToken> {
-        if let Some(handler) = handler {
-            let handler_ref = AgileReference::new(handler)?;
-            let token = get_token(handler.as_raw());
-            INTERNAL.with_borrow_mut(move |internal| {
-                internal.report_open_settings.insert(token, handler_ref);
-
-                Ok(())
-            })?;
-
-            Ok(EventRegistrationToken { Value: token })
-        } else {
-            Err(Error::new(E_POINTER, "delegate is null"))
-        }
-    }
-
-    fn RemoveOnOpenSettings(&self, token: &EventRegistrationToken) -> Result<()> {
-        let value = token.Value;
-        INTERNAL.with_borrow_mut(move |internal| {
-            internal.report_open_settings.remove(value);
-
-            Ok(())
-        })
-    }
-
-    fn OnExitApp(
-        &self,
-        handler: Option<&TypedEventHandler<bindings::NotifyIcon, bool>>,
-    ) -> Result<EventRegistrationToken> {
-        if let Some(handler) = handler {
-            let handler_ref = AgileReference::new(handler)?;
-            let token = get_token(handler.as_raw());
-            INTERNAL.with_borrow_mut(move |internal| {
-                internal.report_exit_app.insert(token, handler_ref);
-
-                Ok(())
-            })?;
-
-            Ok(EventRegistrationToken { Value: token })
-        } else {
-            Err(Error::new(E_POINTER, "delegate is null"))
-        }
-    }
-
-    fn RemoveOnExitApp(&self, token: &EventRegistrationToken) -> Result<()> {
-        let value = token.Value;
-        INTERNAL.with_borrow_mut(move |internal| {
-            internal.report_exit_app.remove(value);
-
-            Ok(())
-        })
-    }
-
-    fn OnSetHookEnabled(
-        &self,
-        handler: Option<&TypedEventHandler<bindings::NotifyIcon, bool>>,
-    ) -> Result<EventRegistrationToken> {
-        if let Some(handler) = handler {
-            let handler_ref = AgileReference::new(handler)?;
-            let token = get_token(handler.as_raw());
-            INTERNAL.with_borrow_mut(move |internal| {
-                internal.report_set_listening.insert(token, handler_ref);
-
-                Ok(())
-            })?;
-
-            Ok(EventRegistrationToken { Value: token })
-        } else {
-            Err(Error::new(E_POINTER, "delegate is null"))
-        }
-    }
-
-    fn RemoveOnSetHookEnabled(&self, token: &EventRegistrationToken) -> Result<()> {
-        let value = token.Value;
-        INTERNAL.with_borrow_mut(move |internal| {
-            internal.report_set_listening.remove(value);
-
-            Ok(())
-        })
-    }
+    event_registration!(OnOpenSettings, bindings::NotifyIcon, bool);
+    event_registration!(OnExitApp, bindings::NotifyIcon, bool);
+    event_registration!(OnSetHookEnabled, bindings::NotifyIcon, bool);
 }
 
 #[implement(IActivationFactory, bindings::INotifyIconFactory)]

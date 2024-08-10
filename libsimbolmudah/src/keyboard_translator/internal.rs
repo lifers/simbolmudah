@@ -41,11 +41,12 @@ impl Into<String> for StringVariant {
     }
 }
 
+#[allow(non_snake_case)]
 pub(super) struct KeyboardTranslatorInternal {
     pub(super) keyboard_layout: HKL,
-    pub(super) report_invalid: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
-    pub(super) report_translated: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
-    pub(super) report_key_translated: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
+    pub(super) OnInvalid: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
+    pub(super) OnTranslated: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
+    pub(super) OnKeyTranslated: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
     possible_altgr: HashMap<String, String>,
     possible_dead: HashMap<String, u16>,
     pub(super) state: String,
@@ -60,9 +61,9 @@ impl KeyboardTranslatorInternal {
     ) -> Self {
         Self {
             keyboard_layout: HKL(null_mut()),
-            report_invalid: DelegateStorage::new(),
-            report_translated: DelegateStorage::new(),
-            report_key_translated: DelegateStorage::new(),
+            OnInvalid: DelegateStorage::new(),
+            OnTranslated: DelegateStorage::new(),
+            OnKeyTranslated: DelegateStorage::new(),
             possible_altgr: HashMap::new(),
             possible_dead: HashMap::new(),
             state: String::new(),
@@ -80,7 +81,7 @@ impl KeyboardTranslatorInternal {
         match vk_to_unicode(vkcode, scancode, &keystate, self.keyboard_layout) {
             Ok(s) => Ok(s.into()),
             Err(e) => {
-                self.report_invalid.invoke_all(
+                self.OnInvalid.invoke_all(
                     &self
                         .parent
                         .upgrade()
@@ -141,12 +142,12 @@ impl KeyboardTranslatorInternal {
         match result {
             Ok(s) => {
                 let _ = send_text_clipboard(s.clone())?;
-                self.report_translated
+                self.OnTranslated
                     .invoke_all(&self.get_parent_ref()?, Some(&s.into()))?;
                 Ok(())
             }
             Err(SequenceDefinitionError::ValueNotFound) => self
-                .report_invalid
+                .OnInvalid
                 .invoke_all(&self.get_parent_ref()?, Some(h!("Value not found"))),
             Err(SequenceDefinitionError::Incomplete) => {
                 // Do nothing
@@ -157,7 +158,7 @@ impl KeyboardTranslatorInternal {
     }
 
     pub(super) fn report_key(&mut self, key: &str) -> Result<()> {
-        self.report_key_translated
+        self.OnKeyTranslated
             .invoke_all(&self.get_parent_ref()?, Some(&key.into()))
     }
 
@@ -220,8 +221,8 @@ impl Debug for KeyboardTranslatorInternal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("KeyboardTranslatorInternal")
             .field("keyboard_layout", &self.keyboard_layout)
-            .field("report_invalid", &self.report_invalid)
-            .field("report_translated", &self.report_translated)
+            .field("report_invalid", &self.OnInvalid)
+            .field("report_translated", &self.OnTranslated)
             .field("possible_altgr", &self.possible_altgr)
             .field("possible_dead", &self.possible_dead)
             .field("state", &self.state)

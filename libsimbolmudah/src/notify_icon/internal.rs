@@ -45,14 +45,15 @@ const WM_USER_TRAYICON: u32 = 0x1772;
 pub(super) static INTERNAL: SingleThreaded<NotifyIconInternal> =
     single_threaded!(NotifyIconInternal);
 
+#[allow(non_snake_case)]
 pub(super) struct NotifyIconInternal {
     h_wnd: MessageWindow,
     internal_id: u32,
     h_icon: Owned<HICON>,
     h_menu: NotifyIconMenu,
-    pub(super) report_open_settings: DelegateStorage<bindings::NotifyIcon, bool>,
-    pub(super) report_exit_app: DelegateStorage<bindings::NotifyIcon, bool>,
-    pub(super) report_set_listening: DelegateStorage<bindings::NotifyIcon, bool>,
+    pub(super) OnOpenSettings: DelegateStorage<bindings::NotifyIcon, bool>,
+    pub(super) OnExitApp: DelegateStorage<bindings::NotifyIcon, bool>,
+    pub(super) OnSetHookEnabled: DelegateStorage<bindings::NotifyIcon, bool>,
     pub(super) on_state_changed_token: EventRegistrationToken,
     pub(super) parent: Weak<bindings::NotifyIcon>,
 }
@@ -100,9 +101,9 @@ impl NotifyIconInternal {
             internal_id,
             h_icon,
             h_menu,
-            report_open_settings: DelegateStorage::new(),
-            report_exit_app: DelegateStorage::new(),
-            report_set_listening: DelegateStorage::new(),
+            OnOpenSettings: DelegateStorage::new(),
+            OnExitApp: DelegateStorage::new(),
+            OnSetHookEnabled: DelegateStorage::new(),
             on_state_changed_token: EventRegistrationToken::default(),
             parent,
         };
@@ -187,7 +188,7 @@ extern "system" fn notify_proc(h_wnd: HWND, msg: u32, w_param: WPARAM, l_param: 
             WM_USER_SHOW_SETTINGS => {
                 INTERNAL
                     .with_borrow_mut(|internal| {
-                        internal.report_open_settings.invoke_all(
+                        internal.OnOpenSettings.invoke_all(
                             &get_strong_ref(&internal.parent).expect("parent should stay valid"),
                             None,
                         )
@@ -197,7 +198,7 @@ extern "system" fn notify_proc(h_wnd: HWND, msg: u32, w_param: WPARAM, l_param: 
             WM_USER_LISTEN => {
                 INTERNAL
                     .with_borrow_mut(|internal| {
-                        internal.report_set_listening.invoke_all(
+                        internal.OnSetHookEnabled.invoke_all(
                             &get_strong_ref(&internal.parent).expect("parent should stay valid"),
                             Some(&!internal.h_menu.is_listening()),
                         )
@@ -207,7 +208,7 @@ extern "system" fn notify_proc(h_wnd: HWND, msg: u32, w_param: WPARAM, l_param: 
             WM_USER_EXIT => {
                 INTERNAL
                     .with_borrow_mut(|internal| {
-                        internal.report_exit_app.invoke_all(
+                        internal.OnExitApp.invoke_all(
                             &get_strong_ref(&internal.parent).expect("parent should stay valid"),
                             None,
                         )
