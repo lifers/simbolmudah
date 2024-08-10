@@ -8,8 +8,7 @@ namespace simbolmudah_ui
         MainWindow(
             LibSimbolMudah.SequenceDefinition seqdef,
             AppManager appManager,
-            LibSimbolMudah.NotifyIcon notifyIcon,
-            UInt8 page);
+            LibSimbolMudah.NotifyIcon notifyIcon);
 
         void UpdateOpenSettings(LibSimbolMudah.NotifyIcon notifyIcon);
         void NavigateToSettings(Microsoft.UI.Xaml.Media.Animation.NavigationTransitionInfo transitionInfo);
