@@ -1,19 +1,11 @@
 mod internal;
 
-use crate::{
-    bindings,
-    utils::{delegate_storage::get_token, functions::fail, thread_handler::ThreadHandler},
-};
-use internal::KeyboardTranslatorInternal;
-use std::sync::{
-    atomic::Ordering::{Acquire, Release},
-    Arc, RwLock,
-};
+use crate::{bindings, utils::delegate_storage::event_registration};
+use internal::{KeyboardTranslatorInternal, INTERNAL};
 use windows::{
-    core::{implement, AgileReference, Error, IInspectable, Interface, Result, Weak, HSTRING},
-    Foundation::{EventRegistrationToken, TypedEventHandler},
+    core::{implement, Error, IInspectable, Interface, Result, HSTRING},
     Win32::{
-        Foundation::{E_ACCESSDENIED, E_NOTIMPL, E_POINTER},
+        Foundation::{E_NOTIMPL, E_POINTER},
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
         UI::{
             Input::KeyboardAndMouse::{
@@ -24,72 +16,9 @@ use windows::{
     },
 };
 
-type H = TypedEventHandler<bindings::KeyboardTranslator, HSTRING>;
-
-enum Reporter {
-    Invalid,
-    Translated,
-    KeyTranslated,
-}
-
 #[implement(bindings::KeyboardTranslator)]
 #[derive(Debug)]
-pub(crate) struct KeyboardTranslator {
-    internal: Arc<RwLock<KeyboardTranslatorInternal>>,
-    thread_controller: ThreadHandler,
-}
-
-impl KeyboardTranslator {
-    fn register_reporter(
-        &self,
-        handler: Option<&H>,
-        reporter: Reporter,
-    ) -> Result<EventRegistrationToken> {
-        if let Some(handler) = handler {
-            let token = get_token(handler.as_raw());
-            let internal = self.internal.clone();
-            let handler_ref = AgileReference::new(handler)?;
-
-            self.thread_controller.try_enqueue(move || -> Result<()> {
-                let mut internal = internal
-                    .try_write()
-                    .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?;
-
-                Ok(match reporter {
-                    Reporter::Invalid => &mut internal.report_invalid,
-                    Reporter::Translated => &mut internal.report_translated,
-                    Reporter::KeyTranslated => &mut internal.report_key_translated,
-                }
-                .insert(token, handler_ref.clone()))
-            })?;
-
-            Ok(EventRegistrationToken { Value: token })
-        } else {
-            Err(E_POINTER.into())
-        }
-    }
-
-    fn unregister_reporter(
-        &self,
-        reporter: Reporter,
-        token: &EventRegistrationToken,
-    ) -> Result<()> {
-        let internal = self.internal.clone();
-        let value = token.Value;
-        self.thread_controller.try_enqueue(move || -> Result<()> {
-            let mut internal = internal
-                .try_write()
-                .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?;
-
-            Ok(match reporter {
-                Reporter::Invalid => &mut internal.report_invalid,
-                Reporter::Translated => &mut internal.report_translated,
-                Reporter::KeyTranslated => &mut internal.report_key_translated,
-            }
-            .remove(value))
-        })
-    }
-}
+pub(crate) struct KeyboardTranslator;
 
 impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator_Impl {
     fn TranslateAndForward(
@@ -101,12 +30,7 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator_Impl {
         hasaltgr: bool,
         destination: u8,
     ) -> Result<()> {
-        let internal = self.internal.clone();
-        self.thread_controller.try_enqueue(move || {
-            let mut internal = internal
-                .try_write()
-                .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?;
-
+        INTERNAL.with_borrow_mut(move |internal| {
             let keystate = calculate_bg_keystate(hascapslock, hasshift, hasaltgr);
             let value = internal.translate(vkcode, scancode, &keystate)?;
             internal.report_key(&value)?;
@@ -116,54 +40,23 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator_Impl {
     }
 
     fn CheckLayoutAndUpdate(&self) -> Result<()> {
-        let internal = self.internal.clone();
-        self.thread_controller.try_enqueue_high(move || {
-            {
-                let lock = internal
-                    .try_read()
-                    .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?;
+        INTERNAL.with_borrow_mut(|internal| {
+            let foreground_window = unsafe { GetForegroundWindow() };
+            let tid = unsafe { GetWindowThreadProcessId(foreground_window, None) };
+            let active_layout = unsafe { GetKeyboardLayout(tid) };
 
-                let foreground_window = unsafe { GetForegroundWindow() };
-                let tid = unsafe { GetWindowThreadProcessId(foreground_window, None) };
-                let active_layout = unsafe { GetKeyboardLayout(tid) };
-
-                if active_layout.0 == lock.keyboard_layout.load(Acquire) {
-                    return Ok(());
-                }
-
-                lock.keyboard_layout.store(active_layout.0, Release);
+            if internal.keyboard_layout == active_layout {
+                return Ok(());
             }
 
-            internal
-                .try_write()
-                .map_err(|e| Error::new(E_ACCESSDENIED, format!("{:?}", e)))?
-                .analyze_layout()
+            internal.keyboard_layout = active_layout;
+            internal.analyze_layout()
         })
     }
 
-    fn OnInvalid(&self, handler: Option<&H>) -> Result<EventRegistrationToken> {
-        self.register_reporter(handler, Reporter::Invalid)
-    }
-
-    fn OnTranslated(&self, handler: Option<&H>) -> Result<EventRegistrationToken> {
-        self.register_reporter(handler, Reporter::Translated)
-    }
-
-    fn OnKeyTranslated(&self, handler: Option<&H>) -> Result<EventRegistrationToken> {
-        self.register_reporter(handler, Reporter::KeyTranslated)
-    }
-
-    fn RemoveOnInvalid(&self, token: &EventRegistrationToken) -> Result<()> {
-        self.unregister_reporter(Reporter::Invalid, token)
-    }
-
-    fn RemoveOnTranslated(&self, token: &EventRegistrationToken) -> Result<()> {
-        self.unregister_reporter(Reporter::Translated, token)
-    }
-
-    fn RemoveOnKeyTranslated(&self, token: &EventRegistrationToken) -> Result<()> {
-        self.unregister_reporter(Reporter::KeyTranslated, token)
-    }
+    event_registration!(OnInvalid, bindings::KeyboardTranslator, HSTRING);
+    event_registration!(OnTranslated, bindings::KeyboardTranslator, HSTRING);
+    event_registration!(OnKeyTranslated, bindings::KeyboardTranslator, HSTRING);
 }
 
 const fn calculate_bg_keystate(has_capslock: bool, has_shift: bool, has_altgr: bool) -> [u8; 256] {
@@ -197,25 +90,14 @@ impl bindings::IKeyboardTranslatorFactory_Impl for KeyboardTranslatorFactory_Imp
         &self,
         definition: Option<&bindings::SequenceDefinition>,
     ) -> Result<bindings::KeyboardTranslator> {
-        let definition = definition.ok_or(Error::new(E_POINTER, "Null pointer"))?;
-        let instance: bindings::KeyboardTranslator = KeyboardTranslator {
-            internal: Arc::new(RwLock::new(KeyboardTranslatorInternal::new(
-                Weak::new(),
-                Weak::new(),
-            ))),
-            thread_controller: ThreadHandler::new().expect("Thread controller should be created"),
-        }
-        .into();
+        let definition = definition
+            .ok_or(Error::new(E_POINTER, "Null pointer"))?
+            .downgrade()?;
+        let instance: bindings::KeyboardTranslator = KeyboardTranslator.into();
+        let instance_weak = instance.downgrade()?;
 
-        {
-            let mut internal = instance
-                .cast_object_ref::<KeyboardTranslator>()?
-                .internal
-                .try_write()
-                .map_err(fail)?;
-            internal.sequence_definition = definition.downgrade()?;
-            internal.parent = instance.downgrade()?;
-        }
+        INTERNAL
+            .initialize(move || Ok(KeyboardTranslatorInternal::new(definition, instance_weak)))?;
 
         Ok(instance)
     }
@@ -223,22 +105,14 @@ impl bindings::IKeyboardTranslatorFactory_Impl for KeyboardTranslatorFactory_Imp
 
 #[cfg(test)]
 mod tests {
-    use bindings::IKeyboardTranslator_Impl;
-    use windows::{
-        core::{h, AsImpl},
-        System::DispatcherQueue,
-    };
+    use bindings::{IKeyboardTranslatorFactory_Impl, ISequenceDefinition_Impl};
 
-    use crate::sequence_definition::SequenceDefinitionError;
+    use crate::sequence_definition::{
+        SequenceDefinition, SequenceDefinitionError, SequenceDefinitionFactory,
+    };
 
     use super::*;
-    use std::sync::{
-        atomic::{
-            AtomicBool,
-            Ordering::{AcqRel, Acquire},
-        },
-        Arc,
-    };
+    use std::thread::sleep;
 
     const KEYSYMDEF: &str = "tests/keysymdef.txt";
     const COMPOSEDEF: &str = "tests/Compose.pre";
@@ -249,186 +123,111 @@ mod tests {
         let seqdef =
             bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
 
-        // Create a new instance of KeyboardTranslator
-        let instance = bindings::KeyboardTranslator::CreateInstance(&seqdef)
-            .expect("Instance should be created");
-        let instance = unsafe { instance.as_impl() };
-        assert!(instance.internal.read().is_ok());
-    }
-
-    #[test]
-    fn test_on_invalid() {
-        // Create and build a SequenceDefinition
-        let seqdef =
-            bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
-        seqdef
-            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
-            .expect("Should be built");
+        let factory: IActivationFactory = KeyboardTranslatorFactory.into();
 
         // Create a new instance of KeyboardTranslator
-        let instance = bindings::KeyboardTranslator::CreateInstance(&seqdef)
+        let instance = factory
+            .cast_object_ref::<KeyboardTranslatorFactory>()
+            .unwrap()
+            .CreateInstance(Some(&seqdef))
             .expect("Instance should be created");
-        let instance = instance
-            .cast_object_ref::<KeyboardTranslator>()
-            .expect("Should be castable");
 
-        // Create a flag to check if the event handler was called
-        let flag = Arc::new(AtomicBool::new(false));
-        let clone = flag.clone();
-
-        // Create a mock event handler
-        let handler = TypedEventHandler::new(
-            move |sender: &Option<bindings::KeyboardTranslator>, result| {
-                assert!(sender.is_some());
-                assert_eq!(result, h!("Value not found"));
-                assert!(!clone.fetch_or(true, AcqRel));
-                Ok(())
-            },
-        );
-
-        // Register the event handler
-        let _token = instance
-            .OnInvalid(Some(&handler))
-            .expect("Event handler should be registered");
-
-        // Check flag on ShutdownCompleted event
-        let complete_handler =
-            TypedEventHandler::new(move |sender: &Option<DispatcherQueue>, _| {
-                assert!(sender.is_some());
-                assert!(flag.load(Acquire));
-                Ok(())
-            });
-
-        // Register the event handler
-        let complete_token = instance
-            .thread_controller
-            .register_shutdown_complete_callback(Some(&complete_handler))
-            .expect("Event handler should be registered");
-
-        // Trigger the event
-        instance
-            .TranslateAndForward(0x41, 0, false, false, false, 1)
-            .expect("Should be successful");
-
-        // Wait until event handler is finished
-        instance
-            .thread_controller
-            .disable()
-            .expect("Thread handler should be disabled");
-
-        // Unregister the event handler
-        // instance
-        //     .RemoveOnInvalid(&token)
-        //     .expect("Event handler should be unregistered");
-        instance
-            .thread_controller
-            .unregister_shutdown_complete_callback(complete_token)
-            .expect("Event handler should be unregistered");
-    }
-
-    #[test]
-    fn test_enqueue_task() {
-        // Create a flag to check if the task was executed
-        let flag = Arc::new(AtomicBool::new(false));
-        let clone = flag.clone();
-
-        // Create a thread handler
-        let thread_handler =
-            Arc::new(ThreadHandler::new().expect("Thread handler should be created"));
-
-        // Enqueue a task that sets the flag to true
-        thread_handler
-            .try_enqueue(move || {
-                assert!(!clone.fetch_or(true, AcqRel));
+        INTERNAL
+            .with_borrow(move |internal| {
+                assert_eq!(
+                    internal.sequence_definition.upgrade().expect("must be set"),
+                    seqdef
+                );
+                assert_eq!(internal.parent.upgrade().expect("must be set"), instance);
                 Ok(())
             })
-            .expect("Task should be enqueued");
+            .expect("Internal should be borrowed");
 
-        let clone = flag.clone();
-
-        let complete_handler =
-            TypedEventHandler::new(move |sender: &Option<DispatcherQueue>, _| {
-                assert!(sender.is_some());
-                assert!(clone.load(Acquire));
-                Ok(())
-            });
-
-        // Register the event handler
-        let complete_token = thread_handler
-            .register_shutdown_complete_callback(Some(&complete_handler))
-            .expect("Event handler should be registered");
-
-        // Wait for the task to complete
-        thread_handler
-            .disable()
-            .expect("Thread handler should be disabled, all tasks should be completed");
-
-        // Unregister the event handler
-        thread_handler
-            .unregister_shutdown_complete_callback(complete_token)
-            .expect("Event handler should be unregistered");
+        INTERNAL.destroy().expect("Internal should be destroyed");
     }
 
     #[test]
     fn test_state_clear_after_translation() {
         // Create and build the SequenceDefinition
-        let seqdef =
-            bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
+        let factory: IActivationFactory = SequenceDefinitionFactory.into();
+        let seqdef = factory
+            .cast_object_ref::<SequenceDefinitionFactory>()
+            .unwrap()
+            .ActivateInstance()
+            .expect("SequenceDefinition should be created");
+
         seqdef
+            .cast_object_ref::<SequenceDefinition>()
+            .expect("Should be castable")
             .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 
+        let factory: IActivationFactory = KeyboardTranslatorFactory.into();
         // Create a new instance of KeyboardTranslator
-        let instance = bindings::KeyboardTranslator::CreateInstance(&seqdef)
+        let _instance = factory
+            .cast_object_ref::<KeyboardTranslatorFactory>()
+            .unwrap()
+            .CreateInstance(Some(
+                &seqdef.cast::<bindings::SequenceDefinition>().unwrap(),
+            ))
             .expect("Instance should be created");
 
-        // Cast KeyboardTranslator to its object
-        let instance = instance
-            .cast_object_ref::<KeyboardTranslator>()
-            .expect("Should be castable");
-
         // Assuming "omg" is an invalid sequence for this test
-        assert_eq!(
-            instance
-                .internal
-                .try_write()
-                .unwrap()
-                .forward(0, "omg".to_string()),
-            Err(SequenceDefinitionError::ValueNotFound)
-        );
-        assert!(instance.internal.try_read().unwrap().state.is_empty());
+        INTERNAL
+            .with_borrow_mut(|internal| {
+                assert_eq!(
+                    internal.forward(0, "omg".to_string()),
+                    Err(SequenceDefinitionError::ValueNotFound)
+                );
+                assert!(internal.state.is_empty());
+                Ok(())
+            })
+            .expect("Internal should be borrowed");
+
+        INTERNAL.destroy().expect("Internal should be destroyed");
+
+        sleep(std::time::Duration::from_secs(5));
     }
 
     #[test]
     fn test_state_accumulation() {
         // Create and build the SequenceDefinition
-        let seqdef =
-            bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
+        let factory: IActivationFactory = SequenceDefinitionFactory.into();
+        let seqdef = factory
+            .cast_object_ref::<SequenceDefinitionFactory>()
+            .unwrap()
+            .ActivateInstance()
+            .expect("SequenceDefinition should be created");
         seqdef
+            .cast_object_ref::<SequenceDefinition>()
+            .expect("Should be castable")
             .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 
         // Create a new instance of KeyboardTranslator
-        let instance = bindings::KeyboardTranslator::CreateInstance(&seqdef)
+        let factory: IActivationFactory = KeyboardTranslatorFactory.into();
+        let _instance = factory
+            .cast_object_ref::<KeyboardTranslatorFactory>()
+            .unwrap()
+            .CreateInstance(Some(
+                &seqdef.cast::<bindings::SequenceDefinition>().unwrap(),
+            ))
             .expect("Instance should be created");
 
-        // Cast KeyboardTranslator to its object
-        let instance = instance
-            .cast_object_ref::<KeyboardTranslator>()
-            .expect("Should be castable");
+        INTERNAL
+            .with_borrow_mut(|internal| {
+                assert_eq!(
+                    internal.forward(0, "/".to_string()),
+                    Err(SequenceDefinitionError::Incomplete)
+                );
+                assert_eq!(internal.forward(0, "=".to_string()), Ok("≠".to_string()));
+                assert!(internal.state.is_empty());
+                Ok(())
+            })
+            .expect("Internal should be borrowed");
 
-        let result = instance
-            .internal
-            .try_write()
-            .unwrap()
-            .forward(0, "/".to_string());
-        assert_eq!(result, Err(SequenceDefinitionError::Incomplete));
-        let result = instance
-            .internal
-            .try_write()
-            .unwrap()
-            .forward(0, "=".to_string());
-        assert_eq!(result, Ok("≠".to_string()));
-        assert!(instance.internal.try_read().unwrap().state.is_empty());
+        INTERNAL.destroy().expect("Internal should be destroyed");
+
+        sleep(std::time::Duration::from_secs(5));
     }
 }
