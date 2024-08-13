@@ -75,8 +75,8 @@ pub(super) static INTERNAL: SingleThreaded<KeyboardHookInternal> =
 
 #[allow(non_snake_case)]
 pub(super) struct KeyboardHookInternal {
-    pub(super) OnStateChanged: DelegateStorage<bindings::KeyboardHook, u8>,
-    pub(super) OnKeyEvent: DelegateStorage<bindings::KeyboardHook, HSTRING>,
+    pub(super) OnStateChanged: DelegateStorage<TypedEventHandler<bindings::KeyboardHook, u8>>,
+    pub(super) OnKeyEvent: DelegateStorage<TypedEventHandler<bindings::KeyboardHook, HSTRING>>,
     pub(super) keyboard_translator: Weak<bindings::KeyboardTranslator>,
     pub(super) on_invalid_token: EventRegistrationToken,
     pub(super) on_translated_token: EventRegistrationToken,
@@ -221,17 +221,17 @@ impl KeyboardHookInternal {
     }
 
     pub(super) fn report_state(&mut self) -> Result<()> {
-        self.OnStateChanged.invoke_all(
-            &get_strong_ref(&self.parent)?,
-            Some(&(self.stage as u8)),
-        )
+        self.OnStateChanged
+            .invoke_all(|d| d.Invoke(&get_strong_ref(&self.parent)?, Some(&(self.stage as u8))))
     }
 
     pub(super) fn report_key_event(&mut self, input: KEYBDINPUT) -> Result<()> {
-        self.OnKeyEvent.invoke_all(
-            &get_strong_ref(&self.parent)?,
-            Some(&keybdinput_to_hstring(input)),
-        )
+        self.OnKeyEvent.invoke_all(|d| {
+            d.Invoke(
+                &get_strong_ref(&self.parent)?,
+                Some(&keybdinput_to_hstring(input)),
+            )
+        })
     }
 
     fn translate_and_forward(&self, input: KEYBDINPUT) -> Result<()> {

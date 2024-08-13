@@ -2,7 +2,7 @@
 /// with modifications.
 use windows::{
     core::{h, Owned, Result, Weak, HSTRING},
-    Foundation::EventRegistrationToken,
+    Foundation::{EventRegistrationToken, TypedEventHandler},
     Win32::{
         Foundation::{HWND, LPARAM, LRESULT, WPARAM},
         UI::{
@@ -47,13 +47,13 @@ pub(super) static INTERNAL: SingleThreaded<NotifyIconInternal> =
 
 #[allow(non_snake_case)]
 pub(super) struct NotifyIconInternal {
-    h_wnd: MessageWindow,
+    pub h_wnd: MessageWindow,
     internal_id: u32,
     h_icon: Owned<HICON>,
     h_menu: NotifyIconMenu,
-    pub(super) OnOpenSettings: DelegateStorage<bindings::NotifyIcon, bool>,
-    pub(super) OnExitApp: DelegateStorage<bindings::NotifyIcon, bool>,
-    pub(super) OnSetHookEnabled: DelegateStorage<bindings::NotifyIcon, bool>,
+    pub(super) OnOpenSettings: DelegateStorage<TypedEventHandler<bindings::NotifyIcon, bool>>,
+    pub(super) OnExitApp: DelegateStorage<TypedEventHandler<bindings::NotifyIcon, bool>>,
+    pub(super) OnSetHookEnabled: DelegateStorage<TypedEventHandler<bindings::NotifyIcon, bool>>,
     pub(super) on_state_changed_token: EventRegistrationToken,
     pub(super) parent: Weak<bindings::NotifyIcon>,
 }
@@ -188,30 +188,39 @@ extern "system" fn notify_proc(h_wnd: HWND, msg: u32, w_param: WPARAM, l_param: 
             WM_USER_SHOW_SETTINGS => {
                 INTERNAL
                     .with_borrow_mut(|internal| {
-                        internal.OnOpenSettings.invoke_all(
-                            &get_strong_ref(&internal.parent).expect("parent should stay valid"),
-                            None,
-                        )
+                        internal.OnOpenSettings.invoke_all(|d| {
+                            d.Invoke(
+                                &get_strong_ref(&internal.parent)
+                                    .expect("parent should stay valid"),
+                                None,
+                            )
+                        })
                     })
                     .expect("invoke_all should succeed");
             }
             WM_USER_LISTEN => {
                 INTERNAL
                     .with_borrow_mut(|internal| {
-                        internal.OnSetHookEnabled.invoke_all(
-                            &get_strong_ref(&internal.parent).expect("parent should stay valid"),
-                            Some(&!internal.h_menu.is_listening()),
-                        )
+                        internal.OnSetHookEnabled.invoke_all(|d| {
+                            d.Invoke(
+                                &get_strong_ref(&internal.parent)
+                                    .expect("parent should stay valid"),
+                                Some(&!internal.h_menu.is_listening()),
+                            )
+                        })
                     })
                     .expect("invoke_all should succeed");
             }
             WM_USER_EXIT => {
                 INTERNAL
                     .with_borrow_mut(|internal| {
-                        internal.OnExitApp.invoke_all(
-                            &get_strong_ref(&internal.parent).expect("parent should stay valid"),
-                            None,
-                        )
+                        internal.OnExitApp.invoke_all(|d| {
+                            d.Invoke(
+                                &get_strong_ref(&internal.parent)
+                                    .expect("parent should stay valid"),
+                                None,
+                            )
+                        })
                     })
                     .expect("invoke_all should succeed");
             }

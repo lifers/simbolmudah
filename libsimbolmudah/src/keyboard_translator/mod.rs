@@ -4,6 +4,7 @@ use crate::{bindings, utils::delegate_storage::event_registration};
 use internal::{KeyboardTranslatorInternal, INTERNAL};
 use windows::{
     core::{implement, Error, IInspectable, Interface, Result, HSTRING},
+    Foundation::TypedEventHandler,
     Win32::{
         Foundation::{E_NOTIMPL, E_POINTER},
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
@@ -59,9 +60,9 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator_Impl {
         })
     }
 
-    event_registration!(OnInvalid, bindings::KeyboardTranslator, HSTRING);
-    event_registration!(OnTranslated, bindings::KeyboardTranslator, HSTRING);
-    event_registration!(OnKeyTranslated, bindings::KeyboardTranslator, HSTRING);
+    event_registration!(OnInvalid, TypedEventHandler<bindings::KeyboardTranslator, HSTRING>);
+    event_registration!(OnTranslated, TypedEventHandler<bindings::KeyboardTranslator, HSTRING>);
+    event_registration!(OnKeyTranslated, TypedEventHandler<bindings::KeyboardTranslator, HSTRING>);
 }
 
 const fn calculate_bg_keystate(has_capslock: bool, has_shift: bool, has_altgr: bool) -> [u8; 256] {
