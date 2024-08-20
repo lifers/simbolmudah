@@ -1,3 +1,4 @@
+mod cldr_parser;
 mod compose_reader;
 mod internal;
 mod keysym_reader;

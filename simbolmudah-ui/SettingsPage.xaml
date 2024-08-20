@@ -637,7 +637,7 @@ https://github.com/CommunityToolkit/Windows/blob/c532c1128de4fcb6bb0cb6f5f0918e9
                         <TextBlock Text="Enable Keyboard Hook" Margin="20,0,0,0"/>
                     </StackPanel>
                     <ToggleSwitch x:Name="HookSwitch"
-                                  IsOn="{x:Bind ViewModel.HookEnabled, Mode=OneWay}"
+                                  IsOn="{x:Bind ViewModel.HookEnabled, Mode=TwoWay}"
                                   Style="{StaticResource RightAlignedCompactToggleSwitchStyle}"
                                   HorizontalAlignment="Right"/>
                 </Grid>
@@ -649,8 +649,8 @@ https://github.com/CommunityToolkit/Windows/blob/c532c1128de4fcb6bb0cb6f5f0918e9
                         <TextBlock x:Name="PopupText" Text="Use Hook Popup" Margin="20,0,0,0"/>
                     </StackPanel>
                     <ToggleSwitch x:Name="PopupSwitch"
-                                  IsEnabled="{x:Bind ViewModel.HookEnabled, Mode=OneWay}"
-                                  IsOn="{x:Bind ViewModel.UseHookPopup, Mode=OneWay}"
+                                  IsEnabled="{x:Bind ViewModel.HookEnabled, Mode=TwoWay}"
+                                  IsOn="{x:Bind ViewModel.UseHookPopup, Mode=TwoWay}"
                                   Style="{StaticResource RightAlignedCompactToggleSwitchStyle}"
                                   HorizontalAlignment="Right"/>
                 </Grid>
@@ -666,7 +666,7 @@ https://github.com/CommunityToolkit/Windows/blob/c532c1128de4fcb6bb0cb6f5f0918e9
                 <TextBlock Text="Enable Notification Icon" Margin="20,0,0,0"/>
             </StackPanel>
             <ToggleSwitch x:Name="NotifyIconSwitch"
-                          IsOn="{x:Bind ViewModel.NotifyIconEnabled, Mode=OneWay}"
+                          IsOn="{x:Bind ViewModel.NotifyIconEnabled, Mode=TwoWay}"
                           Style="{StaticResource RightAlignedCompactToggleSwitchStyle}"
                           HorizontalAlignment="Right"/>
         </Grid>
@@ -680,14 +680,9 @@ https://github.com/CommunityToolkit/Windows/blob/c532c1128de4fcb6bb0cb6f5f0918e9
                 <TextBlock Text="Open Window When Launched" Margin="20,0,0,0"/>
             </StackPanel>
             <ToggleSwitch x:Name="MainWindowSwitch"
-                          IsOn="{x:Bind ViewModel.MainWindowOpened, Mode=OneWay}"
+                          IsOn="{x:Bind ViewModel.MainWindowOpened, Mode=TwoWay}"
                           Style="{StaticResource RightAlignedCompactToggleSwitchStyle}"
                           HorizontalAlignment="Right"/>
         </Grid>
-
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-            <Button Content="Save" Margin="0,0,10,0" Click="OnSaveClick"/>
-            <Button Content="Cancel" Click="OnCancelClick"/>
-        </StackPanel>
     </StackPanel>
 </Page>
