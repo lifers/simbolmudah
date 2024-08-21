@@ -10,14 +10,21 @@
 
 namespace
 {
-    // Limit the minimum window size to 480x360.
-    LRESULT MinimumSizeSubclass(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, UINT_PTR, DWORD_PTR)
-    {
+    // Limit the minimum window size to 640x480 times the DPI scale factor.
+    LRESULT MinimumSizeSubclass(
+        HWND hwnd,
+        UINT message,
+        WPARAM wParam,
+        LPARAM lParam,
+        UINT_PTR,
+        DWORD_PTR
+    ) {
         if (message == WM_GETMINMAXINFO)
         {
             const auto mmi{ reinterpret_cast<MINMAXINFO*>(lParam) };
-            mmi->ptMinTrackSize.x = 480;
-            mmi->ptMinTrackSize.y = 360;
+            const auto dpi{ ::GetDpiForWindow(hwnd) };
+            mmi->ptMinTrackSize.x = 640u * dpi / 96u;
+            mmi->ptMinTrackSize.y = 480u * dpi / 96u;
             return 0;
         }
         else
@@ -62,7 +69,7 @@ namespace winrt::simbolmudah_ui::implementation
         const auto windowNative{ this->m_inner.as<::IWindowNative>() };
         HWND hwnd{};
         check_hresult(windowNative->get_WindowHandle(&hwnd));
-        check_bool(SetWindowSubclass(hwnd, MinimumSizeSubclass, 0, 0));
+        check_bool(::SetWindowSubclass(hwnd, MinimumSizeSubclass, 0, 0));
     }
 
     /// <summary>
