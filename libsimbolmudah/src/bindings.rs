@@ -194,7 +194,7 @@ pub struct INotifyIconFactory_Vtbl {
 windows_core::imp::define_interface!(
     ISequenceDefinition,
     ISequenceDefinition_Vtbl,
-    0x09f566ee_0de2_51b8_aef7_3d4bb720bff2
+    0xea87bd03_ef31_55c0_8fd9_0478f639eebb
 );
 impl windows_core::RuntimeType for ISequenceDefinition {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -205,6 +205,7 @@ pub struct ISequenceDefinition_Vtbl {
     pub base__: windows_core::IInspectable_Vtbl,
     pub Build: unsafe extern "system" fn(
         *mut core::ffi::c_void,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
         core::mem::MaybeUninit<windows_core::HSTRING>,
         core::mem::MaybeUninit<windows_core::HSTRING>,
     ) -> windows_core::HRESULT,
@@ -710,6 +711,7 @@ impl SequenceDefinition {
         &self,
         keysymdef: &windows_core::HSTRING,
         composedef: &windows_core::HSTRING,
+        cldrdir: &windows_core::HSTRING,
     ) -> windows_core::Result<()> {
         let this = self;
         unsafe {
@@ -717,6 +719,7 @@ impl SequenceDefinition {
                 windows_core::Interface::as_raw(this),
                 core::mem::transmute_copy(keysymdef),
                 core::mem::transmute_copy(composedef),
+                core::mem::transmute_copy(cldrdir),
             )
             .ok()
         }
@@ -1469,6 +1472,7 @@ pub trait ISequenceDefinition_Impl: Sized {
         &self,
         keysymdef: &windows_core::HSTRING,
         composedef: &windows_core::HSTRING,
+        cldrdir: &windows_core::HSTRING,
     ) -> windows_core::Result<()>;
     fn PotentialPrefix(
         &self,
@@ -1494,6 +1498,7 @@ impl ISequenceDefinition_Vtbl {
             this: *mut core::ffi::c_void,
             keysymdef: core::mem::MaybeUninit<windows_core::HSTRING>,
             composedef: core::mem::MaybeUninit<windows_core::HSTRING>,
+            cldrdir: core::mem::MaybeUninit<windows_core::HSTRING>,
         ) -> windows_core::HRESULT
         where
             Identity: ISequenceDefinition_Impl,
@@ -1503,6 +1508,7 @@ impl ISequenceDefinition_Vtbl {
                 this,
                 core::mem::transmute(&keysymdef),
                 core::mem::transmute(&composedef),
+                core::mem::transmute(&cldrdir),
             )
             .into()
         }

@@ -122,6 +122,7 @@ mod tests {
 
     const KEYSYMDEF: &str = "tests/keysymdef.txt";
     const COMPOSEDEF: &str = "tests/Compose.pre";
+    const CLDRDIR: &str = "cldr-annotations-derived-full";
 
     #[test]
     fn test_activate_instance() {
@@ -165,7 +166,7 @@ mod tests {
         seqdef
             .cast_object_ref::<SequenceDefinition>()
             .expect("Should be castable")
-            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &CLDRDIR.into())
             .expect("SequenceDefinition should be built");
 
         let factory: IActivationFactory = KeyboardTranslatorFactory.into();
@@ -207,7 +208,7 @@ mod tests {
         seqdef
             .cast_object_ref::<SequenceDefinition>()
             .expect("Should be castable")
-            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &CLDRDIR.into())
             .expect("SequenceDefinition should be built");
 
         // Create a new instance of KeyboardTranslator

@@ -76,6 +76,18 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\Annotations\annotations-en.rkyv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Annotations\annotations-fr.rkyv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Annotations\annotations-id.rkyv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Annotations\annotations-jv.rkyv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Images\AppList.scale-100.png" />
     <Content Include="Images\AppList.scale-125.png" />
     <Content Include="Images\AppList.scale-150.png" />
@@ -141,7 +153,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240627000">
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240802000">
       <IncludeAssets>build</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="[10.0.22621.756]">

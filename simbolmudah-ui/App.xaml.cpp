@@ -84,7 +84,7 @@ namespace winrt::simbolmudah_ui::implementation
     {
         const auto keysymdef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.txt")) };
         const auto composedef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre")) };
-        this->sequenceDefinition.Build((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
+        this->sequenceDefinition.Build((co_await keysymdef_path).Path(), (co_await composedef_path).Path(), L"");
     }
 
     /// <summary>

@@ -628,61 +628,63 @@ https://github.com/CommunityToolkit/Windows/blob/c532c1128de4fcb6bb0cb6f5f0918e9
         </Style>
     </Page.Resources>
 
-    <StackPanel Padding="56">
-        <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,4,0,4" IsExpanded="True">
-            <Expander.Header>
-                <Grid Padding="0,16,0,16">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <FontIcon Glyph="&#xE765;" HorizontalAlignment="Left"/>
-                        <TextBlock Text="Enable Keyboard Hook" Margin="20,0,0,0"/>
-                    </StackPanel>
-                    <ToggleSwitch x:Name="HookSwitch"
-                                  IsOn="{x:Bind ViewModel.HookEnabled, Mode=TwoWay}"
-                                  Style="{StaticResource RightAlignedCompactToggleSwitchStyle}"
-                                  HorizontalAlignment="Right"/>
-                </Grid>
-            </Expander.Header>
-            <Expander.Content>
-                <Grid Padding="0,0,44,0">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <FontIcon x:Name="PopupIcon" Glyph="&#xE8AD;" HorizontalAlignment="Left"/>
-                        <TextBlock x:Name="PopupText" Text="Use Hook Popup" Margin="20,0,0,0"/>
-                    </StackPanel>
-                    <ToggleSwitch x:Name="PopupSwitch"
-                                  IsEnabled="{x:Bind ViewModel.HookEnabled, Mode=TwoWay}"
-                                  IsOn="{x:Bind ViewModel.UseHookPopup, Mode=TwoWay}"
-                                  Style="{StaticResource RightAlignedCompactToggleSwitchStyle}"
-                                  HorizontalAlignment="Right"/>
-                </Grid>
-            </Expander.Content>
-        </Expander>
+    <ScrollViewer>
+        <StackPanel Padding="56">
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,4,0,4" IsExpanded="True">
+                <Expander.Header>
+                    <Grid Padding="0,16,0,16">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE765;" HorizontalAlignment="Left"/>
+                            <TextBlock Text="Enable Keyboard Hook" Margin="20,0,0,0"/>
+                        </StackPanel>
+                        <ToggleSwitch x:Name="HookSwitch"
+                                      IsOn="{x:Bind ViewModel.HookEnabled, Mode=TwoWay}"
+                                      Style="{StaticResource RightAlignedCompactToggleSwitchStyle}"
+                                      HorizontalAlignment="Right"/>
+                    </Grid>
+                </Expander.Header>
+                <Expander.Content>
+                    <Grid Padding="0,0,44,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <FontIcon x:Name="PopupIcon" Glyph="&#xE8AD;" HorizontalAlignment="Left"/>
+                            <TextBlock x:Name="PopupText" Text="Use Hook Popup" Margin="20,0,0,0"/>
+                        </StackPanel>
+                        <ToggleSwitch x:Name="PopupSwitch"
+                                      IsEnabled="{x:Bind ViewModel.HookEnabled, Mode=TwoWay}"
+                                      IsOn="{x:Bind ViewModel.UseHookPopup, Mode=TwoWay}"
+                                      Style="{StaticResource RightAlignedCompactToggleSwitchStyle}"
+                                      HorizontalAlignment="Right"/>
+                    </Grid>
+                </Expander.Content>
+            </Expander>
         
-        <Grid Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-              BorderThickness="1"
-              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-              CornerRadius="4" Padding="16" Margin="0,4,0,4">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <FontIcon Glyph="&#xE91C;" HorizontalAlignment="Left"/>
-                <TextBlock Text="Enable Notification Icon" Margin="20,0,0,0"/>
-            </StackPanel>
-            <ToggleSwitch x:Name="NotifyIconSwitch"
-                          IsOn="{x:Bind ViewModel.NotifyIconEnabled, Mode=TwoWay}"
-                          Style="{StaticResource RightAlignedCompactToggleSwitchStyle}"
-                          HorizontalAlignment="Right"/>
-        </Grid>
+            <Grid Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                  BorderThickness="1"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                  CornerRadius="4" Padding="16" Margin="0,4,0,4">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE91C;" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Enable Notification Icon" Margin="20,0,0,0"/>
+                </StackPanel>
+                <ToggleSwitch x:Name="NotifyIconSwitch"
+                              IsOn="{x:Bind ViewModel.NotifyIconEnabled, Mode=TwoWay}"
+                              Style="{StaticResource RightAlignedCompactToggleSwitchStyle}"
+                              HorizontalAlignment="Right"/>
+            </Grid>
         
-        <Grid Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-              BorderThickness="1"
-              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-              CornerRadius="4" Padding="16" Margin="0,4,0,4">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <FontIcon Glyph="&#xE78B;" HorizontalAlignment="Left"/>
-                <TextBlock Text="Open Window When Launched" Margin="20,0,0,0"/>
-            </StackPanel>
-            <ToggleSwitch x:Name="MainWindowSwitch"
-                          IsOn="{x:Bind ViewModel.MainWindowOpened, Mode=TwoWay}"
-                          Style="{StaticResource RightAlignedCompactToggleSwitchStyle}"
-                          HorizontalAlignment="Right"/>
-        </Grid>
-    </StackPanel>
+            <Grid Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                  BorderThickness="1"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                  CornerRadius="4" Padding="16" Margin="0,4,0,4">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE78B;" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Open Window When Launched" Margin="20,0,0,0"/>
+                </StackPanel>
+                <ToggleSwitch x:Name="MainWindowSwitch"
+                              IsOn="{x:Bind ViewModel.MainWindowOpened, Mode=TwoWay}"
+                              Style="{StaticResource RightAlignedCompactToggleSwitchStyle}"
+                              HorizontalAlignment="Right"/>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
 </Page>

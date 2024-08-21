@@ -82,6 +82,9 @@
     <Filter Include="AppManager">
       <UniqueIdentifier>{dc0015a4-57d2-4212-b22c-ef83b8879fd2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Assets\Annotations">
+      <UniqueIdentifier>{04872605-19e6-4a33-84de-fbcd988ce851}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="readme.txt" />
@@ -90,9 +93,26 @@
     <Manifest Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
+    <ContentWithTargetPath Include="..\libsimbolmudah\cldr-annotations-derived-full\processed\annotations-en.rkyv">
+      <Filter>Assets\Annotations</Filter>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="..\libsimbolmudah\cldr-annotations-derived-full\processed\annotations-fr.rkyv">
+      <Filter>Assets\Annotations</Filter>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="..\libsimbolmudah\cldr-annotations-derived-full\processed\annotations-id.rkyv">
+      <Filter>Assets\Annotations</Filter>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="..\libsimbolmudah\cldr-annotations-derived-full\processed\annotations-jv.rkyv">
+      <Filter>Assets\Annotations</Filter>
+    </ContentWithTargetPath>
+  </ItemGroup>
+  <ItemGroup>
     <None Include="packages.config" />
     <None Include="Assets\Resources\Compose.pre">
       <Filter>Assets\Resources</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
   </ItemGroup>
 </Project>

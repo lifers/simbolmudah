@@ -28,5 +28,16 @@ namespace winrt::simbolmudah_ui::implementation
         this->mainViewModel = simbolmudah_ui::SearchPageViewModel{ seqdef };
     }
 
-    void SearchPage::CurrentSearch_Completed(IAsyncAction const&, AsyncStatus) { this->currentSearch = nullptr; }
+    void SearchPage::CurrentSearch_Completed(IAsyncAction const&, AsyncStatus) {
+        
+        if (this->mainViewModel.SearchResults().Size() == 0)
+        {
+            this->MainContent().Content(this->NoResultsView());
+        }
+        else
+        {
+            this->MainContent().Content(this->ResultsView());
+        }
+        this->currentSearch = nullptr;
+    }
 }

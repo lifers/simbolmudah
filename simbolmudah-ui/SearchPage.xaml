@@ -61,18 +61,29 @@
                 </ItemsRepeater>
             </Grid>
         </DataTemplate>
+        
+        <ListView x:Name="ResultsView"
+                  ItemsSource="{x:Bind MainViewModel.SearchResults, Mode=OneWay}"
+                  ItemTemplate="{StaticResource searchResultTemplate}"
+                  Grid.Row="1">
+        </ListView>
+        
+        <TextBlock x:Name="NoResultsView" Text="No results found"/>
     </Page.Resources>
 
-    <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="48" Height="Auto">
+    <Grid Margin="48,48,48,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
         <AutoSuggestBox x:Name="SearchBox"
                         PlaceholderText="Type a character name"
                         QueryIcon="Find"
                         TextChanged="SubmitSearch"
-                        Margin="0,0,0,16"/>
-        <ListView x:Name="SearchResults"
-                  ItemsSource="{x:Bind MainViewModel.SearchResults, Mode=OneWay}"
-                  ItemTemplate="{StaticResource searchResultTemplate}"
-                  MaxHeight="500">
-        </ListView>
-    </StackPanel>
+                        Margin="0,0,0,16"
+                        Grid.Row="0"/>
+        <ContentControl x:Name="MainContent" Grid.Row="1">
+            <TextBlock Text="Search for a character name"/>
+        </ContentControl>
+    </Grid>
 </Page>
