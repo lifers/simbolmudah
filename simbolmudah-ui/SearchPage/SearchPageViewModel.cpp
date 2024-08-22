@@ -2,6 +2,14 @@
 #include "SearchPageViewModel.h"
 #include "SearchPageViewModel.g.cpp"
 
+namespace
+{
+    const winrt::simbolmudah_ui::SequenceDetail PLACEHOLDER{
+        {}, L"🔍", L"Start typing to search", L"Results will show up as you type" };
+    const winrt::simbolmudah_ui::SequenceDetail NO_RESULTS{
+        {}, L"🤷", L"No results found", L"Try searching for something else" };
+}
+
 namespace winrt::simbolmudah_ui::implementation
 {
     using namespace Windows::Foundation;
@@ -9,10 +17,8 @@ namespace winrt::simbolmudah_ui::implementation
     using namespace LibSimbolMudah;
 
     SearchPageViewModel::SearchPageViewModel(SequenceDefinition const& seqdef)
-        : searchResults{ single_threaded_observable_vector<simbolmudah_ui::SequenceDetail>({
-            simbolmudah_ui::SequenceDetail({L"`", L"e"}, L"🙏", L"tangan", L"U+XXXX"),
-            simbolmudah_ui::SequenceDetail({L"`", L"a"}, L"🙏", L"tangan", L"U+XXXX")
-        }) }, sequenceDefinition{ seqdef } {}
+        : searchResults{ single_threaded_observable_vector<simbolmudah_ui::SequenceDetail>({ PLACEHOLDER }) },
+          sequenceDefinition{ seqdef } {}
 
     IObservableVector<simbolmudah_ui::SequenceDetail> SearchPageViewModel::SearchResults() const
     {
@@ -21,11 +27,24 @@ namespace winrt::simbolmudah_ui::implementation
 
     IAsyncAction SearchPageViewModel::Search(hstring keyword)
     {
+        if (keyword.empty())
+        {
+            this->searchResults.ReplaceAll({ PLACEHOLDER });
+            co_return;
+        }
+
         const auto ui_thread{ apartment_context() };
         co_await resume_background();
         const auto results{ this->sequenceDefinition.Search(keyword, 2000) };
 
         const auto size{ results.Size() };
+        if (size == 0)
+        {
+            co_await ui_thread;
+            this->searchResults.ReplaceAll({ NO_RESULTS });
+            co_return;
+        }
+
         std::vector<SequenceDetail> toShow;
         toShow.reserve(size);
 

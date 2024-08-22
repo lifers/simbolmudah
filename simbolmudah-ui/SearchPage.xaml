@@ -17,7 +17,7 @@
                 <Grid.Shadow>
                     <ThemeShadow/>
                 </Grid.Shadow>
-                
+
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             Width="48"
@@ -28,7 +28,7 @@
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"/>
                     </Border>
-                    
+
                     <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="16,0,0,0">
                         <TextBlock Text="{x:Bind Description, Mode=OneTime}"/>
                         <TextBlock Text="{x:Bind Codepoints, Mode=OneTime}"
@@ -36,12 +36,12 @@
                                    Margin="0,4,0,0"/>
                     </StackPanel>
                 </StackPanel>
-                
+
                 <ItemsRepeater ItemsSource="{x:Bind Sequence, Mode=OneTime}" VerticalAlignment="Center" HorizontalAlignment="Right">
                     <ItemsRepeater.Layout>
                         <StackLayout Orientation="Horizontal" Spacing="2"/>
                     </ItemsRepeater.Layout>
-                    
+
                     <ItemsRepeater.ItemTemplate>
                         <DataTemplate x:DataType="x:String">
                             <Border Background="{ThemeResource AccentFillColorDefaultBrush}"
@@ -61,14 +61,6 @@
                 </ItemsRepeater>
             </Grid>
         </DataTemplate>
-        
-        <ListView x:Name="ResultsView"
-                  ItemsSource="{x:Bind MainViewModel.SearchResults, Mode=OneWay}"
-                  ItemTemplate="{StaticResource searchResultTemplate}"
-                  Grid.Row="1">
-        </ListView>
-        
-        <TextBlock x:Name="NoResultsView" Text="No results found"/>
     </Page.Resources>
 
     <Grid Margin="48,48,48,0">
@@ -82,8 +74,10 @@
                         TextChanged="SubmitSearch"
                         Margin="0,0,0,16"
                         Grid.Row="0"/>
-        <ContentControl x:Name="MainContent" Grid.Row="1">
-            <TextBlock Text="Search for a character name"/>
-        </ContentControl>
+        <ListView x:Name="ResultsView"
+                  ItemsSource="{x:Bind MainViewModel.SearchResults, Mode=OneWay}"
+                  ItemTemplate="{StaticResource searchResultTemplate}"
+                  Grid.Row="1">
+        </ListView>
     </Grid>
 </Page>
