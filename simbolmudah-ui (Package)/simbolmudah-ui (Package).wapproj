@@ -76,18 +76,14 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Assets\Annotations\annotations-en.rkyv">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Assets\Annotations\annotations-fr.rkyv">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Assets\Annotations\annotations-id.rkyv">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Assets\Annotations\annotations-jv.rkyv">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="Assets\Annotations\en-annotations.xml.br" />
+    <Content Include="Assets\Annotations\en-annotationsDerived.xml.br" />
+    <Content Include="Assets\Annotations\fr-annotations.xml.br" />
+    <Content Include="Assets\Annotations\fr-annotationsDerived.xml.br" />
+    <Content Include="Assets\Annotations\id-annotations.xml.br" />
+    <Content Include="Assets\Annotations\id-annotationsDerived.xml.br" />
+    <Content Include="Assets\Annotations\jv-annotations.xml.br" />
+    <Content Include="Assets\Annotations\jv-annotationsDerived.xml.br" />
     <Content Include="Images\AppList.scale-100.png" />
     <Content Include="Images\AppList.scale-125.png" />
     <Content Include="Images\AppList.scale-150.png" />

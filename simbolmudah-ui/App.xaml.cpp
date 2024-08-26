@@ -20,6 +20,7 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     App::App() :
         main_thread{ DispatcherQueue::GetForCurrentThread() },
+        keyboardThread{ DispatcherQueueController::CreateOnDedicatedThread() },
         appManager{ ApplicationData::Current().LocalSettings() },
         keyboardTranslator{ sequenceDefinition },
         settingsChangedRevoker{ appManager.PropertyChanged(auto_revoke, { this->get_weak(), &App::OnSettingsChanged }) }
@@ -36,7 +37,7 @@ namespace winrt::simbolmudah_ui::implementation
         });
 
         // Build the keyboard translator finite state automaton.
-        this->BuildDefinition();
+        this->buildProgress = this->BuildDefinitionAndReset();
 
 #if defined _DEBUG && !defined DISABLE_XAML_GENERATED_BREAK_ON_UNHANDLED_EXCEPTION
         this->UnhandledException([](IInspectable const&, UnhandledExceptionEventArgs const& e)
@@ -48,6 +49,17 @@ namespace winrt::simbolmudah_ui::implementation
             }
         });
 #endif
+    }
+
+    void App::InitializeKeyboardHook()
+    {
+        this->keyboardHook = KeyboardHook{ this->keyboardTranslator };
+
+        if (this->appManager.UseHookPopup())
+        {
+            this->popupWindow = simbolmudah_ui::PopupWindow{
+                this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+        }
     }
 
     /// <summary>
@@ -67,24 +79,18 @@ namespace winrt::simbolmudah_ui::implementation
 
         if (this->appManager.HookEnabled())
         {
-            this->keyboardHook = KeyboardHook{ this->keyboardTranslator };
-
-            if (this->appManager.UseHookPopup())
-            {
-                this->popupWindow = simbolmudah_ui::PopupWindow{
-                    this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
-            }
+            this->keyboardThread.DispatcherQueue().TryEnqueue({ this->get_weak(), &App::InitializeKeyboardHook });
         }
     }
 
     /// <summary>
     /// Builds the keyboard translator finite state automaton.
     /// </summary>
-    fire_and_forget App::BuildDefinition() const
+    void App::BuildDefinitionAndReset() const
     {
         const auto keysymdef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.txt")) };
         const auto composedef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre")) };
-        this->sequenceDefinition.Build((co_await keysymdef_path).Path(), (co_await composedef_path).Path(), L"");
+        this->sequenceDefinition.Build(keysymdef_path.get().Path(), composedef_path.get().Path());
     }
 
     /// <summary>
@@ -95,13 +101,7 @@ namespace winrt::simbolmudah_ui::implementation
         // Update the keyboard hook and popup window.
         if (this->appManager.HookEnabled() && !this->keyboardHook)
         {
-            this->keyboardHook = KeyboardHook{ this->keyboardTranslator };
-
-            if (this->appManager.UseHookPopup())
-            {
-                this->popupWindow = simbolmudah_ui::PopupWindow{
-                    this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
-            }
+            this->keyboardThread.DispatcherQueue().TryEnqueue({ this->get_weak(), &App::InitializeKeyboardHook });
 
             if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(true); }
         }

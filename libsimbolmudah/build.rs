@@ -90,12 +90,17 @@ fn main() {
     if is_debug {
         std::env::set_var("RUST_BACKTRACE", "full");
     }
-    let headers_enabled = std::env::var("CARGO_FEATURE_HEADERS").is_ok();
+    let headers_enabled = std::env::var("CARGO_FEATURE_BUILD_HEADERS").is_ok();
     if headers_enabled {
         generate_bindgen();
     } else {
         println!("cargo:warning=The 'headers' feature is not enabled. The generated bindings will not be available.");
     }
 
-    compress_annotations();
+    let annotations_enabled = std::env::var("CARGO_FEATURE_BUILD_ANNOTATIONS").is_ok();
+    if annotations_enabled {
+        compress_annotations();
+    } else {
+        println!("cargo:warning=The 'annotations' feature is not enabled. The compressed annotations will not be available.");
+    }
 }

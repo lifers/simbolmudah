@@ -9,9 +9,8 @@ namespace LibSimbolMudah
 
     runtimeclass SequenceDefinition
     {
-        SequenceDefinition();
+        SequenceDefinition(String keysymdef, String composedef);
 
-        void Build(String keysymdef, String composedef);
         IVectorView<SequenceDescription> PotentialPrefix(String sequence, UInt32 limit);
         IVectorView<SequenceDescription> Search(String sequence, UInt32 limit);
     }
