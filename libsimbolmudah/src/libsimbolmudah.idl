@@ -11,7 +11,7 @@ namespace LibSimbolMudah
     {
         SequenceDefinition();
 
-        void Build(String keysymdef, String composedef, String cldrdir);
+        void Build(String keysymdef, String composedef);
         IVectorView<SequenceDescription> PotentialPrefix(String sequence, UInt32 limit);
         IVectorView<SequenceDescription> Search(String sequence, UInt32 limit);
     }

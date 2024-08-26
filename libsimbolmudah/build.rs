@@ -1,6 +1,9 @@
-use std::{fs::File, io::Write};
+use std::{fs, io::Write};
 
-use libsimbolmudah_cldr::{parse_cldr_annotations, SupportedLocale};
+use brotli::{
+    enc::{backward_references::BrotliEncoderMode, BrotliEncoderParams},
+    CompressorWriter,
+};
 
 fn generate_bindgen() {
     println!("cargo:rerun-if-changed=src/libsimbolmudah.idl");
@@ -40,26 +43,46 @@ fn generate_bindgen() {
     }
 }
 
-fn encode_annotations() {
-    println!("cargo:rerun-if-changed=cldr-annotations-derived-full");
-    for locale in [
-        SupportedLocale::en,
-        SupportedLocale::id,
-        SupportedLocale::fr,
-        SupportedLocale::jv,
-    ] {
-        let annotations = parse_cldr_annotations(
-            locale,
-            &format!("cldr-annotations-derived-full/{}/annotations.json", locale),
-        );
-        let mut file = File::create(format!(
-            "cldr-annotations-derived-full/processed/annotations-{}.rkyv",
-            locale
-        ))
-        .expect("file created successfully");
-        let bytes = rkyv::to_bytes::<_, 1024>(&annotations).expect("bytes created successfully");
-        file.write_all(&bytes).expect("bytes written successfully");
-    }
+fn compress_annotations() {
+    println!("cargo:rerun-if-changed=../git-deps/cldr");
+
+    let params = BrotliEncoderParams {
+        mode: BrotliEncoderMode::BROTLI_MODE_TEXT,
+        quality: 11,
+        lgwin: 22,
+        ..Default::default()
+    };
+
+    std::thread::scope(|s| {
+        for locale in ["en", "fr", "id", "jv"] {
+            let locale_clone = locale.to_string();
+            let params_clone = params.clone();
+            s.spawn(move || {
+                let outpath = format!("cldr/{}-annotations.xml.br", locale_clone);
+                let mut output = fs::File::create(outpath).unwrap();
+                let mut compressed =
+                    CompressorWriter::with_params(&mut output, 4096, &params_clone);
+                let inpath = format!("../git-deps/cldr/common/annotations/{}.xml", locale_clone);
+                let input = fs::read(inpath).unwrap();
+                compressed.write_all(input.as_slice()).unwrap();
+            });
+
+            let locale_clone = locale.to_string();
+            let params_clone = params.clone();
+            s.spawn(move || {
+                let outpath = format!("cldr/{}-annotationsDerived.xml.br", locale_clone);
+                let mut output = fs::File::create(outpath).unwrap();
+                let mut compressed =
+                    CompressorWriter::with_params(&mut output, 4096, &params_clone);
+                let inpath = format!(
+                    "../git-deps/cldr/common/annotationsDerived/{}.xml",
+                    locale_clone
+                );
+                let input = fs::read(inpath).unwrap();
+                compressed.write_all(input.as_slice()).unwrap();
+            });
+        }
+    });
 }
 
 fn main() {
@@ -74,5 +97,5 @@ fn main() {
         println!("cargo:warning=The 'headers' feature is not enabled. The generated bindings will not be available.");
     }
 
-    encode_annotations();
+    compress_annotations();
 }

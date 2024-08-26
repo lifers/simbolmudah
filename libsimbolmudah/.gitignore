@@ -23,5 +23,5 @@ Cargo.lock
 # These are Windows Metadata files to be exported along with the resulting dll
 *.winmd
 
-# These are CLDR JSON files to be parsed, with the resulting map will go into the resulting dll
-cldr-annotations-derived-full/
+# These are compressed CLDR XML files to be parsed, with the resulting map will go into the resulting dll
+cldr/

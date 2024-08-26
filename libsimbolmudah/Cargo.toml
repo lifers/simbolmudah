@@ -18,6 +18,7 @@ features = [
     "implement",
     "Foundation",
     "Foundation_Collections",
+    "Globalization",
     "Storage",
     "System",
     "System_Threading",
@@ -45,15 +46,13 @@ smol_str = "0.2.2"
 regex = "1.10.6"
 fst = "0.4.7"
 concat-idents = "1.1.5"
-rkyv = "0.7.45"
-libsimbolmudah-cldr = { path = "../libsimbolmudah-cldr" }
+serde = { version = "1.0.209", features = ["derive"] }
+quick-xml = { version = "0.36.1", features = ["serialize"] }
+brotli-decompressor = "4.0.1"
 
 [build-dependencies]
 windows-bindgen = "0.58"
-serde = { version = "1.0.208", features = ["derive"] }
-serde_json = "1.0.125"
-rkyv = "0.7.45"
-libsimbolmudah-cldr = { path = "../libsimbolmudah-cldr" }
+brotli = "6.0.0"
 
 # libx11 = { git = "https://gitlab.freedesktop.org/xorg/lib/libx11.git", tag = "libX11-1.8.6" }
 # xcompose = { git = "https://github.com/kragen/xcompose.git", branch = "master" }

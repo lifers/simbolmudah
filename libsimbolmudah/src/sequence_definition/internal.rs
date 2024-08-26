@@ -1,19 +1,16 @@
-use std::{collections::HashMap, fs::File, io::Read};
+use std::{collections::HashMap, rc::Rc};
 
 use fst::{automaton::Str, Automaton, IntoStreamer, Map, MapBuilder, Streamer};
-use libsimbolmudah_cldr::{AnnotationPair, SupportedLocale};
-use rkyv::{Deserialize, Infallible};
-use windows::{
-    core::{Result, Weak, HSTRING, PSTR},
-    Foundation::Uri,
-    Storage::StorageFile,
-    Win32::Globalization::{u_charName, UErrorCode, U_EXTENDED_CHAR_NAME},
-};
+use smol_str::SmolStr;
+use windows::core::{Result, Weak, HSTRING};
 
 use crate::{bindings, utils::functions::fail};
 
 use super::{
-    compose_reader::ComposeDef, keysym_reader::KeySymDef, mapped_string::MappedString,
+    cldr::{load_annotation_file, AnnotationPair, SupportedLocale},
+    compose_reader::ComposeDef,
+    keysym_reader::KeySymDef,
+    mapped_string::MappedString,
     SequenceDefinitionError,
 };
 
@@ -22,7 +19,7 @@ pub(super) struct SequenceDefinitionInternal {
     index_map: HashMap<String, MappedString>,
     value_to_string: HashMap<u64, MappedString>,
     string_to_value: HashMap<MappedString, u64>,
-    char_to_name: HashMap<char, String>,
+    char_to_name: HashMap<SmolStr, Box<str>>,
     string_to_sequence: HashMap<String, String>,
     annotations: HashMap<SupportedLocale, Box<[AnnotationPair]>>,
     pub(super) parent: Weak<bindings::SequenceDefinition>,
@@ -42,39 +39,71 @@ impl SequenceDefinitionInternal {
         }
     }
 
-    fn load_cldr_annotations(&mut self) -> Result<()> {
+    fn load_cldr_annotations(&mut self, languages: &[SupportedLocale]) -> Result<()> {
         let mut result = HashMap::new();
-        for locale in [
-            SupportedLocale::en,
-            SupportedLocale::id,
-            SupportedLocale::fr,
-            SupportedLocale::jv,
-        ] {
-            let path =
-                StorageFile::GetFileFromApplicationUriAsync(&Uri::CreateUri(&HSTRING::from(
-                    format!("ms-appx:///Assets/Annotations/annotations-{}.rkyv", locale),
-                ))?)?
-                .get()?
-                .Path()?
-                .to_string();
-            let mut file = File::open(&path).expect("file opened successfully");
-            let mut buf = Vec::new();
-            let _bytes = file.read_to_end(&mut buf).expect("file read successfully");
-            let archived = unsafe { rkyv::archived_root::<Box<[AnnotationPair]>>(&buf) };
-            let annotations = archived
-                .deserialize(&mut Infallible)
-                .expect("bytes deserialized successfully");
-            result.insert(locale, annotations);
+        for locale in languages {
+            let mut result_vec = Vec::new();
+
+            for a in load_annotation_file(&format!(
+                "ms-appx://Assets/Annotations/{}-annotations.xml.br",
+                locale
+            ))?
+            .into_iter()
+            {
+                if a.r#type.is_some() {
+                    if locale == languages.first().expect("there is at least one language") {
+                        self.char_to_name.insert(a.cp.into(), Box::from(a.text));
+                    }
+                } else {
+                    let main_char: Rc<str> = Rc::from(a.cp);
+                    let words = a.text.split_terminator("|").collect::<Vec<&str>>();
+                    for word in words {
+                        result_vec.push(AnnotationPair {
+                            char: main_char.clone(),
+                            desc: Box::from(word),
+                        });
+                    }
+                }
+            }
+
+            for a in load_annotation_file(&format!(
+                "ms-appx://Assets/Annotations/{}-annotationsDerived.xml.br",
+                locale
+            ))?
+            .into_iter()
+            {
+                if a.r#type.is_some() {
+                    if locale == languages.first().expect("there is at least one language") {
+                        self.char_to_name.insert(a.cp.into(), Box::from(a.text));
+                    }
+                } else {
+                    let main_char: Rc<str> = Rc::from(a.cp);
+                    let words = a.text.split_terminator("|").collect::<Vec<&str>>();
+                    for word in words {
+                        result_vec.push(AnnotationPair {
+                            char: main_char.clone(),
+                            desc: Box::from(word),
+                        });
+                    }
+                }
+            }
+
+            result.insert(*locale, result_vec.into_boxed_slice());
         }
 
         self.annotations = result;
         Ok(())
     }
 
-    pub(super) fn build(&mut self, keysymdef: &str, composedef: &str, cldrdir: &str) -> Result<()> {
-        let keysymdef = KeySymDef::new(keysymdef, self)?;
-        let composedef = ComposeDef::build(&keysymdef, composedef, self)?;
-        self.load_cldr_annotations()?;
+    pub(super) fn build(
+        &mut self,
+        keysymdef: &str,
+        composedef: &str,
+        languages: &[SupportedLocale],
+    ) -> Result<()> {
+        let keysymdef = KeySymDef::new(keysymdef)?;
+        let composedef = ComposeDef::build(&keysymdef, composedef)?;
+        self.load_cldr_annotations(languages)?;
         let mut build = MapBuilder::memory();
         self.index_map.clear();
         self.value_to_string.clear();
@@ -162,21 +191,6 @@ impl SequenceDefinitionInternal {
         result
     }
 
-    pub(super) fn index_char(&mut self, value: char) -> Result<()> {
-        let mut buffer = [0; 88];
-        let pstr = PSTR::from_raw(buffer.as_mut_ptr());
-        let mut errcode = UErrorCode::default();
-        let len = unsafe { u_charName(value as i32, U_EXTENDED_CHAR_NAME, pstr, 88, &mut errcode) };
-
-        assert!(len.is_positive());
-        let name = unsafe { pstr.to_string() }.map_err(fail)?;
-
-        assert_eq!(len as usize, name.len());
-        self.char_to_name.insert(value, name.to_string());
-
-        Ok(())
-    }
-
     pub(super) fn filter_sequence(
         &self,
         tokens: Vec<String>,
@@ -250,12 +264,7 @@ impl SequenceDefinitionInternal {
             sequence: seq.into(),
             result: value.to_string().into(),
             description: match value {
-                MappedString::Basic(c) => self
-                    .char_to_name
-                    .get(&c.chars().next().unwrap())
-                    .unwrap()
-                    .to_string()
-                    .into(),
+                MappedString::Basic(c) => self.char_to_name.get(c).unwrap().to_string().into(),
                 MappedString::Extra(s) => s.to_string().into(),
             },
         }

@@ -11,8 +11,6 @@ use windows::{
     Win32::Foundation::E_FAIL,
 };
 
-use super::internal::SequenceDefinitionInternal;
-
 // const GENERAL_REGEX_STR: &str = r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*(/\*.*\*/)?\s*$";
 const UNICODE_REGEX_STR: &str =
     r"^#define XK_([a-zA-Z_0-9]+)\s+0x([0-9a-f]+)\s*/\*[ <(]U\+([0-9A-F]{4,6}) (.*)[ >)]\*/\s*$";
@@ -36,10 +34,10 @@ pub(super) struct KeySymDef {
 }
 
 impl KeySymDef {
-    pub(super) fn new(path: &str, definition: &mut SequenceDefinitionInternal) -> Result<Self> {
+    pub(super) fn new(path: &str) -> Result<Self> {
         let unicode_regex =
             Regex::new(UNICODE_REGEX_STR).map_err(|e| Error::new(E_FAIL, format!("{:?}", e)))?;
-        let content = get_general_keysym(&unicode_regex, path, definition)?;
+        let content = get_general_keysym(&unicode_regex, path)?;
         Ok(Self { content })
     }
 
@@ -50,11 +48,7 @@ impl KeySymDef {
     }
 }
 
-fn get_general_keysym(
-    unicode_regex: &Regex,
-    path: &str,
-    definition: &mut SequenceDefinitionInternal,
-) -> Result<HashMap<String, char>> {
+fn get_general_keysym(unicode_regex: &Regex, path: &str) -> Result<HashMap<String, char>> {
     let file = File::open(path).map_err(fail)?;
     let reader = BufReader::new(file);
 
@@ -78,7 +72,6 @@ fn get_general_keysym(
             )
             .ok_or_else(|| fail_message("Invalid char"))?;
 
-            definition.index_char(value)?;
             result.insert(name.to_string(), value);
         }
     }

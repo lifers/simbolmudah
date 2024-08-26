@@ -1,3 +1,4 @@
+mod cldr;
 mod compose_reader;
 mod internal;
 mod keysym_reader;
@@ -6,8 +7,8 @@ mod mapped_string;
 use std::sync::RwLock;
 
 use crate::{bindings, utils::functions::fail};
+use cldr::SupportedLocale;
 use internal::SequenceDefinitionInternal;
-use libsimbolmudah_cldr::SupportedLocale;
 use windows::{
     core::{implement, Error, IInspectable, Result, Weak, HSTRING},
     Foundation::Collections::IVectorView,
@@ -65,11 +66,11 @@ impl SequenceDefinition {
 }
 
 impl bindings::ISequenceDefinition_Impl for SequenceDefinition_Impl {
-    fn Build(&self, keysymdef: &HSTRING, composedef: &HSTRING, cldrdir: &HSTRING) -> Result<()> {
+    fn Build(&self, keysymdef: &HSTRING, composedef: &HSTRING) -> Result<()> {
         self.internal.write().map_err(fail)?.build(
             keysymdef.to_string().as_str(),
             composedef.to_string().as_str(),
-            cldrdir.to_string().as_str(),
+            &self.get_user_langs()?,
         )
     }
 
@@ -130,7 +131,6 @@ mod tests {
 
     const KEYSYMDEF: &str = "tests/keysymdef.txt";
     const COMPOSEDEF: &str = "tests/Compose.pre";
-    const CLDRDIR: &str = "cldr-annotations-derived-full";
 
     #[test]
     fn test_check_languages() -> Result<()> {
@@ -140,7 +140,7 @@ mod tests {
             .ActivateInstance()?;
 
         let seqdef = seqdef.cast_object_ref::<SequenceDefinition>()?;
-        let langs = seqdef.get_user_langs()?;
+        let _langs = seqdef.get_user_langs()?;
 
         // print BCP-47 language tag
         let user_langs = GlobalizationPreferences::Languages()?;
@@ -163,7 +163,7 @@ mod tests {
         seqdef
             .cast_object_ref::<SequenceDefinition>()
             .expect("SequenceDefinition should be casted")
-            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &CLDRDIR.into())
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
     }
 
@@ -179,7 +179,7 @@ mod tests {
         seqdef
             .cast_object_ref::<SequenceDefinition>()
             .expect("SequenceDefinition should be casted")
-            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &CLDRDIR.into())
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 
         // Cast SequenceDefinition to its object
@@ -204,7 +204,7 @@ mod tests {
         seqdef
             .cast_object_ref::<SequenceDefinition>()
             .expect("SequenceDefinition should be casted")
-            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &CLDRDIR.into())
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 
         // Cast SequenceDefinition to its object
@@ -232,7 +232,7 @@ mod tests {
         seqdef
             .cast_object_ref::<SequenceDefinition>()
             .expect("SequenceDefinition should be casted")
-            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &CLDRDIR.into())
+            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
             .expect("SequenceDefinition should be built");
 
         // Cast SequenceDefinition to its object
