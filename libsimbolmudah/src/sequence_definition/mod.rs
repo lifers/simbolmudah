@@ -12,14 +12,15 @@ use compose_reader::ComposeDef;
 use fst::{automaton::Str, Automaton, IntoStreamer, Map, MapBuilder, Streamer};
 use keysym_reader::KeySymDef;
 use mapped_string::MappedString;
-use smol_str::SmolStr;
+use smol_str::{SmolStr, ToSmolStr};
 use windows::{
-    core::{implement, Error, IInspectable, Result, HSTRING},
+    core::{implement, Error, IInspectable, Result, HSTRING, PSTR},
     Foundation::Collections::IVectorView,
     Globalization::Language,
     System::UserProfile::GlobalizationPreferences,
     Win32::{
         Foundation::E_NOTIMPL,
+        Globalization::{u_charName, UErrorCode, U_EXTENDED_CHAR_NAME},
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
     },
 };
@@ -113,34 +114,70 @@ impl SequenceDefinition {
         // prioritize exact character match
         for lang in languages {
             let annotations = self.annotations.get(lang).unwrap();
-            annotations
+            for pair in annotations
                 .iter()
-                .filter(|pair| tokens.iter().any(|t| pair.char.contains(t)))
-                .for_each(|pair| {
-                    if !result_map.contains_key(&pair.char.to_string()) {
-                        result_map.insert(pair.char.to_string(), pair.desc.to_string());
-                    }
-                });
+                .filter(|pair| tokens.iter().any(|t| pair.char.contains(&t.to_lowercase())))
+            {
+                if !result_map.contains_key(&pair.char.to_string()) {
+                    result_map.insert(
+                        pair.char.to_string(),
+                        self.char_to_name
+                            .get(&pair.char.to_smolstr())
+                            .expect("already indexed")
+                            .to_string(),
+                    );
+                }
+            }
 
             if result_map.len() >= limit {
                 return self.process_map(&result_map);
             }
         }
 
+        for token in tokens.iter() {
+            if !result_map.contains_key(token) {
+                let token = token.to_smolstr();
+                if let Some(name) = self.char_to_name.get(&token) {
+                    result_map.insert(token.to_string(), name.to_string());
+                }
+            }
+        }
+
+        if result_map.len() >= limit {
+            return self.process_map(&result_map);
+        }
+
         // search in descriptions
         for lang in languages {
             let annotations = self.annotations.get(lang).unwrap();
-            annotations
+            for pair in annotations
                 .iter()
-                .filter(|pair| tokens.iter().all(|t| pair.desc.contains(t)))
-                .for_each(|pair| {
-                    if !result_map.contains_key(&pair.char.to_string()) {
-                        result_map.insert(pair.char.to_string(), pair.desc.to_string());
-                    }
-                });
+                .filter(|pair| tokens.iter().all(|t| pair.desc.contains(&t.to_lowercase())))
+            {
+                if !result_map.contains_key(&pair.char.to_string()) {
+                    result_map.insert(
+                        pair.char.to_string(),
+                        self.char_to_name
+                            .get(&pair.char.to_smolstr())
+                            .expect("already indexed")
+                            .to_string(),
+                    );
+                }
+            }
 
             if result_map.len() >= limit {
                 return self.process_map(&result_map);
+            }
+        }
+
+        for (c, n) in self
+            .char_to_name
+            .iter()
+            .filter(|(_, n)| tokens.iter().all(|t| n.contains(&t.to_uppercase())))
+        {
+            let c = c.to_string();
+            if !result_map.contains_key(&c) {
+                result_map.insert(c, n.to_string());
             }
         }
 
@@ -221,7 +258,7 @@ impl bindings::ISequenceDefinitionFactory_Impl for SequenceDefinitionFactory_Imp
             let mut result_vec = Vec::new();
             for variant in ["annotations", "annotationsDerived"] {
                 for a in load_annotation_file(&format!(
-                    "ms-appx://Assets/Annotations/{locale}-{variant}.xml.br"
+                    "ms-appx:///Assets/Annotations/{locale}-{variant}.xml.br"
                 ))? {
                     if a.r#type.is_some() {
                         if locale == languages.first().expect("there is at least one language") {
@@ -229,7 +266,11 @@ impl bindings::ISequenceDefinitionFactory_Impl for SequenceDefinitionFactory_Imp
                         }
                     } else {
                         let main_char: Rc<str> = Rc::from(a.cp);
-                        let words = a.text.split_terminator("|").collect::<Vec<&str>>();
+                        let words = a
+                            .text
+                            .split_terminator("|")
+                            .map(|s| s.trim())
+                            .collect::<Vec<_>>();
                         for word in words {
                             result_vec.push(AnnotationPair {
                                 char: main_char.clone(),
@@ -251,11 +292,15 @@ impl bindings::ISequenceDefinitionFactory_Impl for SequenceDefinitionFactory_Imp
 
         for (key, value) in composedef {
             match value {
-                MappedString::Basic(_) => {
+                MappedString::Basic(e) => {
                     basic_index += 1;
-                    value_to_string.insert(basic_index, value.clone());
-                    string_to_sequence.insert(value.to_string(), key.clone());
+                    value_to_string.insert(basic_index, MappedString::Basic(e.clone()));
+                    string_to_sequence.insert(e.to_string(), key.clone());
                     build.insert(key.clone(), basic_index).map_err(fail)?;
+                    char_to_name.insert(
+                        e.clone(),
+                        char_to_unicode_name(e.chars().next().expect("string not empty"))?,
+                    );
                 }
                 MappedString::Extra(_) => {
                     extra_index += 1;
@@ -286,6 +331,19 @@ fn get_user_langs() -> Result<Box<[SupportedLocale]>> {
         valid_langs.push(Language::CreateLanguage(&lang)?.try_into()?);
     }
     Ok(valid_langs.into_boxed_slice())
+}
+
+fn char_to_unicode_name(value: char) -> Result<Box<str>> {
+    let mut buffer = [0; 88];
+    let pstr = PSTR::from_raw(buffer.as_mut_ptr());
+    let mut errcode = UErrorCode::default();
+    let len = unsafe { u_charName(value as i32, U_EXTENDED_CHAR_NAME, pstr, 88, &mut errcode) };
+
+    assert!(len.is_positive());
+    let name = unsafe { pstr.to_string() }.map_err(fail)?;
+
+    assert_eq!(len as usize, name.len());
+    Ok(name.into_boxed_str())
 }
 
 #[cfg(test)]

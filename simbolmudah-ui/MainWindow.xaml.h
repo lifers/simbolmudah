@@ -26,6 +26,7 @@ namespace winrt::simbolmudah_ui::implementation
             Microsoft::UI::Xaml::Controls::NavigationViewBackRequestedEventArgs const&);
         void Window_SizeChanged(IInspectable const&, Microsoft::UI::Xaml::WindowSizeChangedEventArgs const& args);
         void NavigateToSettings(Microsoft::UI::Xaml::Media::Animation::NavigationTransitionInfo const& transitionInfo);
+        void SetSequenceDefinition(LibSimbolMudah::SequenceDefinition const& seqdef);
 
     private:
         void NavigateToSearch(Microsoft::UI::Xaml::Media::Animation::NavigationTransitionInfo const& transitionInfo);
@@ -33,7 +34,7 @@ namespace winrt::simbolmudah_ui::implementation
         void OnClosed(IInspectable const&, Microsoft::UI::Xaml::WindowEventArgs const&);
         void SetMinimumWindowSize();
 
-        const LibSimbolMudah::SequenceDefinition sequenceDefinition;
+        LibSimbolMudah::SequenceDefinition sequenceDefinition{ nullptr };
         const simbolmudah_ui::AppManager appManager;
         LibSimbolMudah::NotifyIcon::OnOpenSettings_revoker openSettingsRevoker;
     };

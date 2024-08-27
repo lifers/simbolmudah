@@ -1,5 +1,6 @@
 #include "pch.hpp"
 #include "MainWindow.xaml.h"
+#include "SearchPage.xaml.h"
 #if __has_include("MainWindow.g.cpp")
 #include "MainWindow.g.cpp"
 #endif
@@ -169,7 +170,9 @@ namespace winrt::simbolmudah_ui::implementation
     {
         if (const auto& f{ this->ContentFrame() }; f.CurrentSourcePageType().Name != L"simbolmudah_ui.SearchPage")
         {
-            f.Navigate({ L"simbolmudah_ui.SearchPage", TypeKind::Metadata }, this->sequenceDefinition, transitionInfo);
+            f.Navigate({ L"simbolmudah_ui.SearchPage", TypeKind::Metadata }, nullptr, transitionInfo);
+            get_self<implementation::SearchPage>(
+                f.Content().as<simbolmudah_ui::SearchPage>())->SetSequenceDefinition(this->sequenceDefinition);
         }
     }
 
@@ -191,5 +194,14 @@ namespace winrt::simbolmudah_ui::implementation
     void MainWindow::OnClosed(IInspectable const&, WindowEventArgs const&)
     {
         this->openSettingsRevoker.revoke();
+    }
+
+    void MainWindow::SetSequenceDefinition(SequenceDefinition const& seqdef)
+    {
+        this->sequenceDefinition = seqdef;
+        if (const auto& f{ this->ContentFrame() }; f.CurrentSourcePageType().Name == L"simbolmudah_ui.SearchPage")
+        {
+            get_self<implementation::SearchPage>(f.Content().as<simbolmudah_ui::SearchPage>())->SetSequenceDefinition(seqdef);
+        }
     }
 }

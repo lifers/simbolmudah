@@ -16,13 +16,18 @@ namespace winrt::simbolmudah_ui::implementation
     using namespace Collections;
     using namespace LibSimbolMudah;
 
-    SearchPageViewModel::SearchPageViewModel(SequenceDefinition const& seqdef)
-        : searchResults{ single_threaded_observable_vector<simbolmudah_ui::SequenceDetail>({ PLACEHOLDER }) },
-          sequenceDefinition{ seqdef } {}
+    SearchPageViewModel::SearchPageViewModel()
+        : searchResults{ single_threaded_observable_vector<simbolmudah_ui::SequenceDetail>({ PLACEHOLDER }) } {}
 
     IObservableVector<simbolmudah_ui::SequenceDetail> SearchPageViewModel::SearchResults() const
     {
         return this->searchResults;
+    }
+
+    void SearchPageViewModel::SetSequenceDefinition(SequenceDefinition const& seqdef)
+    {
+        this->sequenceDefinition = seqdef;
+        this->searchResults.ReplaceAll({ PLACEHOLDER });
     }
 
     IAsyncAction SearchPageViewModel::Search(hstring keyword)

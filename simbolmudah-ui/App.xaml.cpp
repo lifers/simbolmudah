@@ -1,5 +1,6 @@
 #include "pch.hpp"
 #include "App.xaml.h"
+#include "MainWindow.xaml.h"
 #include <wil/cppwinrt_helpers.h>
 
 
@@ -19,14 +20,16 @@ namespace winrt::simbolmudah_ui::implementation
     /// executed, and as such is the logical equivalent of main() or WinMain().
     /// </summary>
     App::App() :
-        main_thread{ DispatcherQueue::GetForCurrentThread() },
+        mainThread{ DispatcherQueue::GetForCurrentThread() },
         keyboardThread{ DispatcherQueueController::CreateOnDedicatedThread() },
         appManager{ ApplicationData::Current().LocalSettings() },
-        keyboardTranslator{ sequenceDefinition },
         settingsChangedRevoker{ appManager.PropertyChanged(auto_revoke, { this->get_weak(), &App::OnSettingsChanged }) }
     {
-        // Xaml objects should not call InitializeComponent during construction.
-        // See https://github.com/microsoft/cppwinrt/tree/master/nuget#initializecomponent
+        // Initialize the keyboard STA.
+        this->keyboardThread.DispatcherQueue().TryEnqueue(
+            DispatcherQueuePriority::High,
+            []() { init_apartment(apartment_type::single_threaded); }
+        );
 
         // Do not close the application when the last window is closed.
         this->DispatcherShutdownMode(DispatcherShutdownMode::OnExplicitShutdown);
@@ -37,7 +40,7 @@ namespace winrt::simbolmudah_ui::implementation
         });
 
         // Build the keyboard translator finite state automaton.
-        this->buildProgress = this->BuildDefinitionAndReset();
+        this->buildProgress = this->RebuildDefinition();
 
 #if defined _DEBUG && !defined DISABLE_XAML_GENERATED_BREAK_ON_UNHANDLED_EXCEPTION
         this->UnhandledException([](IInspectable const&, UnhandledExceptionEventArgs const& e)
@@ -54,12 +57,6 @@ namespace winrt::simbolmudah_ui::implementation
     void App::InitializeKeyboardHook()
     {
         this->keyboardHook = KeyboardHook{ this->keyboardTranslator };
-
-        if (this->appManager.UseHookPopup())
-        {
-            this->popupWindow = simbolmudah_ui::PopupWindow{
-                this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
-        }
     }
 
     /// <summary>
@@ -76,21 +73,51 @@ namespace winrt::simbolmudah_ui::implementation
         {
             this->InitializeNotifyIcon();
         }
-
-        if (this->appManager.HookEnabled())
-        {
-            this->keyboardThread.DispatcherQueue().TryEnqueue({ this->get_weak(), &App::InitializeKeyboardHook });
-        }
     }
 
     /// <summary>
     /// Builds the keyboard translator finite state automaton.
     /// </summary>
-    void App::BuildDefinitionAndReset() const
+    IAsyncAction App::RebuildDefinition()
     {
+        if (const auto mainWindowImpl{ get_self<implementation::MainWindow>(this->mainWindow.get()) }; mainWindowImpl)
+        {
+            mainWindowImpl->SetSequenceDefinition(nullptr);
+        }
+        co_await resume_background();
+        this->sequenceDefinition = nullptr;
+        this->keyboardTranslator = nullptr;
+        if (this->popupWindow)
+        {
+            this->popupWindow.Close();
+            this->popupWindow = nullptr;
+        }
+        this->popupWindow = nullptr;
+        // TODO: disable the notify icon entry
+
         const auto keysymdef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.txt")) };
         const auto composedef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre")) };
-        this->sequenceDefinition.Build(keysymdef_path.get().Path(), composedef_path.get().Path());
+        this->sequenceDefinition = SequenceDefinition{ (co_await keysymdef_path).Path(), (co_await composedef_path).Path() };
+        this->keyboardTranslator = KeyboardTranslator{ this->sequenceDefinition };
+
+        co_await wil::resume_foreground(this->mainThread);
+        if (this->appManager.HookEnabled())
+        {
+            this->keyboardThread.DispatcherQueue().TryEnqueue({ this->get_weak(), &App::InitializeKeyboardHook });
+
+            if (this->appManager.UseHookPopup())
+            {
+                this->popupWindow = simbolmudah_ui::PopupWindow{
+                    this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+            }
+
+            if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(true); }
+        }
+
+        if (const auto mainWindowImpl{ get_self<implementation::MainWindow>(this->mainWindow.get()) }; mainWindowImpl)
+        {
+            mainWindowImpl->SetSequenceDefinition(this->sequenceDefinition);
+        }
     }
 
     /// <summary>
@@ -99,22 +126,32 @@ namespace winrt::simbolmudah_ui::implementation
     void App::OnSettingsChanged(IInspectable const&, PropertyChangedEventArgs const&)
     {
         // Update the keyboard hook and popup window.
-        if (this->appManager.HookEnabled() && !this->keyboardHook)
+        // Only do this if the build progress is not running.
+        if (this->buildProgress.Status() != AsyncStatus::Started)
         {
-            this->keyboardThread.DispatcherQueue().TryEnqueue({ this->get_weak(), &App::InitializeKeyboardHook });
-
-            if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(true); }
-        }
-        else if (!this->appManager.HookEnabled() && this->keyboardHook)
-        {
-            if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(false); }
-
-            if (this->popupWindow)
+            if (this->appManager.HookEnabled() && !this->keyboardHook)
             {
-                this->popupWindow.Close();
-                this->popupWindow = nullptr;
+                this->keyboardThread.DispatcherQueue().TryEnqueue({ this->get_weak(), &App::InitializeKeyboardHook });
+
+                if (this->appManager.UseHookPopup())
+                {
+                    this->popupWindow = simbolmudah_ui::PopupWindow{
+                        this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+                }
+
+                if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(true); }
             }
-            this->keyboardHook = nullptr;
+            else if (!this->appManager.HookEnabled() && this->keyboardHook)
+            {
+                if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(false); }
+
+                if (this->popupWindow)
+                {
+                    this->popupWindow.Close();
+                    this->popupWindow = nullptr;
+                }
+                this->keyboardHook = nullptr;
+            }
         }
 
         // Update the popup window, given the hook is enabled.
@@ -147,7 +184,7 @@ namespace winrt::simbolmudah_ui::implementation
     fire_and_forget App::OnNotifyIconPathInitialized(IAsyncOperation<StorageFile> const& op, AsyncStatus)
     {
         const auto filepath{ op.GetResults().Path() };
-        co_await wil::resume_foreground(this->main_thread);
+        co_await wil::resume_foreground(this->mainThread);
         this->notifyIconPath = filepath;
 
         if (this->delayNotifyIcon)
@@ -161,7 +198,7 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     void App::InitializeNotifyIcon()
     {
-        if (!this->main_thread.HasThreadAccess())
+        if (!this->mainThread.HasThreadAccess())
         {
             throw hresult_wrong_thread();
         }
@@ -181,7 +218,7 @@ namespace winrt::simbolmudah_ui::implementation
 
     fire_and_forget App::OpenWindow()
     {
-        co_await wil::resume_foreground(this->main_thread);
+        co_await wil::resume_foreground(this->mainThread);
         auto w{ this->mainWindow.get() };
         if (!w)
         {
@@ -197,26 +234,26 @@ namespace winrt::simbolmudah_ui::implementation
         using namespace Microsoft::UI::Xaml::Media::Animation;
         using namespace std::chrono_literals;
 
-        co_await wil::resume_foreground(this->main_thread);
+        co_await wil::resume_foreground(this->mainThread);
         this->OpenWindow();
         co_await 500ms;
 
-        co_await wil::resume_foreground(this->main_thread);
+        co_await wil::resume_foreground(this->mainThread);
         if (const auto& w{ this->mainWindow.get() }; w)
         {
-            w.NavigateToSettings(EntranceNavigationTransitionInfo());
+            get_self<implementation::MainWindow>(w)->NavigateToSettings(EntranceNavigationTransitionInfo());
         }
     }
 
     fire_and_forget App::OnNotifyIconSetHook(NotifyIcon const&, bool status)
     {
-        co_await wil::resume_foreground(this->main_thread);
+        co_await wil::resume_foreground(this->mainThread);
         this->appManager.HookEnabled(status);
     }
 
     fire_and_forget App::OnAppExit(NotifyIcon const&, bool)
     {
-        co_await wil::resume_foreground(this->main_thread);
+        co_await wil::resume_foreground(this->mainThread);
         this->Exit();
     }
 }

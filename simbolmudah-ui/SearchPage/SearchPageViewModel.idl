@@ -5,8 +5,7 @@ namespace simbolmudah_ui
     [default_interface]
     runtimeclass SearchPageViewModel
     {
-        SearchPageViewModel(LibSimbolMudah.SequenceDefinition seqdef);
-        Windows.Foundation.IAsyncAction Search(String keyword);
+        SearchPageViewModel();
         IObservableVector<SequenceDetail> SearchResults{ get; };
     }
 }
