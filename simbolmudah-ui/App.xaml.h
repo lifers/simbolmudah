@@ -19,7 +19,7 @@ namespace winrt::simbolmudah_ui::implementation
             Windows::Foundation::IAsyncOperation<Windows::Storage::StorageFile> const& op,
             Windows::Foundation::AsyncStatus);
         void InitializeNotifyIcon();
-        void InitializeKeyboardHook();
+        fire_and_forget InitializeKeyboardHook();
         fire_and_forget OnOpenSettings(LibSimbolMudah::NotifyIcon const&, bool);
         fire_and_forget OnNotifyIconSetHook(LibSimbolMudah::NotifyIcon const&, bool status);
         fire_and_forget OnAppExit(LibSimbolMudah::NotifyIcon const&, bool);

@@ -40,7 +40,7 @@ namespace winrt::simbolmudah_ui::implementation
 
         const auto ui_thread{ apartment_context() };
         co_await resume_background();
-        const auto results{ this->sequenceDefinition.Search(keyword, 2000) };
+        const auto results{ this->sequenceDefinition.Search(keyword, 200) };
 
         const auto size{ results.Size() };
         if (size == 0)

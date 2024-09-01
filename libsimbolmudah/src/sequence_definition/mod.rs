@@ -12,7 +12,6 @@ use compose_reader::ComposeDef;
 use fst::{automaton::Str, Automaton, IntoStreamer, Map, MapBuilder, Streamer};
 use keysym_reader::KeySymDef;
 use mapped_string::MappedString;
-use smol_str::{SmolStr, ToSmolStr};
 use windows::{
     core::{implement, Error, IInspectable, Result, HSTRING, PSTR},
     Foundation::Collections::IVectorView,
@@ -42,7 +41,7 @@ impl From<Error> for SequenceDefinitionError {
 pub(crate) struct SequenceDefinition {
     prefix_map: Map<Vec<u8>>,
     value_to_string: HashMap<u64, MappedString>,
-    char_to_name: HashMap<SmolStr, Box<str>>,
+    char_to_name: HashMap<String, Box<str>>,
     string_to_sequence: HashMap<String, String>,
     annotations: HashMap<SupportedLocale, Box<[AnnotationPair]>>,
 }
@@ -90,7 +89,7 @@ impl SequenceDefinition {
                     result: mapped_value.to_string().into(),
                     description: match mapped_value {
                         MappedString::Basic(c) => {
-                            self.char_to_name.get(c).unwrap().to_string().into()
+                            self.char_to_name.get(&c.to_string()).unwrap().to_string().into()
                         }
                         MappedString::Extra(s) => s.to_string().into(),
                     },
@@ -122,29 +121,28 @@ impl SequenceDefinition {
                     result_map.insert(
                         pair.char.to_string(),
                         self.char_to_name
-                            .get(&pair.char.to_smolstr())
+                            .get(&pair.char.to_string())
                             .expect("already indexed")
                             .to_string(),
                     );
+                }
+
+                if result_map.len() >= limit {
+                    return self.process_map(&result_map);
+                }
+            }
+        }
+
+        for token in tokens.iter() {
+            if !result_map.contains_key(token) {
+                if let Some(name) = self.char_to_name.get(&token.to_string()) {
+                    result_map.insert(token.to_string(), name.to_string());
                 }
             }
 
             if result_map.len() >= limit {
                 return self.process_map(&result_map);
             }
-        }
-
-        for token in tokens.iter() {
-            if !result_map.contains_key(token) {
-                let token = token.to_smolstr();
-                if let Some(name) = self.char_to_name.get(&token) {
-                    result_map.insert(token.to_string(), name.to_string());
-                }
-            }
-        }
-
-        if result_map.len() >= limit {
-            return self.process_map(&result_map);
         }
 
         // search in descriptions
@@ -158,15 +156,15 @@ impl SequenceDefinition {
                     result_map.insert(
                         pair.char.to_string(),
                         self.char_to_name
-                            .get(&pair.char.to_smolstr())
+                            .get(&pair.char.to_string())
                             .expect("already indexed")
                             .to_string(),
                     );
                 }
-            }
 
-            if result_map.len() >= limit {
-                return self.process_map(&result_map);
+                if result_map.len() >= limit {
+                    return self.process_map(&result_map);
+                }
             }
         }
 
@@ -178,6 +176,10 @@ impl SequenceDefinition {
             let c = c.to_string();
             if !result_map.contains_key(&c) {
                 result_map.insert(c, n.to_string());
+            }
+
+            if result_map.len() >= limit {
+                return self.process_map(&result_map);
             }
         }
 
@@ -252,7 +254,7 @@ impl bindings::ISequenceDefinitionFactory_Impl for SequenceDefinitionFactory_Imp
         let composedef = ComposeDef::build(&keysymdef, &composedef.to_string())?;
 
         let mut annotations = HashMap::new();
-        let mut char_to_name: HashMap<SmolStr, Box<str>> = HashMap::new();
+        let mut char_to_name: HashMap<String, Box<str>> = HashMap::new();
         let languages = get_user_langs()?;
         for locale in languages.iter() {
             let mut result_vec = Vec::new();
@@ -261,8 +263,8 @@ impl bindings::ISequenceDefinitionFactory_Impl for SequenceDefinitionFactory_Imp
                     "ms-appx:///Assets/Annotations/{locale}-{variant}.xml.br"
                 ))? {
                     if a.r#type.is_some() {
-                        if locale == languages.first().expect("there is at least one language") {
-                            char_to_name.insert(a.cp.into(), Box::from(a.text));
+                        if !char_to_name.contains_key(&a.cp) {
+                            char_to_name.insert(a.cp, Box::from(a.text));
                         }
                     } else {
                         let main_char: Rc<str> = Rc::from(a.cp);
@@ -298,7 +300,7 @@ impl bindings::ISequenceDefinitionFactory_Impl for SequenceDefinitionFactory_Imp
                     string_to_sequence.insert(e.to_string(), key.clone());
                     build.insert(key.clone(), basic_index).map_err(fail)?;
                     char_to_name.insert(
-                        e.clone(),
+                        e.to_string(),
                         char_to_unicode_name(e.chars().next().expect("string not empty"))?,
                     );
                 }
@@ -348,6 +350,8 @@ fn char_to_unicode_name(value: char) -> Result<Box<str>> {
 
 #[cfg(test)]
 mod tests {
+    use std::str;
+
     use super::*;
     use bindings::ISequenceDefinitionFactory_Impl;
     use windows_core::{Interface, Result};
@@ -426,6 +430,17 @@ mod tests {
         assert!(result.is_ok());
         let expected = "ﬂ"; // Expected result for the sequence "fl"
         assert_eq!(result.unwrap(), expected);
+        Ok(())
+    }
+
+    #[test]
+    fn test_unicode() -> Result<()> {
+        let name: Box<str> = "#⃣".to_string().into();
+        let reference: String = "#⃣".to_string();
+        let mut map: HashMap<String, String> = HashMap::new();
+        map.insert(reference, "surprise".into());
+        assert_eq!(map.get(&name.to_string()).unwrap(), "surprise");
+
         Ok(())
     }
 }

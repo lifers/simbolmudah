@@ -50,7 +50,7 @@ namespace winrt::simbolmudah_ui::implementation
     {
         const auto keyword_copy{ keyword };
         co_await resume_background();
-        const auto results{ this->sequenceDefinition.Search(keyword_copy, 2000) };
+        const auto results{ this->sequenceDefinition.Search(keyword_copy, 5) };
 
         const auto size{ results.Size() };
         std::vector<SequenceDetail> toShow;

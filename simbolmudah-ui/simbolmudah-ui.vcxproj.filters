@@ -93,20 +93,6 @@
     <Manifest Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
-    <ContentWithTargetPath Include="..\libsimbolmudah\cldr-annotations-derived-full\processed\annotations-en.rkyv">
-      <Filter>Assets\Annotations</Filter>
-    </ContentWithTargetPath>
-    <ContentWithTargetPath Include="..\libsimbolmudah\cldr-annotations-derived-full\processed\annotations-fr.rkyv">
-      <Filter>Assets\Annotations</Filter>
-    </ContentWithTargetPath>
-    <ContentWithTargetPath Include="..\libsimbolmudah\cldr-annotations-derived-full\processed\annotations-id.rkyv">
-      <Filter>Assets\Annotations</Filter>
-    </ContentWithTargetPath>
-    <ContentWithTargetPath Include="..\libsimbolmudah\cldr-annotations-derived-full\processed\annotations-jv.rkyv">
-      <Filter>Assets\Annotations</Filter>
-    </ContentWithTargetPath>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="packages.config" />
     <None Include="Assets\Resources\Compose.pre">
       <Filter>Assets\Resources</Filter>

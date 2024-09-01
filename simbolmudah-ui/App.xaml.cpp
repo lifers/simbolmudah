@@ -54,9 +54,18 @@ namespace winrt::simbolmudah_ui::implementation
 #endif
     }
 
-    void App::InitializeKeyboardHook()
+    fire_and_forget App::InitializeKeyboardHook()
     {
         this->keyboardHook = KeyboardHook{ this->keyboardTranslator };
+
+        co_await wil::resume_foreground(this->mainThread);
+        if (this->appManager.UseHookPopup())
+        {
+            this->popupWindow = simbolmudah_ui::PopupWindow{
+                this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+        }
+
+        if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(true); }
     }
 
     /// <summary>
@@ -104,14 +113,6 @@ namespace winrt::simbolmudah_ui::implementation
         if (this->appManager.HookEnabled())
         {
             this->keyboardThread.DispatcherQueue().TryEnqueue({ this->get_weak(), &App::InitializeKeyboardHook });
-
-            if (this->appManager.UseHookPopup())
-            {
-                this->popupWindow = simbolmudah_ui::PopupWindow{
-                    this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
-            }
-
-            if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(true); }
         }
 
         if (const auto mainWindowImpl{ get_self<implementation::MainWindow>(this->mainWindow.get()) }; mainWindowImpl)
@@ -132,14 +133,6 @@ namespace winrt::simbolmudah_ui::implementation
             if (this->appManager.HookEnabled() && !this->keyboardHook)
             {
                 this->keyboardThread.DispatcherQueue().TryEnqueue({ this->get_weak(), &App::InitializeKeyboardHook });
-
-                if (this->appManager.UseHookPopup())
-                {
-                    this->popupWindow = simbolmudah_ui::PopupWindow{
-                        this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
-                }
-
-                if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(true); }
             }
             else if (!this->appManager.HookEnabled() && this->keyboardHook)
             {
@@ -152,18 +145,18 @@ namespace winrt::simbolmudah_ui::implementation
                 }
                 this->keyboardHook = nullptr;
             }
-        }
 
-        // Update the popup window, given the hook is enabled.
-        if (this->appManager.HookEnabled() && this->appManager.UseHookPopup() && !this->popupWindow)
-        {
-            this->popupWindow = simbolmudah_ui::PopupWindow{
-                this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
-        }
-        else if (!this->appManager.UseHookPopup() && this->popupWindow)
-        {
-            this->popupWindow.Close();
-            this->popupWindow = nullptr;
+            // Update the popup window, given the hook is enabled.
+            if (this->appManager.HookEnabled() && this->appManager.UseHookPopup() && !this->popupWindow)
+            {
+                this->popupWindow = simbolmudah_ui::PopupWindow{
+                    this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+            }
+            else if (!this->appManager.UseHookPopup() && this->popupWindow)
+            {
+                this->popupWindow.Close();
+                this->popupWindow = nullptr;
+            }
         }
 
         // Update the notify icon and main window.

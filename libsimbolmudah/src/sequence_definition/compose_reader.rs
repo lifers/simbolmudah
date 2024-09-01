@@ -1,7 +1,6 @@
 use super::{keysym_reader::KeySymDef, mapped_string::MappedString};
 use crate::utils::functions::{fail, fail_message};
 use regex::Regex;
-use smol_str::ToSmolStr;
 use std::{
     collections::BTreeMap,
     fs::File,
@@ -53,8 +52,8 @@ fn get_compose_def(keysym: &KeySymDef, path: &str) -> Result<BTreeMap<String, Ma
 
     // result.insert(">=".into(), MappedString::Basic('≥'));
     // result.insert("oe".into(), MappedString::Basic('œ'));
-    result.insert("wkwk".into(), "🤣".to_smolstr().into());
-    result.insert("pr".into(), "peradaban".to_string().into());
+    result.insert("wkwk".into(), MappedString::Basic("🤣".into()));
+    result.insert("pr".into(), MappedString::Extra("peradaban".into()));
 
     Ok(result)
 }
@@ -84,7 +83,7 @@ fn decode_entry(
 
         Ok((
             [key1, key2].into_iter().collect(),
-            value.to_smolstr().into(),
+            MappedString::Basic(value.into()),
         ))
     } else if let Some(caps) = regex3.captures(line) {
         let key1 = keysymdef.get_key(
@@ -109,7 +108,7 @@ fn decode_entry(
 
         Ok((
             [key1, key2, key3].into_iter().collect(),
-            value.to_smolstr().into(),
+            MappedString::Basic(value.into()),
         ))
     } else if let Some(caps) = regex4.captures(line) {
         let key1 = keysymdef.get_key(
@@ -139,7 +138,7 @@ fn decode_entry(
 
         Ok((
             [key1, key2, key3, key4].into_iter().collect(),
-            value.to_smolstr().into(),
+            MappedString::Basic(value.into()),
         ))
     } else {
         Err(fail_message("Regex parse"))
@@ -174,7 +173,7 @@ mod tests {
         let line = "<Multi_key> <A> <B> : \"C\".";
         let expected = Ok((
             "AB".to_string(),
-            MappedString::Basic("C".to_smolstr().into()),
+            MappedString::Basic("C".into()),
         ));
         let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
 
@@ -191,7 +190,7 @@ mod tests {
         let line = "<Multi_key> <A> <B> <C> : \"D\".";
         let expected = Ok((
             "ABC".to_string(),
-            MappedString::Basic("D".to_smolstr().into()),
+            MappedString::Basic("D".into()),
         ));
         let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
 
@@ -208,7 +207,7 @@ mod tests {
         let line = "<Multi_key> <A> <B> <C> <D> : \"E\".";
         let expected = Ok((
             "ABCD".to_string(),
-            MappedString::Basic("E".to_smolstr().into()),
+            MappedString::Basic("E".into()),
         ));
         let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
 
@@ -223,12 +222,12 @@ mod tests {
         assert!(map.contains_key("wkwk"));
         assert_eq!(
             map.get("wkwk").unwrap(),
-            &MappedString::Basic("🤣".to_smolstr().into())
+            &MappedString::Basic("🤣".into())
         );
         assert!(map.contains_key("pr"));
         assert_eq!(
             map.get("pr").unwrap(),
-            &MappedString::Extra("peradaban".to_string())
+            &MappedString::Extra("peradaban".into())
         );
     }
 }

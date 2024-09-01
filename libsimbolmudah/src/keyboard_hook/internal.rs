@@ -32,7 +32,7 @@ use crate::{
 };
 
 /// Stage enum controls how low_level_keyboard_proc behave.
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 enum Stage {
     /// No compose key pressed.
@@ -272,24 +272,30 @@ extern "system" fn keyboard_procedure(ncode: i32, wparam: WPARAM, lparam: LPARAM
         let is_injected = unsafe { *kb_hook }.flags.0 & LLKHF_INJECTED.0 != 0;
 
         if is_key && !is_injected {
-            return unsafe {
+            if let Some(res) = unsafe {
                 INTERNAL.in_thread_borrow_mut(|internal| {
+                    if internal.stage == Stage::SearchMode {
+                        return None;
+                    }
+
                     let input = kbdllhookstruct_to_keybdinput(*kb_hook);
                     internal
                         .report_key_event(input)
                         .expect("report_key_event should succeed");
 
                     if internal.process_input(input).is_ok() {
-                        LRESULT(1)
+                        Some(LRESULT(1))
                     } else {
-                        CallNextHookEx(None, ncode, wparam, lparam)
+                        None
                     }
                 })
-            };
+            } {
+                return res;
+            }
         }
     }
 
-    return unsafe { CallNextHookEx(None, ncode, wparam, lparam) };
+    unsafe { CallNextHookEx(None, ncode, wparam, lparam) }
 }
 
 const fn kbdllhookstruct_to_keybdinput(event: KBDLLHOOKSTRUCT) -> KEYBDINPUT {

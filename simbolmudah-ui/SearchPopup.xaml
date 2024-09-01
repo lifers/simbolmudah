@@ -40,15 +40,17 @@
         </DataTemplate>
     </Page.Resources>
 
-    <AutoSuggestBox x:Name="SearchBox"
-            Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}"
-            BorderBrush="{ThemeResource ControlElevationBorderBrush}"
-            BorderThickness="1"
-            PlaceholderText="Type a character name"
-            QueryIcon="Find"
-            TextChanged="SearchBox_TextChanged"
-            SuggestionChosen="SearchBox_SuggestionChosen"
-            ItemsSource="{x:Bind SearchResults}"
-            ItemTemplate="{StaticResource SuggestionTemplate}"
-            Padding="8"/>
+    <StackPanel Orientation="Vertical" Padding="8,8,8,0" Spacing="4">
+        <AutoSuggestBox x:Name="SearchBox"
+                Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource ControlElevationBorderBrush}"
+                BorderThickness="1"
+                PlaceholderText="Type a character name"
+                QueryIcon="Find"
+                TextChanged="SearchBox_TextChanged"
+                SuggestionChosen="SearchBox_SuggestionChosen"
+                ItemsSource="{x:Bind SearchResults}"
+                ItemTemplate="{StaticResource SuggestionTemplate}"
+                Padding="8"/>
+    </StackPanel>
 </Page>
