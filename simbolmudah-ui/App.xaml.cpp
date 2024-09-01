@@ -104,7 +104,7 @@ namespace winrt::simbolmudah_ui::implementation
         this->popupWindow = nullptr;
         // TODO: disable the notify icon entry
 
-        const auto keysymdef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.txt")) };
+        const auto keysymdef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.h")) };
         const auto composedef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre")) };
         this->sequenceDefinition = SequenceDefinition{ (co_await keysymdef_path).Path(), (co_await composedef_path).Path() };
         this->keyboardTranslator = KeyboardTranslator{ this->sequenceDefinition };

@@ -356,8 +356,8 @@ mod tests {
     use bindings::ISequenceDefinitionFactory_Impl;
     use windows_core::{Interface, Result};
 
-    const KEYSYMDEF: &str = "tests/keysymdef.txt";
-    const COMPOSEDEF: &str = "tests/Compose.pre";
+    const KEYSYMDEF: &str = "../git-deps/xorgproto/include/X11/keysymdef.h";
+    const COMPOSEDEF: &str = "../git-deps/libX11/nls/en_US.UTF8/Compose.pre";
 
     #[test]
     fn test_check_languages() -> Result<()> {

@@ -212,10 +212,6 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
       <DependentUpon>App.xaml</DependentUpon>
     </ClInclude>
     <ClInclude Include="AppManager.h" />
-    <ClInclude Include="Assets\Resources\keysymdef.txt">
-      <DeploymentContent>true</DeploymentContent>
-      <FileType>Document</FileType>
-    </ClInclude>
     <ClInclude Include="PopupWindow.xaml.h">
       <DependentUpon>PopupWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -329,9 +325,6 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\Resources\Compose.pre">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
