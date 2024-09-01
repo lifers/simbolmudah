@@ -139,6 +139,10 @@ namespace winrt::simbolmudah_ui::implementation
             {
                 this->NavigateToSearch(args.RecommendedNavigationTransitionInfo());
             }
+            else if (n == L"simbolmudah_ui.CustomSeqPage")
+            {
+                this->NavigateToCustomSeq(args.RecommendedNavigationTransitionInfo());
+            }
         }
     }
 
@@ -173,6 +177,14 @@ namespace winrt::simbolmudah_ui::implementation
             f.Navigate({ L"simbolmudah_ui.SearchPage", TypeKind::Metadata }, nullptr, transitionInfo);
             get_self<implementation::SearchPage>(
                 f.Content().as<simbolmudah_ui::SearchPage>())->SetSequenceDefinition(this->sequenceDefinition);
+        }
+    }
+
+    void MainWindow::NavigateToCustomSeq(NavigationTransitionInfo const& transitionInfo)
+    {
+        if (const auto& f{ this->ContentFrame() }; f.CurrentSourcePageType().Name != L"simbolmudah_ui.CustomSeqPage")
+        {
+            f.Navigate({ L"simbolmudah_ui.CustomSeqPage", TypeKind::Metadata }, nullptr, transitionInfo);
         }
     }
 

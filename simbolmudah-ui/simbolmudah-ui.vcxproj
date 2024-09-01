@@ -212,6 +212,10 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
       <DependentUpon>App.xaml</DependentUpon>
     </ClInclude>
     <ClInclude Include="AppManager.h" />
+    <ClInclude Include="CustomSeqPage.xaml.h">
+      <DependentUpon>CustomSeqPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
     <ClInclude Include="PopupWindow.xaml.h">
       <DependentUpon>PopupWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -240,6 +244,9 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml" />
+    <Page Include="CustomSeqPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="PopupWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
@@ -257,6 +264,10 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AppManager.cpp" />
+    <ClCompile Include="CustomSeqPage.xaml.cpp">
+      <DependentUpon>CustomSeqPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PopupWindow.xaml.cpp">
       <DependentUpon>PopupWindow.xaml</DependentUpon>
@@ -292,6 +303,10 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
   </ItemGroup>
   <ItemGroup>
     <Midl Include="AppManager.idl" />
+    <Midl Include="CustomSeqPage.idl">
+      <DependentUpon>CustomSeqPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
     <Midl Include="PopupWindow.idl">
       <DependentUpon>PopupWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

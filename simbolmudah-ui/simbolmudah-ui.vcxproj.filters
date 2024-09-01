@@ -18,6 +18,7 @@
     <Page Include="SearchPopup.xaml">
       <Filter>Popup</Filter>
     </Page>
+    <Page Include="CustomSeqPage.xaml" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />

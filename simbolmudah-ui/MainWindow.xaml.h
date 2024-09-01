@@ -30,6 +30,7 @@ namespace winrt::simbolmudah_ui::implementation
 
     private:
         void NavigateToSearch(Microsoft::UI::Xaml::Media::Animation::NavigationTransitionInfo const& transitionInfo);
+        void NavigateToCustomSeq(Microsoft::UI::Xaml::Media::Animation::NavigationTransitionInfo const& transitionInfo);
         fire_and_forget OnOpenSettings(LibSimbolMudah::NotifyIcon const&, bool);
         void OnClosed(IInspectable const&, Microsoft::UI::Xaml::WindowEventArgs const&);
         void SetMinimumWindowSize();
