@@ -1,3 +1,6 @@
 [submodule "git-deps/cldr"]
 	path = git-deps/cldr
 	url = https://github.com/unicode-org/cldr
+[submodule "git-deps/libX11"]
+	path = git-deps/libX11
+	url = https://gitlab.freedesktop.org/xorg/lib/libx11.git
