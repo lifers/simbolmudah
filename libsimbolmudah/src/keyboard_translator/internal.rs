@@ -144,7 +144,7 @@ impl KeyboardTranslatorInternal {
     ) -> Result<()> {
         match result {
             Ok(s) => {
-                let _ = send_text_clipboard(s.clone())?;
+                let _ = send_text_clipboard(&s.clone().into())?;
                 self.OnTranslated
                     .invoke_all(|d| d.Invoke(&get_strong_ref(&self.parent)?, &(&s).into()))?;
                 Ok(())

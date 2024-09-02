@@ -36,9 +36,11 @@ namespace winrt::simbolmudah_ui::implementation
         });
     }
 
-    void SearchPopup::SearchBox_SuggestionChosen(const AutoSuggestBox&, const AutoSuggestBoxSuggestionChosenEventArgs&) const
+    void SearchPopup::SearchBox_SuggestionChosen(const AutoSuggestBox&, const AutoSuggestBoxSuggestionChosenEventArgs& args) const
     {
         this->hook.ResetStage();
+        const auto selected{ args.SelectedItem().as<SequenceDetail>() };
+        Sender::SendTextClipboard(selected.Result());
     }
 
     void SearchPopup::Page_Loaded(const IInspectable&, const RoutedEventArgs&)

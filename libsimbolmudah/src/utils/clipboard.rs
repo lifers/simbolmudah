@@ -1,5 +1,5 @@
 use windows::{
-    core::{w, Error, Result, HRESULT},
+    core::{w, Error, Result, HRESULT, HSTRING},
     Win32::{
         Foundation::{HANDLE, HGLOBAL, HWND},
         System::{
@@ -28,13 +28,12 @@ impl Clipboard {
         }
     }
 
-    pub(super) fn set_text(&self, text: &str) -> Result<()> {
-        let u_text = text.encode_utf16().collect::<Box<_>>();
+    pub(super) fn set_text(&self, text: &HSTRING) -> Result<()> {
         unsafe {
-            let h_global = GlobalAlloc(GMEM_MOVEABLE, size_of::<u16>() * (u_text.len() + 1))?;
+            let h_global = GlobalAlloc(GMEM_MOVEABLE, size_of::<u16>() * (text.len() + 1))?;
             let h_ptr = GlobalLock(h_global) as *mut u16;
-            h_ptr.copy_from_nonoverlapping(u_text.as_ptr(), u_text.len());
-            h_ptr.offset(u_text.len() as isize).write(0);
+            h_ptr.copy_from_nonoverlapping(text.as_ptr(), text.len());
+            h_ptr.offset(text.len() as isize).write(0);
 
             global_unlock(h_global)?;
             let _ = SetClipboardData(CF_UNICODETEXT.0.into(), HANDLE(h_global.0))?;

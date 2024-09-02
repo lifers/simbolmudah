@@ -1,11 +1,12 @@
 use std::mem::size_of;
 
 use windows::{
-    core::{h, Error, Result},
+    core::{h, implement, Error, IInspectable, Result, HSTRING},
     Foundation::{AsyncStatus, IAsyncAction},
     System::Threading::{ThreadPool, WorkItemHandler},
     Win32::{
         Foundation::{GetLastError, E_ABORT, E_POINTER, HWND, LPARAM, LRESULT, WPARAM},
+        System::WinRT::{IActivationFactory, IActivationFactory_Impl},
         UI::{
             Input::KeyboardAndMouse::{
                 SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VK_CONTROL,
@@ -17,6 +18,23 @@ use windows::{
 };
 
 use super::{clipboard::Clipboard, message_window::MessageWindow};
+
+use crate::bindings;
+
+#[implement(IActivationFactory, bindings::ISenderStatics)]
+pub(crate) struct Sender;
+
+impl IActivationFactory_Impl for Sender_Impl {
+    fn ActivateInstance(&self) -> Result<IInspectable> {
+        Ok(Sender.into())
+    }
+}
+
+impl bindings::ISenderStatics_Impl for Sender_Impl {
+    fn SendTextClipboard(&self, message: &HSTRING) -> Result<IAsyncAction> {
+        send_text_clipboard(message)
+    }
+}
 
 fn send(sent: &[INPUT]) -> Result<()> {
     unsafe {
@@ -50,8 +68,8 @@ pub(crate) fn send_keybdinput(sent: Vec<KEYBDINPUT>) -> Result<IAsyncAction> {
     }))
 }
 
-/// Send text to foreground window through clipboard.
-pub(crate) fn send_text_clipboard(text: String) -> Result<IAsyncAction> {
+pub(crate) fn send_text_clipboard(message: &HSTRING) -> Result<IAsyncAction> {
+    let text = message.clone();
     ThreadPool::RunAsync(&WorkItemHandler::new(move |a| {
         if let Some(a) = a {
             if a.Status()? == AsyncStatus::Canceled {
@@ -59,6 +77,15 @@ pub(crate) fn send_text_clipboard(text: String) -> Result<IAsyncAction> {
             }
 
             {
+                unsafe extern "system" fn wnd_proc(
+                    hwnd: HWND,
+                    msg: u32,
+                    w_param: WPARAM,
+                    l_param: LPARAM,
+                ) -> LRESULT {
+                    DefWindowProcW(hwnd, msg, w_param, l_param)
+                }
+
                 // Create message only window
                 let h_wnd = MessageWindow::new(h!("LibSimbolMudah.Clipboard"), Some(wnd_proc))?;
 
@@ -110,13 +137,4 @@ pub(crate) fn send_text_clipboard(text: String) -> Result<IAsyncAction> {
             Err(Error::new(E_POINTER, "Null pointer"))
         }
     }))
-}
-
-unsafe extern "system" fn wnd_proc(
-    hwnd: HWND,
-    msg: u32,
-    w_param: WPARAM,
-    l_param: LPARAM,
-) -> LRESULT {
-    DefWindowProcW(hwnd, msg, w_param, l_param)
 }

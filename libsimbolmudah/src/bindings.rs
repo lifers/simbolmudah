@@ -192,6 +192,24 @@ pub struct INotifyIconFactory_Vtbl {
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
+    ISenderStatics,
+    ISenderStatics_Vtbl,
+    0x527c51dc_e574_5518_aa9d_ad9d9720c86b
+);
+impl windows_core::RuntimeType for ISenderStatics {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+#[repr(C)]
+pub struct ISenderStatics_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    pub SendTextClipboard: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
     ISequenceDefinition,
     ISequenceDefinition_Vtbl,
     0xcccb020c_3758_51d7_8349_915ba28e271b
@@ -696,6 +714,33 @@ impl windows_core::RuntimeName for NotifyIcon {
 }
 unsafe impl Send for NotifyIcon {}
 unsafe impl Sync for NotifyIcon {}
+pub struct Sender;
+impl Sender {
+    pub fn SendTextClipboard(
+        message: &windows_core::HSTRING,
+    ) -> windows_core::Result<windows::Foundation::IAsyncAction> {
+        Self::ISenderStatics(|this| unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).SendTextClipboard)(
+                windows_core::Interface::as_raw(this),
+                core::mem::transmute_copy(message),
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        })
+    }
+    #[doc(hidden)]
+    pub fn ISenderStatics<R, F: FnOnce(&ISenderStatics) -> windows_core::Result<R>>(
+        callback: F,
+    ) -> windows_core::Result<R> {
+        static SHARED: windows_core::imp::FactoryCache<Sender, ISenderStatics> =
+            windows_core::imp::FactoryCache::new();
+        SHARED.call(callback)
+    }
+}
+impl windows_core::RuntimeName for Sender {
+    const NAME: &'static str = "LibSimbolMudah.Sender";
+}
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct SequenceDefinition(windows_core::IUnknown);
@@ -1474,6 +1519,51 @@ impl INotifyIconFactory_Vtbl {
     }
     pub fn matches(iid: &windows_core::GUID) -> bool {
         iid == &<INotifyIconFactory as windows_core::Interface>::IID
+    }
+}
+pub trait ISenderStatics_Impl: Sized {
+    fn SendTextClipboard(
+        &self,
+        message: &windows_core::HSTRING,
+    ) -> windows_core::Result<windows::Foundation::IAsyncAction>;
+}
+impl windows_core::RuntimeName for ISenderStatics {
+    const NAME: &'static str = "LibSimbolMudah.ISenderStatics";
+}
+impl ISenderStatics_Vtbl {
+    pub const fn new<Identity: windows_core::IUnknownImpl, const OFFSET: isize>(
+    ) -> ISenderStatics_Vtbl
+    where
+        Identity: ISenderStatics_Impl,
+    {
+        unsafe extern "system" fn SendTextClipboard<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            message: core::mem::MaybeUninit<windows_core::HSTRING>,
+            result__: *mut *mut core::ffi::c_void,
+        ) -> windows_core::HRESULT
+        where
+            Identity: ISenderStatics_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            match ISenderStatics_Impl::SendTextClipboard(this, core::mem::transmute(&message)) {
+                Ok(ok__) => {
+                    result__.write(core::mem::transmute_copy(&ok__));
+                    core::mem::forget(ok__);
+                    windows_core::HRESULT(0)
+                }
+                Err(err) => err.into(),
+            }
+        }
+        Self {
+            base__: windows_core::IInspectable_Vtbl::new::<Identity, ISenderStatics, OFFSET>(),
+            SendTextClipboard: SendTextClipboard::<Identity, OFFSET>,
+        }
+    }
+    pub fn matches(iid: &windows_core::GUID) -> bool {
+        iid == &<ISenderStatics as windows_core::Interface>::IID
     }
 }
 pub trait ISequenceDefinition_Impl: Sized {

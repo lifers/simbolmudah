@@ -47,4 +47,9 @@ namespace LibSimbolMudah
         event Windows.Foundation.TypedEventHandler<NotifyIcon, Boolean> OnExitApp;
         event Windows.Foundation.TypedEventHandler<NotifyIcon, Boolean> OnSetHookEnabled;
     }
+
+    static runtimeclass Sender
+    {
+        static Windows.Foundation.IAsyncAction SendTextClipboard(String message);
+    }
 }

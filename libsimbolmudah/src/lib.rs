@@ -9,6 +9,7 @@ use keyboard_hook::KeyboardHookFactory;
 use keyboard_translator::KeyboardTranslatorFactory;
 use notify_icon::NotifyIconFactory;
 use sequence_definition::SequenceDefinitionFactory;
+use utils::sender::Sender;
 use windows::{
     core::{OutRef, Ref, HRESULT, HSTRING},
     Win32::{
@@ -34,6 +35,7 @@ extern "system" fn DllGetActivationFactory(
             "LibSimbolMudah.SequenceDefinition" => {
                 result.write(Some(SequenceDefinitionFactory.into())).into()
             }
+            "LibSimbolMudah.Sender" => result.write(Some(Sender.into())).into(),
             _ => {
                 let _ = result.write(None);
                 CLASS_E_CLASSNOTAVAILABLE
