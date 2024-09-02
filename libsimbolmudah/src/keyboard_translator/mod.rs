@@ -119,8 +119,8 @@ mod tests {
     use std::thread::sleep;
     use windows_core::Result;
 
-    const KEYSYMDEF: &str = "tests/keysymdef.txt";
-    const COMPOSEDEF: &str = "tests/Compose.pre";
+    const KEYSYMDEF: &str = "../git-deps/xorgproto/include/X11/keysymdef.h";
+    const COMPOSEDEF: &str = "../git-deps/libX11/nls/en_US.UTF-8/Compose.pre";
 
     #[test]
     fn test_activate_instance() -> Result<()> {

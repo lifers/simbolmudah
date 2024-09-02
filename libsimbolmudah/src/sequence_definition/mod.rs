@@ -357,14 +357,14 @@ mod tests {
     use windows_core::{Interface, Result};
 
     const KEYSYMDEF: &str = "../git-deps/xorgproto/include/X11/keysymdef.h";
-    const COMPOSEDEF: &str = "../git-deps/libX11/nls/en_US.UTF8/Compose.pre";
+    const COMPOSEDEF: &str = "../git-deps/libX11/nls/en_US.UTF-8/Compose.pre";
 
     #[test]
     fn test_check_languages() -> Result<()> {
         let factory: IActivationFactory = SequenceDefinitionFactory.into();
         let seqdef = factory
             .cast_object_ref::<SequenceDefinitionFactory>()?
-            .ActivateInstance()?;
+            .CreateInstance(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
 
         let _seqdef = seqdef.cast_object_ref::<SequenceDefinition>()?;
 

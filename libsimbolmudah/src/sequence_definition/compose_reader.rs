@@ -150,7 +150,7 @@ mod tests {
     use super::*;
 
     const KEYSYMDEF: &str = "../git-deps/xorgproto/include/X11/keysymdef.h";
-    const COMPOSEDEF: &str = "../git-deps/libX11/nls/en_US.UTF8/Compose.pre";
+    const COMPOSEDEF: &str = "../git-deps/libX11/nls/en_US.UTF-8/Compose.pre";
 
     #[test]
     fn test_compose_regex() {
