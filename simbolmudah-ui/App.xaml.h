@@ -13,22 +13,24 @@ namespace winrt::simbolmudah_ui::implementation
         fire_and_forget OpenWindow();
 
     private:
-        fire_and_forget BuildDefinition() const;
+        Windows::Foundation::IAsyncAction RebuildDefinition();
         void OnSettingsChanged(IInspectable const&, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs const&);
         fire_and_forget OnNotifyIconPathInitialized(
             Windows::Foundation::IAsyncOperation<Windows::Storage::StorageFile> const& op,
             Windows::Foundation::AsyncStatus);
         void InitializeNotifyIcon();
+        fire_and_forget InitializeKeyboardHook();
         fire_and_forget OnOpenSettings(LibSimbolMudah::NotifyIcon const&, bool);
         fire_and_forget OnNotifyIconSetHook(LibSimbolMudah::NotifyIcon const&, bool status);
         fire_and_forget OnAppExit(LibSimbolMudah::NotifyIcon const&, bool);
 
-        const Microsoft::UI::Dispatching::DispatcherQueue main_thread;
+        const Microsoft::UI::Dispatching::DispatcherQueue mainThread;
+        const Microsoft::UI::Dispatching::DispatcherQueueController keyboardThread;
         const simbolmudah_ui::AppManager appManager;
-        const LibSimbolMudah::SequenceDefinition sequenceDefinition;
-        const LibSimbolMudah::KeyboardTranslator keyboardTranslator;
 
         weak_ref<simbolmudah_ui::MainWindow> mainWindow;
+        LibSimbolMudah::SequenceDefinition sequenceDefinition{ nullptr };
+        LibSimbolMudah::KeyboardTranslator keyboardTranslator{ nullptr };
         LibSimbolMudah::KeyboardHook keyboardHook{ nullptr };
         simbolmudah_ui::PopupWindow popupWindow{ nullptr };
         LibSimbolMudah::NotifyIcon notifyIcon{ nullptr };
@@ -37,6 +39,7 @@ namespace winrt::simbolmudah_ui::implementation
         event_token openSettingsToken;
         event_token notifyIconSetHookToken;
         event_token appExitToken;
+        Windows::Foundation::IAsyncAction buildProgress;
 
         hstring notifyIconPath;
         bool delayNotifyIcon{ false };

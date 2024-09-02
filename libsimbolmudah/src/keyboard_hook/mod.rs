@@ -8,6 +8,7 @@ use internal::{KeyboardHookInternal, INTERNAL};
 use std::{fmt::Debug, usize};
 use windows::{
     core::{implement, Error, IInspectable, Interface, Result, HSTRING},
+    Foundation::TypedEventHandler,
     Win32::{
         Foundation::{E_NOTIMPL, E_POINTER},
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
@@ -37,8 +38,8 @@ impl bindings::IKeyboardHook_Impl for KeyboardHook_Impl {
         INTERNAL.with_borrow_mut(|internal| internal.reset_state())
     }
 
-    event_registration!(OnStateChanged, bindings::KeyboardHook, u8);
-    event_registration!(OnKeyEvent, bindings::KeyboardHook, HSTRING);
+    event_registration!(OnStateChanged, TypedEventHandler<bindings::KeyboardHook, u8>);
+    event_registration!(OnKeyEvent, TypedEventHandler<bindings::KeyboardHook, HSTRING>);
 }
 
 #[implement(IActivationFactory, bindings::IKeyboardHookFactory)]

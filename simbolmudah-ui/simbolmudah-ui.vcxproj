@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\Microsoft.WindowsAppSDK.1.5.240627000\build\native\Microsoft.WindowsAppSDK.props" Condition="Exists('..\packages\Microsoft.WindowsAppSDK.1.5.240627000\build\native\Microsoft.WindowsAppSDK.props')" />
+  <Import Project="..\packages\Microsoft.WindowsAppSDK.1.5.240802000\build\native\Microsoft.WindowsAppSDK.props" Condition="Exists('..\packages\Microsoft.WindowsAppSDK.1.5.240802000\build\native\Microsoft.WindowsAppSDK.props')" />
   <Import Project="..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1\build\Microsoft.Windows.SDK.BuildTools.props" Condition="Exists('..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1\build\Microsoft.Windows.SDK.BuildTools.props')" />
   <Import Project="..\packages\Microsoft.Windows.CppWinRT.2.0.240405.15\build\native\Microsoft.Windows.CppWinRT.props" Condition="Exists('..\packages\Microsoft.Windows.CppWinRT.2.0.240405.15\build\native\Microsoft.Windows.CppWinRT.props')" />
   <PropertyGroup Label="Globals">
@@ -212,9 +212,9 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
       <DependentUpon>App.xaml</DependentUpon>
     </ClInclude>
     <ClInclude Include="AppManager.h" />
-    <ClInclude Include="Assets\Resources\keysymdef.txt">
-      <DeploymentContent>true</DeploymentContent>
-      <FileType>Document</FileType>
+    <ClInclude Include="CustomSeqPage.xaml.h">
+      <DependentUpon>CustomSeqPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
     </ClInclude>
     <ClInclude Include="PopupWindow.xaml.h">
       <DependentUpon>PopupWindow.xaml</DependentUpon>
@@ -244,6 +244,9 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml" />
+    <Page Include="CustomSeqPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="PopupWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
@@ -261,6 +264,10 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AppManager.cpp" />
+    <ClCompile Include="CustomSeqPage.xaml.cpp">
+      <DependentUpon>CustomSeqPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PopupWindow.xaml.cpp">
       <DependentUpon>PopupWindow.xaml</DependentUpon>
@@ -296,6 +303,10 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
   </ItemGroup>
   <ItemGroup>
     <Midl Include="AppManager.idl" />
+    <Midl Include="CustomSeqPage.idl">
+      <DependentUpon>CustomSeqPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
     <Midl Include="PopupWindow.idl">
       <DependentUpon>PopupWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -329,9 +340,6 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\Resources\Compose.pre">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -344,9 +352,8 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\Microsoft.Windows.CppWinRT.2.0.240405.15\build\native\Microsoft.Windows.CppWinRT.targets" Condition="Exists('..\packages\Microsoft.Windows.CppWinRT.2.0.240405.15\build\native\Microsoft.Windows.CppWinRT.targets')" />
     <Import Project="..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1\build\Microsoft.Windows.SDK.BuildTools.targets" Condition="Exists('..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1\build\Microsoft.Windows.SDK.BuildTools.targets')" />
-    <Import Project="..\packages\boost.1.85.0\build\boost.targets" Condition="Exists('..\packages\boost.1.85.0\build\boost.targets')" />
-    <Import Project="..\packages\Microsoft.WindowsAppSDK.1.5.240627000\build\native\Microsoft.WindowsAppSDK.targets" Condition="Exists('..\packages\Microsoft.WindowsAppSDK.1.5.240627000\build\native\Microsoft.WindowsAppSDK.targets')" />
     <Import Project="..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
+    <Import Project="..\packages\Microsoft.WindowsAppSDK.1.5.240802000\build\native\Microsoft.WindowsAppSDK.targets" Condition="Exists('..\packages\Microsoft.WindowsAppSDK.1.5.240802000\build\native\Microsoft.WindowsAppSDK.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -356,9 +363,8 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
     <Error Condition="!Exists('..\packages\Microsoft.Windows.CppWinRT.2.0.240405.15\build\native\Microsoft.Windows.CppWinRT.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.CppWinRT.2.0.240405.15\build\native\Microsoft.Windows.CppWinRT.targets'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1\build\Microsoft.Windows.SDK.BuildTools.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1\build\Microsoft.Windows.SDK.BuildTools.props'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1\build\Microsoft.Windows.SDK.BuildTools.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.SDK.BuildTools.10.0.26100.1\build\Microsoft.Windows.SDK.BuildTools.targets'))" />
-    <Error Condition="!Exists('..\packages\boost.1.85.0\build\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost.1.85.0\build\boost.targets'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.WindowsAppSDK.1.5.240627000\build\native\Microsoft.WindowsAppSDK.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.WindowsAppSDK.1.5.240627000\build\native\Microsoft.WindowsAppSDK.props'))" />
-    <Error Condition="!Exists('..\packages\Microsoft.WindowsAppSDK.1.5.240627000\build\native\Microsoft.WindowsAppSDK.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.WindowsAppSDK.1.5.240627000\build\native\Microsoft.WindowsAppSDK.targets'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.ImplementationLibrary.1.0.240803.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.WindowsAppSDK.1.5.240802000\build\native\Microsoft.WindowsAppSDK.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.WindowsAppSDK.1.5.240802000\build\native\Microsoft.WindowsAppSDK.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.WindowsAppSDK.1.5.240802000\build\native\Microsoft.WindowsAppSDK.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.WindowsAppSDK.1.5.240802000\build\native\Microsoft.WindowsAppSDK.targets'))" />
   </Target>
 </Project>

@@ -1,5 +1,6 @@
 #include "pch.hpp"
 #include "MainWindow.xaml.h"
+#include "SearchPage.xaml.h"
 #if __has_include("MainWindow.g.cpp")
 #include "MainWindow.g.cpp"
 #endif
@@ -10,14 +11,21 @@
 
 namespace
 {
-    // Limit the minimum window size to 480x360.
-    LRESULT MinimumSizeSubclass(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, UINT_PTR, DWORD_PTR)
-    {
+    // Limit the minimum window size to 640x480 times the DPI scale factor.
+    LRESULT MinimumSizeSubclass(
+        HWND hwnd,
+        UINT message,
+        WPARAM wParam,
+        LPARAM lParam,
+        UINT_PTR,
+        DWORD_PTR
+    ) {
         if (message == WM_GETMINMAXINFO)
         {
             const auto mmi{ reinterpret_cast<MINMAXINFO*>(lParam) };
-            mmi->ptMinTrackSize.x = 480;
-            mmi->ptMinTrackSize.y = 360;
+            const auto dpi{ ::GetDpiForWindow(hwnd) };
+            mmi->ptMinTrackSize.x = 640u * dpi / 96u;
+            mmi->ptMinTrackSize.y = 480u * dpi / 96u;
             return 0;
         }
         else
@@ -62,7 +70,7 @@ namespace winrt::simbolmudah_ui::implementation
         const auto windowNative{ this->m_inner.as<::IWindowNative>() };
         HWND hwnd{};
         check_hresult(windowNative->get_WindowHandle(&hwnd));
-        check_bool(SetWindowSubclass(hwnd, MinimumSizeSubclass, 0, 0));
+        check_bool(::SetWindowSubclass(hwnd, MinimumSizeSubclass, 0, 0));
     }
 
     /// <summary>
@@ -131,6 +139,10 @@ namespace winrt::simbolmudah_ui::implementation
             {
                 this->NavigateToSearch(args.RecommendedNavigationTransitionInfo());
             }
+            else if (n == L"simbolmudah_ui.CustomSeqPage")
+            {
+                this->NavigateToCustomSeq(args.RecommendedNavigationTransitionInfo());
+            }
         }
     }
 
@@ -162,7 +174,17 @@ namespace winrt::simbolmudah_ui::implementation
     {
         if (const auto& f{ this->ContentFrame() }; f.CurrentSourcePageType().Name != L"simbolmudah_ui.SearchPage")
         {
-            f.Navigate({ L"simbolmudah_ui.SearchPage", TypeKind::Metadata }, this->sequenceDefinition, transitionInfo);
+            f.Navigate({ L"simbolmudah_ui.SearchPage", TypeKind::Metadata }, nullptr, transitionInfo);
+            get_self<implementation::SearchPage>(
+                f.Content().as<simbolmudah_ui::SearchPage>())->SetSequenceDefinition(this->sequenceDefinition);
+        }
+    }
+
+    void MainWindow::NavigateToCustomSeq(NavigationTransitionInfo const& transitionInfo)
+    {
+        if (const auto& f{ this->ContentFrame() }; f.CurrentSourcePageType().Name != L"simbolmudah_ui.CustomSeqPage")
+        {
+            f.Navigate({ L"simbolmudah_ui.CustomSeqPage", TypeKind::Metadata }, nullptr, transitionInfo);
         }
     }
 
@@ -184,5 +206,14 @@ namespace winrt::simbolmudah_ui::implementation
     void MainWindow::OnClosed(IInspectable const&, WindowEventArgs const&)
     {
         this->openSettingsRevoker.revoke();
+    }
+
+    void MainWindow::SetSequenceDefinition(SequenceDefinition const& seqdef)
+    {
+        this->sequenceDefinition = seqdef;
+        if (const auto& f{ this->ContentFrame() }; f.CurrentSourcePageType().Name == L"simbolmudah_ui.SearchPage")
+        {
+            get_self<implementation::SearchPage>(f.Content().as<simbolmudah_ui::SearchPage>())->SetSequenceDefinition(seqdef);
+        }
     }
 }

@@ -4,6 +4,7 @@ use crate::{bindings, utils::delegate_storage::event_registration};
 use internal::{KeyboardTranslatorInternal, INTERNAL};
 use windows::{
     core::{implement, Error, IInspectable, Interface, Result, HSTRING},
+    Foundation::TypedEventHandler,
     Win32::{
         Foundation::{E_NOTIMPL, E_POINTER},
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
@@ -59,9 +60,9 @@ impl bindings::IKeyboardTranslator_Impl for KeyboardTranslator_Impl {
         })
     }
 
-    event_registration!(OnInvalid, bindings::KeyboardTranslator, HSTRING);
-    event_registration!(OnTranslated, bindings::KeyboardTranslator, HSTRING);
-    event_registration!(OnKeyTranslated, bindings::KeyboardTranslator, HSTRING);
+    event_registration!(OnInvalid, TypedEventHandler<bindings::KeyboardTranslator, HSTRING>);
+    event_registration!(OnTranslated, TypedEventHandler<bindings::KeyboardTranslator, HSTRING>);
+    event_registration!(OnKeyTranslated, TypedEventHandler<bindings::KeyboardTranslator, HSTRING>);
 }
 
 const fn calculate_bg_keystate(has_capslock: bool, has_shift: bool, has_altgr: bool) -> [u8; 256] {
@@ -110,129 +111,101 @@ impl bindings::IKeyboardTranslatorFactory_Impl for KeyboardTranslatorFactory_Imp
 
 #[cfg(test)]
 mod tests {
-    use bindings::{IKeyboardTranslatorFactory_Impl, ISequenceDefinition_Impl};
+    use bindings::{IKeyboardTranslatorFactory_Impl, ISequenceDefinitionFactory_Impl};
 
-    use crate::sequence_definition::{
-        SequenceDefinition, SequenceDefinitionError, SequenceDefinitionFactory,
-    };
+    use crate::sequence_definition::{SequenceDefinitionError, SequenceDefinitionFactory};
 
     use super::*;
     use std::thread::sleep;
+    use windows_core::Result;
 
-    const KEYSYMDEF: &str = "tests/keysymdef.txt";
-    const COMPOSEDEF: &str = "tests/Compose.pre";
+    const KEYSYMDEF: &str = "../git-deps/xorgproto/include/X11/keysymdef.h";
+    const COMPOSEDEF: &str = "../git-deps/libX11/nls/en_US.UTF-8/Compose.pre";
 
     #[test]
-    fn test_activate_instance() {
+    fn test_activate_instance() -> Result<()> {
         // Create an empty SequenceDefinition
-        let seqdef =
-            bindings::SequenceDefinition::new().expect("SequenceDefinition should be created");
+        let factory: IActivationFactory = SequenceDefinitionFactory.into();
+        let seqdef = factory
+            .cast_object_ref::<SequenceDefinitionFactory>()?
+            .CreateInstance(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
 
         let factory: IActivationFactory = KeyboardTranslatorFactory.into();
 
         // Create a new instance of KeyboardTranslator
         let instance = factory
-            .cast_object_ref::<KeyboardTranslatorFactory>()
-            .unwrap()
-            .CreateInstance(Some(&seqdef))
-            .expect("Instance should be created");
+            .cast_object_ref::<KeyboardTranslatorFactory>()?
+            .CreateInstance(Some(&seqdef))?;
 
-        INTERNAL
-            .with_borrow(move |internal| {
-                assert_eq!(
-                    internal.sequence_definition.upgrade().expect("must be set"),
-                    seqdef
-                );
-                assert_eq!(internal.parent.upgrade().expect("must be set"), instance);
-                Ok(())
-            })
-            .expect("Internal should be borrowed");
+        INTERNAL.with_borrow(move |internal| {
+            assert_eq!(
+                internal.sequence_definition.upgrade().expect("must be set"),
+                seqdef
+            );
+            assert_eq!(internal.parent.upgrade().expect("must be set"), instance);
+            Ok(())
+        })?;
 
-        INTERNAL.destroy().expect("Internal should be destroyed");
+        INTERNAL.destroy()
     }
 
     #[test]
-    fn test_state_clear_after_translation() {
+    fn test_state_clear_after_translation() -> Result<()> {
         // Create and build the SequenceDefinition
         let factory: IActivationFactory = SequenceDefinitionFactory.into();
         let seqdef = factory
-            .cast_object_ref::<SequenceDefinitionFactory>()
-            .unwrap()
-            .ActivateInstance()
-            .expect("SequenceDefinition should be created");
-
-        seqdef
-            .cast_object_ref::<SequenceDefinition>()
-            .expect("Should be castable")
-            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
-            .expect("SequenceDefinition should be built");
+            .cast_object_ref::<SequenceDefinitionFactory>()?
+            .CreateInstance(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
 
         let factory: IActivationFactory = KeyboardTranslatorFactory.into();
         // Create a new instance of KeyboardTranslator
         let _instance = factory
-            .cast_object_ref::<KeyboardTranslatorFactory>()
-            .unwrap()
-            .CreateInstance(Some(
-                &seqdef.cast::<bindings::SequenceDefinition>().unwrap(),
-            ))
-            .expect("Instance should be created");
+            .cast_object_ref::<KeyboardTranslatorFactory>()?
+            .CreateInstance(Some(&seqdef.cast::<bindings::SequenceDefinition>()?))?;
 
         // Assuming "omg" is an invalid sequence for this test
-        INTERNAL
-            .with_borrow_mut(|internal| {
-                assert_eq!(
-                    internal.forward(0, "omg".to_string()),
-                    Err(SequenceDefinitionError::ValueNotFound)
-                );
-                assert!(internal.state.is_empty());
-                Ok(())
-            })
-            .expect("Internal should be borrowed");
+        INTERNAL.with_borrow_mut(|internal| {
+            assert_eq!(
+                internal.forward(0, "omg".to_string()),
+                Err(SequenceDefinitionError::ValueNotFound)
+            );
+            assert!(internal.state.is_empty());
+            Ok(())
+        })?;
 
-        INTERNAL.destroy().expect("Internal should be destroyed");
+        INTERNAL.destroy()?;
 
         sleep(std::time::Duration::from_secs(5));
+        Ok(())
     }
 
     #[test]
-    fn test_state_accumulation() {
+    fn test_state_accumulation() -> Result<()> {
         // Create and build the SequenceDefinition
         let factory: IActivationFactory = SequenceDefinitionFactory.into();
         let seqdef = factory
-            .cast_object_ref::<SequenceDefinitionFactory>()
-            .unwrap()
-            .ActivateInstance()
-            .expect("SequenceDefinition should be created");
-        seqdef
-            .cast_object_ref::<SequenceDefinition>()
-            .expect("Should be castable")
-            .Build(&KEYSYMDEF.into(), &COMPOSEDEF.into())
-            .expect("SequenceDefinition should be built");
+            .cast_object_ref::<SequenceDefinitionFactory>()?
+            .CreateInstance(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
 
         // Create a new instance of KeyboardTranslator
         let factory: IActivationFactory = KeyboardTranslatorFactory.into();
         let _instance = factory
-            .cast_object_ref::<KeyboardTranslatorFactory>()
-            .unwrap()
-            .CreateInstance(Some(
-                &seqdef.cast::<bindings::SequenceDefinition>().unwrap(),
-            ))
-            .expect("Instance should be created");
+            .cast_object_ref::<KeyboardTranslatorFactory>()?
+            .CreateInstance(Some(&seqdef.cast::<bindings::SequenceDefinition>()?))?;
 
-        INTERNAL
-            .with_borrow_mut(|internal| {
-                assert_eq!(
-                    internal.forward(0, "/".to_string()),
-                    Err(SequenceDefinitionError::Incomplete)
-                );
-                assert_eq!(internal.forward(0, "=".to_string()), Ok("≠".to_string()));
-                assert!(internal.state.is_empty());
-                Ok(())
-            })
-            .expect("Internal should be borrowed");
+        INTERNAL.with_borrow_mut(|internal| {
+            assert_eq!(
+                internal.forward(0, "/".to_string()),
+                Err(SequenceDefinitionError::Incomplete)
+            );
+            assert_eq!(internal.forward(0, "=".to_string()), Ok("≠".to_string()));
+            assert!(internal.state.is_empty());
+            Ok(())
+        })?;
 
-        INTERNAL.destroy().expect("Internal should be destroyed");
+        INTERNAL.destroy()?;
 
         sleep(std::time::Duration::from_secs(5));
+        Ok(())
     }
 }

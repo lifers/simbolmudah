@@ -47,9 +47,9 @@ impl bindings::INotifyIcon_Impl for NotifyIcon_Impl {
         INTERNAL.with_borrow_mut(move |internal| internal.update_listening_check(enabled))
     }
 
-    event_registration!(OnOpenSettings, bindings::NotifyIcon, bool);
-    event_registration!(OnExitApp, bindings::NotifyIcon, bool);
-    event_registration!(OnSetHookEnabled, bindings::NotifyIcon, bool);
+    event_registration!(OnOpenSettings, TypedEventHandler<bindings::NotifyIcon, bool>);
+    event_registration!(OnExitApp, TypedEventHandler<bindings::NotifyIcon, bool>);
+    event_registration!(OnSetHookEnabled, TypedEventHandler<bindings::NotifyIcon, bool>);
 }
 
 #[implement(IActivationFactory, bindings::INotifyIconFactory)]

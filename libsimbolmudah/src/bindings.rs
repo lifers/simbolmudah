@@ -192,9 +192,27 @@ pub struct INotifyIconFactory_Vtbl {
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
+    ISenderStatics,
+    ISenderStatics_Vtbl,
+    0x527c51dc_e574_5518_aa9d_ad9d9720c86b
+);
+impl windows_core::RuntimeType for ISenderStatics {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+#[repr(C)]
+pub struct ISenderStatics_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    pub SendTextClipboard: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
     ISequenceDefinition,
     ISequenceDefinition_Vtbl,
-    0x09f566ee_0de2_51b8_aef7_3d4bb720bff2
+    0xcccb020c_3758_51d7_8349_915ba28e271b
 );
 impl windows_core::RuntimeType for ISequenceDefinition {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -203,11 +221,6 @@ impl windows_core::RuntimeType for ISequenceDefinition {
 #[repr(C)]
 pub struct ISequenceDefinition_Vtbl {
     pub base__: windows_core::IInspectable_Vtbl,
-    pub Build: unsafe extern "system" fn(
-        *mut core::ffi::c_void,
-        core::mem::MaybeUninit<windows_core::HSTRING>,
-        core::mem::MaybeUninit<windows_core::HSTRING>,
-    ) -> windows_core::HRESULT,
     pub PotentialPrefix: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         core::mem::MaybeUninit<windows_core::HSTRING>,
@@ -218,6 +231,25 @@ pub struct ISequenceDefinition_Vtbl {
         *mut core::ffi::c_void,
         core::mem::MaybeUninit<windows_core::HSTRING>,
         u32,
+        *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+}
+windows_core::imp::define_interface!(
+    ISequenceDefinitionFactory,
+    ISequenceDefinitionFactory_Vtbl,
+    0x26c0758a_c0fe_50cc_a153_2ae0dec46c32
+);
+impl windows_core::RuntimeType for ISequenceDefinitionFactory {
+    const SIGNATURE: windows_core::imp::ConstBuffer =
+        windows_core::imp::ConstBuffer::for_interface::<Self>();
+}
+#[repr(C)]
+pub struct ISequenceDefinitionFactory_Vtbl {
+    pub base__: windows_core::IInspectable_Vtbl,
+    pub CreateInstance: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
         *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
 }
@@ -682,6 +714,33 @@ impl windows_core::RuntimeName for NotifyIcon {
 }
 unsafe impl Send for NotifyIcon {}
 unsafe impl Sync for NotifyIcon {}
+pub struct Sender;
+impl Sender {
+    pub fn SendTextClipboard(
+        message: &windows_core::HSTRING,
+    ) -> windows_core::Result<windows::Foundation::IAsyncAction> {
+        Self::ISenderStatics(|this| unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).SendTextClipboard)(
+                windows_core::Interface::as_raw(this),
+                core::mem::transmute_copy(message),
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        })
+    }
+    #[doc(hidden)]
+    pub fn ISenderStatics<R, F: FnOnce(&ISenderStatics) -> windows_core::Result<R>>(
+        callback: F,
+    ) -> windows_core::Result<R> {
+        static SHARED: windows_core::imp::FactoryCache<Sender, ISenderStatics> =
+            windows_core::imp::FactoryCache::new();
+        SHARED.call(callback)
+    }
+}
+impl windows_core::RuntimeName for Sender {
+    const NAME: &'static str = "LibSimbolMudah.Sender";
+}
 #[repr(transparent)]
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct SequenceDefinition(windows_core::IUnknown);
@@ -691,36 +750,6 @@ windows_core::imp::interface_hierarchy!(
     windows_core::IInspectable
 );
 impl SequenceDefinition {
-    pub fn new() -> windows_core::Result<Self> {
-        Self::IActivationFactory(|f| f.ActivateInstance::<Self>())
-    }
-    fn IActivationFactory<
-        R,
-        F: FnOnce(&windows_core::imp::IGenericFactory) -> windows_core::Result<R>,
-    >(
-        callback: F,
-    ) -> windows_core::Result<R> {
-        static SHARED: windows_core::imp::FactoryCache<
-            SequenceDefinition,
-            windows_core::imp::IGenericFactory,
-        > = windows_core::imp::FactoryCache::new();
-        SHARED.call(callback)
-    }
-    pub fn Build(
-        &self,
-        keysymdef: &windows_core::HSTRING,
-        composedef: &windows_core::HSTRING,
-    ) -> windows_core::Result<()> {
-        let this = self;
-        unsafe {
-            (windows_core::Interface::vtable(this).Build)(
-                windows_core::Interface::as_raw(this),
-                core::mem::transmute_copy(keysymdef),
-                core::mem::transmute_copy(composedef),
-            )
-            .ok()
-        }
-    }
     pub fn PotentialPrefix(
         &self,
         sequence: &windows_core::HSTRING,
@@ -756,6 +785,34 @@ impl SequenceDefinition {
             )
             .and_then(|| windows_core::Type::from_abi(result__))
         }
+    }
+    pub fn CreateInstance(
+        keysymdef: &windows_core::HSTRING,
+        composedef: &windows_core::HSTRING,
+    ) -> windows_core::Result<SequenceDefinition> {
+        Self::ISequenceDefinitionFactory(|this| unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).CreateInstance)(
+                windows_core::Interface::as_raw(this),
+                core::mem::transmute_copy(keysymdef),
+                core::mem::transmute_copy(composedef),
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        })
+    }
+    #[doc(hidden)]
+    pub fn ISequenceDefinitionFactory<
+        R,
+        F: FnOnce(&ISequenceDefinitionFactory) -> windows_core::Result<R>,
+    >(
+        callback: F,
+    ) -> windows_core::Result<R> {
+        static SHARED: windows_core::imp::FactoryCache<
+            SequenceDefinition,
+            ISequenceDefinitionFactory,
+        > = windows_core::imp::FactoryCache::new();
+        SHARED.call(callback)
     }
 }
 impl windows_core::RuntimeType for SequenceDefinition {
@@ -1464,12 +1521,52 @@ impl INotifyIconFactory_Vtbl {
         iid == &<INotifyIconFactory as windows_core::Interface>::IID
     }
 }
-pub trait ISequenceDefinition_Impl: Sized {
-    fn Build(
+pub trait ISenderStatics_Impl: Sized {
+    fn SendTextClipboard(
         &self,
-        keysymdef: &windows_core::HSTRING,
-        composedef: &windows_core::HSTRING,
-    ) -> windows_core::Result<()>;
+        message: &windows_core::HSTRING,
+    ) -> windows_core::Result<windows::Foundation::IAsyncAction>;
+}
+impl windows_core::RuntimeName for ISenderStatics {
+    const NAME: &'static str = "LibSimbolMudah.ISenderStatics";
+}
+impl ISenderStatics_Vtbl {
+    pub const fn new<Identity: windows_core::IUnknownImpl, const OFFSET: isize>(
+    ) -> ISenderStatics_Vtbl
+    where
+        Identity: ISenderStatics_Impl,
+    {
+        unsafe extern "system" fn SendTextClipboard<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            message: core::mem::MaybeUninit<windows_core::HSTRING>,
+            result__: *mut *mut core::ffi::c_void,
+        ) -> windows_core::HRESULT
+        where
+            Identity: ISenderStatics_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            match ISenderStatics_Impl::SendTextClipboard(this, core::mem::transmute(&message)) {
+                Ok(ok__) => {
+                    result__.write(core::mem::transmute_copy(&ok__));
+                    core::mem::forget(ok__);
+                    windows_core::HRESULT(0)
+                }
+                Err(err) => err.into(),
+            }
+        }
+        Self {
+            base__: windows_core::IInspectable_Vtbl::new::<Identity, ISenderStatics, OFFSET>(),
+            SendTextClipboard: SendTextClipboard::<Identity, OFFSET>,
+        }
+    }
+    pub fn matches(iid: &windows_core::GUID) -> bool {
+        iid == &<ISenderStatics as windows_core::Interface>::IID
+    }
+}
+pub trait ISequenceDefinition_Impl: Sized {
     fn PotentialPrefix(
         &self,
         sequence: &windows_core::HSTRING,
@@ -1490,22 +1587,6 @@ impl ISequenceDefinition_Vtbl {
     where
         Identity: ISequenceDefinition_Impl,
     {
-        unsafe extern "system" fn Build<Identity: windows_core::IUnknownImpl, const OFFSET: isize>(
-            this: *mut core::ffi::c_void,
-            keysymdef: core::mem::MaybeUninit<windows_core::HSTRING>,
-            composedef: core::mem::MaybeUninit<windows_core::HSTRING>,
-        ) -> windows_core::HRESULT
-        where
-            Identity: ISequenceDefinition_Impl,
-        {
-            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            ISequenceDefinition_Impl::Build(
-                this,
-                core::mem::transmute(&keysymdef),
-                core::mem::transmute(&composedef),
-            )
-            .into()
-        }
         unsafe extern "system" fn PotentialPrefix<
             Identity: windows_core::IUnknownImpl,
             const OFFSET: isize,
@@ -1556,12 +1637,66 @@ impl ISequenceDefinition_Vtbl {
         }
         Self {
             base__: windows_core::IInspectable_Vtbl::new::<Identity, ISequenceDefinition, OFFSET>(),
-            Build: Build::<Identity, OFFSET>,
             PotentialPrefix: PotentialPrefix::<Identity, OFFSET>,
             Search: Search::<Identity, OFFSET>,
         }
     }
     pub fn matches(iid: &windows_core::GUID) -> bool {
         iid == &<ISequenceDefinition as windows_core::Interface>::IID
+    }
+}
+pub trait ISequenceDefinitionFactory_Impl: Sized {
+    fn CreateInstance(
+        &self,
+        keysymdef: &windows_core::HSTRING,
+        composedef: &windows_core::HSTRING,
+    ) -> windows_core::Result<SequenceDefinition>;
+}
+impl windows_core::RuntimeName for ISequenceDefinitionFactory {
+    const NAME: &'static str = "LibSimbolMudah.ISequenceDefinitionFactory";
+}
+impl ISequenceDefinitionFactory_Vtbl {
+    pub const fn new<Identity: windows_core::IUnknownImpl, const OFFSET: isize>(
+    ) -> ISequenceDefinitionFactory_Vtbl
+    where
+        Identity: ISequenceDefinitionFactory_Impl,
+    {
+        unsafe extern "system" fn CreateInstance<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            keysymdef: core::mem::MaybeUninit<windows_core::HSTRING>,
+            composedef: core::mem::MaybeUninit<windows_core::HSTRING>,
+            result__: *mut *mut core::ffi::c_void,
+        ) -> windows_core::HRESULT
+        where
+            Identity: ISequenceDefinitionFactory_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            match ISequenceDefinitionFactory_Impl::CreateInstance(
+                this,
+                core::mem::transmute(&keysymdef),
+                core::mem::transmute(&composedef),
+            ) {
+                Ok(ok__) => {
+                    result__.write(core::mem::transmute_copy(&ok__));
+                    core::mem::forget(ok__);
+                    windows_core::HRESULT(0)
+                }
+                Err(err) => err.into(),
+            }
+        }
+        Self {
+            base__: windows_core::IInspectable_Vtbl::new::<
+                Identity,
+                ISequenceDefinitionFactory,
+                OFFSET,
+            >(),
+            CreateInstance: CreateInstance::<Identity, OFFSET>,
+        }
+    }
+    pub fn matches(iid: &windows_core::GUID) -> bool {
+        iid == &<ISequenceDefinitionFactory as windows_core::Interface>::IID
     }
 }

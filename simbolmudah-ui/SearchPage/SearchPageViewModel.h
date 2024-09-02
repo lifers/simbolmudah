@@ -5,14 +5,15 @@ namespace winrt::simbolmudah_ui::implementation
 {   
     struct SearchPageViewModel : SearchPageViewModelT<SearchPageViewModel>
     {
-        explicit SearchPageViewModel(LibSimbolMudah::SequenceDefinition const& seqdef);
+        SearchPageViewModel();
         SearchPageViewModel(SearchPageViewModel const&) = delete;
         SearchPageViewModel& operator=(SearchPageViewModel const&) = delete;
         Windows::Foundation::Collections::IObservableVector<simbolmudah_ui::SequenceDetail> SearchResults() const;
         Windows::Foundation::IAsyncAction Search(hstring keyword);
+        void SetSequenceDefinition(LibSimbolMudah::SequenceDefinition const& seqdef);
 
     private:
-        const LibSimbolMudah::SequenceDefinition sequenceDefinition;
+        LibSimbolMudah::SequenceDefinition sequenceDefinition{ nullptr };
         Windows::Foundation::Collections::IObservableVector<simbolmudah_ui::SequenceDetail> searchResults;
     };
 }

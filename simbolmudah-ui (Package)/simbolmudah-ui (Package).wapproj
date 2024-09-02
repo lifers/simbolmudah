@@ -76,6 +76,16 @@
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\Annotations\en-annotations.xml.br" />
+    <Content Include="Assets\Annotations\en-annotationsDerived.xml.br" />
+    <Content Include="Assets\Annotations\fr-annotations.xml.br" />
+    <Content Include="Assets\Annotations\fr-annotationsDerived.xml.br" />
+    <Content Include="Assets\Annotations\id-annotations.xml.br" />
+    <Content Include="Assets\Annotations\id-annotationsDerived.xml.br" />
+    <Content Include="Assets\Annotations\jv-annotations.xml.br" />
+    <Content Include="Assets\Annotations\jv-annotationsDerived.xml.br" />
+    <Content Include="Assets\Resources\Compose.pre" />
+    <Content Include="Assets\Resources\keysymdef.h" />
     <Content Include="Images\AppList.scale-100.png" />
     <Content Include="Images\AppList.scale-125.png" />
     <Content Include="Images\AppList.scale-150.png" />
@@ -141,7 +151,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240627000">
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240802000">
       <IncludeAssets>build</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="[10.0.22621.756]">

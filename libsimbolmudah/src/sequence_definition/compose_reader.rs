@@ -1,9 +1,6 @@
-use super::{
-    internal::SequenceDefinitionInternal, keysym_reader::KeySymDef, mapped_string::MappedString,
-};
+use super::{keysym_reader::KeySymDef, mapped_string::MappedString};
 use crate::utils::functions::{fail, fail_message};
 use regex::Regex;
-use smol_str::ToSmolStr;
 use std::{
     collections::BTreeMap,
     fs::File,
@@ -22,12 +19,8 @@ pub(super) struct ComposeDef {
 }
 
 impl ComposeDef {
-    pub(super) fn build(
-        keysym: &KeySymDef,
-        path: &str,
-        definition: &mut SequenceDefinitionInternal,
-    ) -> Result<Self> {
-        let content = get_compose_def(keysym, path, definition)?;
+    pub(super) fn build(keysym: &KeySymDef, path: &str) -> Result<Self> {
+        let content = get_compose_def(keysym, path)?;
         Ok(Self { content })
     }
 }
@@ -41,11 +34,7 @@ impl IntoIterator for ComposeDef {
     }
 }
 
-fn get_compose_def(
-    keysym: &KeySymDef,
-    path: &str,
-    definition: &mut SequenceDefinitionInternal,
-) -> Result<BTreeMap<String, MappedString>> {
+fn get_compose_def(keysym: &KeySymDef, path: &str) -> Result<BTreeMap<String, MappedString>> {
     let file = File::open(path).map_err(fail)?;
     let reader = BufReader::new(file);
 
@@ -57,18 +46,14 @@ fn get_compose_def(
     for line in reader.lines() {
         let line = line.map_err(fail)?;
         if let Ok((key, value)) = decode_entry(&line, &regex2, &regex3, &regex4, keysym) {
-            if let MappedString::Basic(ref s) = value {
-                definition.index_char(s.chars().next().unwrap())?;
-            }
             result.insert(key, value);
         }
     }
 
     // result.insert(">=".into(), MappedString::Basic('≥'));
     // result.insert("oe".into(), MappedString::Basic('œ'));
-    result.insert("wkwk".into(), "🤣".to_smolstr().into());
-    definition.index_char('🤣')?;
-    result.insert("pr".into(), "peradaban".to_string().into());
+    result.insert("wkwk".into(), MappedString::Basic("🤣".into()));
+    result.insert("pr".into(), MappedString::Extra("peradaban".into()));
 
     Ok(result)
 }
@@ -98,7 +83,7 @@ fn decode_entry(
 
         Ok((
             [key1, key2].into_iter().collect(),
-            value.to_smolstr().into(),
+            MappedString::Basic(value.into()),
         ))
     } else if let Some(caps) = regex3.captures(line) {
         let key1 = keysymdef.get_key(
@@ -123,7 +108,7 @@ fn decode_entry(
 
         Ok((
             [key1, key2, key3].into_iter().collect(),
-            value.to_smolstr().into(),
+            MappedString::Basic(value.into()),
         ))
     } else if let Some(caps) = regex4.captures(line) {
         let key1 = keysymdef.get_key(
@@ -153,7 +138,7 @@ fn decode_entry(
 
         Ok((
             [key1, key2, key3, key4].into_iter().collect(),
-            value.to_smolstr().into(),
+            MappedString::Basic(value.into()),
         ))
     } else {
         Err(fail_message("Regex parse"))
@@ -162,12 +147,10 @@ fn decode_entry(
 
 #[cfg(test)]
 mod tests {
-    use windows_core::Weak;
-
     use super::*;
 
-    const KEYSYMDEF: &str = "tests/keysymdef.txt";
-    const COMPOSEDEF: &str = "tests/Compose.pre";
+    const KEYSYMDEF: &str = "../git-deps/xorgproto/include/X11/keysymdef.h";
+    const COMPOSEDEF: &str = "../git-deps/libX11/nls/en_US.UTF-8/Compose.pre";
 
     #[test]
     fn test_compose_regex() {
@@ -182,16 +165,15 @@ mod tests {
 
     #[test]
     fn test_decode_entry_two_keys() {
-        let mut seqdef = SequenceDefinitionInternal::new(Weak::new());
         let regex2 = Regex::new(COMPOSE_REGEX_2_STR).unwrap();
         let regex3 = Regex::new(COMPOSE_REGEX_3_STR).unwrap();
         let regex4 = Regex::new(COMPOSE_REGEX_4_STR).unwrap();
-        let keysymdef = KeySymDef::new(KEYSYMDEF, &mut seqdef).unwrap(); // Assuming a constructor for simplicity
+        let keysymdef = KeySymDef::new(KEYSYMDEF).unwrap(); // Assuming a constructor for simplicity
 
         let line = "<Multi_key> <A> <B> : \"C\".";
         let expected = Ok((
             "AB".to_string(),
-            MappedString::Basic("C".to_smolstr().into()),
+            MappedString::Basic("C".into()),
         ));
         let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
 
@@ -200,16 +182,15 @@ mod tests {
 
     #[test]
     fn test_decode_entry_three_keys() {
-        let mut seqdef = SequenceDefinitionInternal::new(Weak::new());
         let regex2 = Regex::new(COMPOSE_REGEX_2_STR).unwrap();
         let regex3 = Regex::new(COMPOSE_REGEX_3_STR).unwrap();
         let regex4 = Regex::new(COMPOSE_REGEX_4_STR).unwrap();
-        let keysymdef = KeySymDef::new(KEYSYMDEF, &mut seqdef).unwrap(); // Assuming a constructor for simplicity
+        let keysymdef = KeySymDef::new(KEYSYMDEF).unwrap(); // Assuming a constructor for simplicity
 
         let line = "<Multi_key> <A> <B> <C> : \"D\".";
         let expected = Ok((
             "ABC".to_string(),
-            MappedString::Basic("D".to_smolstr().into()),
+            MappedString::Basic("D".into()),
         ));
         let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
 
@@ -218,16 +199,15 @@ mod tests {
 
     #[test]
     fn test_decode_entry_four_keys() {
-        let mut seqdef = SequenceDefinitionInternal::new(Weak::new());
         let regex2 = Regex::new(COMPOSE_REGEX_2_STR).unwrap();
         let regex3 = Regex::new(COMPOSE_REGEX_3_STR).unwrap();
         let regex4 = Regex::new(COMPOSE_REGEX_4_STR).unwrap();
-        let keysymdef = KeySymDef::new(KEYSYMDEF, &mut seqdef).unwrap(); // Assuming a constructor for simplicity
+        let keysymdef = KeySymDef::new(KEYSYMDEF).unwrap(); // Assuming a constructor for simplicity
 
         let line = "<Multi_key> <A> <B> <C> <D> : \"E\".";
         let expected = Ok((
             "ABCD".to_string(),
-            MappedString::Basic("E".to_smolstr().into()),
+            MappedString::Basic("E".into()),
         ));
         let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
 
@@ -236,19 +216,18 @@ mod tests {
 
     #[test]
     fn test_get_compose_def() {
-        let mut seqdef = SequenceDefinitionInternal::new(Weak::new());
-        let keysymdef = KeySymDef::new(KEYSYMDEF, &mut seqdef).unwrap(); // Assuming a constructor for simplicity
-        let map = get_compose_def(&keysymdef, COMPOSEDEF, &mut seqdef).unwrap();
+        let keysymdef = KeySymDef::new(KEYSYMDEF).unwrap(); // Assuming a constructor for simplicity
+        let map = get_compose_def(&keysymdef, COMPOSEDEF).unwrap();
 
         assert!(map.contains_key("wkwk"));
         assert_eq!(
             map.get("wkwk").unwrap(),
-            &MappedString::Basic("🤣".to_smolstr().into())
+            &MappedString::Basic("🤣".into())
         );
         assert!(map.contains_key("pr"));
         assert_eq!(
             map.get("pr").unwrap(),
-            &MappedString::Extra("peradaban".to_string())
+            &MappedString::Extra("peradaban".into())
         );
     }
 }

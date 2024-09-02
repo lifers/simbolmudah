@@ -1,3 +1,10 @@
+use std::{fs, io::Write};
+
+use brotli::{
+    enc::{backward_references::BrotliEncoderMode, BrotliEncoderParams},
+    CompressorWriter,
+};
+
 fn generate_bindgen() {
     println!("cargo:rerun-if-changed=src/libsimbolmudah.idl");
     let metadata_dir = format!("{}\\System32\\WinMetadata", env!("windir"));
@@ -36,15 +43,64 @@ fn generate_bindgen() {
     }
 }
 
+fn compress_annotations() {
+    println!("cargo:rerun-if-changed=../git-deps/cldr");
+
+    let params = BrotliEncoderParams {
+        mode: BrotliEncoderMode::BROTLI_MODE_TEXT,
+        quality: 11,
+        lgwin: 22,
+        ..Default::default()
+    };
+
+    std::thread::scope(|s| {
+        for locale in ["en", "fr", "id", "jv"] {
+            let locale_clone = locale.to_string();
+            let params_clone = params.clone();
+            s.spawn(move || {
+                let outpath = format!("cldr/{}-annotations.xml.br", locale_clone);
+                let mut output = fs::File::create(outpath).unwrap();
+                let mut compressed =
+                    CompressorWriter::with_params(&mut output, 4096, &params_clone);
+                let inpath = format!("../git-deps/cldr/common/annotations/{}.xml", locale_clone);
+                let input = fs::read(inpath).unwrap();
+                compressed.write_all(input.as_slice()).unwrap();
+            });
+
+            let locale_clone = locale.to_string();
+            let params_clone = params.clone();
+            s.spawn(move || {
+                let outpath = format!("cldr/{}-annotationsDerived.xml.br", locale_clone);
+                let mut output = fs::File::create(outpath).unwrap();
+                let mut compressed =
+                    CompressorWriter::with_params(&mut output, 4096, &params_clone);
+                let inpath = format!(
+                    "../git-deps/cldr/common/annotationsDerived/{}.xml",
+                    locale_clone
+                );
+                let input = fs::read(inpath).unwrap();
+                compressed.write_all(input.as_slice()).unwrap();
+            });
+        }
+    });
+}
+
 fn main() {
     let is_debug = std::env::var("PROFILE").unwrap() == "debug";
     if is_debug {
         std::env::set_var("RUST_BACKTRACE", "full");
     }
-    let headers_enabled = std::env::var("CARGO_FEATURE_HEADERS").is_ok();
+    let headers_enabled = std::env::var("CARGO_FEATURE_BUILD_HEADERS").is_ok();
     if headers_enabled {
         generate_bindgen();
     } else {
         println!("cargo:warning=The 'headers' feature is not enabled. The generated bindings will not be available.");
+    }
+
+    let annotations_enabled = std::env::var("CARGO_FEATURE_BUILD_ANNOTATIONS").is_ok();
+    if annotations_enabled {
+        compress_annotations();
+    } else {
+        println!("cargo:warning=The 'annotations' feature is not enabled. The compressed annotations will not be available.");
     }
 }

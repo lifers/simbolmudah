@@ -204,7 +204,14 @@ XCOMM "₪" U20aa NEW SHEQEL SIGN
 XCOMM "₱" U20b1 PESO SIGN
 <Multi_key> <G> <bar>			: "₲"	U20b2 # GUARANI SIGN
 <Multi_key> <bar> <G>			: "₲"	U20b2 # GUARANI SIGN
-XCOMM "₴" U20b4 HRYVNIA SIGN
+<Multi_key> <H> <equal>			: "₴"	U20b4 # HRYVNIA SIGN
+<Multi_key> <equal> <H>			: "₴"	U20b4 # HRYVNIA SIGN
+<Multi_key> <h> <equal>			: "₴"	U20b4 # HRYVNIA SIGN
+<Multi_key> <equal> <h>			: "₴"	U20b4 # HRYVNIA SIGN
+<Multi_key> <Cyrillic_GHE> <equal>	: "₴"	U20b4 # HRYVNIA SIGN
+<Multi_key> <equal> <Cyrillic_GHE>	: "₴"	U20b4 # HRYVNIA SIGN
+<Multi_key> <Cyrillic_ghe> <equal>	: "₴"	U20b4 # HRYVNIA SIGN
+<Multi_key> <equal> <Cyrillic_ghe>	: "₴"	U20b4 # HRYVNIA SIGN
 <Multi_key> <C> <bar>			: "₵"	U20b5 # CEDI SIGN
 <Multi_key> <bar> <C>			: "₵"	U20b5 # CEDI SIGN
 <Multi_key> <R> <equal>			: "₹"	U20b9 # INDIAN RUPEE SIGN
@@ -912,7 +919,6 @@ XCOMM Latin Extended-A
 <Multi_key> <comma> <s>			: "ş"	U015F # LATIN SMALL LETTER S WITH CEDILLA
 <Multi_key> <s> <comma>			: "ş"	U015F # LATIN SMALL LETTER S WITH CEDILLA
 <Multi_key> <cedilla> <s>		: "ş"	U015F # LATIN SMALL LETTER S WITH CEDILLA
-<Multi_key> <s> <cedilla>		: "ş"	U015F # LATIN SMALL LETTER S WITH CEDILLA
 <dead_caron> <S>			: "Š"	U0160 # LATIN CAPITAL LETTER S WITH CARON
 <Multi_key> <c> <S>			: "Š"	U0160 # LATIN CAPITAL LETTER S WITH CARON
 <Multi_key> <v> <S>			: "Š"	U0160 # LATIN CAPITAL LETTER S WITH CARON

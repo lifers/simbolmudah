@@ -38,6 +38,7 @@
 
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Search" x:Name="SearchPage" Tag="simbolmudah_ui.SearchPage" />
+                <NavigationViewItem Content="Custom Sequence" x:Name="CustomSeqPage" Tag="simbolmudah_ui.CustomSeqPage" />
             </NavigationView.MenuItems>
 
             <Frame x:Name="ContentFrame"

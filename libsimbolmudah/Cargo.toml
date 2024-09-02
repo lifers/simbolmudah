@@ -1,6 +1,6 @@
 [package]
 name = "libsimbolmudah"
-version = "0.3.0"
+version = "0.4.2"
 edition = "2021"
 publish = false
 
@@ -10,7 +10,8 @@ crate-type = ["cdylib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-headers = []
+build-headers = []
+build-annotations = []
 
 [dependencies.windows]
 version = "0.58"
@@ -18,11 +19,15 @@ features = [
     "implement",
     "Foundation",
     "Foundation_Collections",
+    "Globalization",
+    "Storage",
     "System",
     "System_Threading",
+    "System_UserProfile",
     "Win32_Foundation",
     "Win32_Globalization",
     "Win32_Graphics_Gdi",
+    "Win32_System_Com",
     "Win32_System_DataExchange",
     "Win32_System_Diagnostics_Debug",
     "Win32_System_LibraryLoader",
@@ -38,13 +43,17 @@ features = [
 
 [dependencies]
 windows-core = "0.58.0"
-smol_str = "0.2.2"
 regex = "1.10.6"
 fst = "0.4.7"
 concat-idents = "1.1.5"
+serde = { version = "1.0.209", features = ["derive"] }
+quick-xml = { version = "0.36.1", features = ["serialize"] }
+brotli-decompressor = "4.0.1"
 
 [build-dependencies]
 windows-bindgen = "0.58"
+brotli = "6.0.0"
+
 # libx11 = { git = "https://gitlab.freedesktop.org/xorg/lib/libx11.git", tag = "libX11-1.8.6" }
 # xcompose = { git = "https://github.com/kragen/xcompose.git", branch = "master" }
 # wincompose = { git = "https://github.com/samhocevar/wincompose.git", tag = "0.9.11" }

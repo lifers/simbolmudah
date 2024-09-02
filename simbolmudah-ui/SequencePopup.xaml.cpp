@@ -41,7 +41,7 @@ namespace winrt::simbolmudah_ui::implementation
         for (const auto& key : this->sequence) { sequenceString.append(key); }
 
         co_await resume_background();
-        const auto results{ this->sequenceDefinition.PotentialPrefix(sequenceString, 1000) };
+        const auto results{ this->sequenceDefinition.PotentialPrefix(sequenceString, 3) };
 
         std::vector<simbolmudah_ui::SequenceDetail> toShow;
         toShow.reserve(results.Size());

@@ -14,8 +14,6 @@ namespace winrt::simbolmudah_ui::implementation
         simbolmudah_ui::AppManager ViewModel() const;
         void OnNavigatedTo(Microsoft::UI::Xaml::Navigation::NavigationEventArgs const& e);
         void OnNavigatingFrom(Microsoft::UI::Xaml::Navigation::NavigatingCancelEventArgs const& e);
-        void OnSaveClick(IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
-        void OnCancelClick(IInspectable const&, Microsoft::UI::Xaml::RoutedEventArgs const&);
 
     private:
         fire_and_forget OnSettingsChanged(

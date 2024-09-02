@@ -18,6 +18,7 @@
     <Page Include="SearchPopup.xaml">
       <Filter>Popup</Filter>
     </Page>
+    <Page Include="CustomSeqPage.xaml" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />
@@ -50,9 +51,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.hpp" />
-    <ClInclude Include="Assets\Resources\keysymdef.txt">
-      <Filter>Assets\Resources</Filter>
-    </ClInclude>
     <ClInclude Include="SearchPage\SearchPageViewModel.h">
       <Filter>SearchPage</Filter>
     </ClInclude>
@@ -64,12 +62,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Assets">
-      <UniqueIdentifier>{e48dc53e-40b1-40cb-970a-f89935452892}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Assets\Resources">
-      <UniqueIdentifier>{727390d1-6787-4add-834b-540001af7a85}</UniqueIdentifier>
-    </Filter>
     <Filter Include="SearchPage">
       <UniqueIdentifier>{5e6d4c98-5dc7-4eda-9097-08c977fbac0c}</UniqueIdentifier>
     </Filter>
@@ -91,8 +83,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="Assets\Resources\Compose.pre">
-      <Filter>Assets\Resources</Filter>
-    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
   </ItemGroup>
 </Project>

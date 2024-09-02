@@ -34,24 +34,6 @@ namespace winrt::simbolmudah_ui::implementation
         this->viewModel = nullptr;
     }
 
-    void SettingsPage::OnSaveClick(IInspectable const&, RoutedEventArgs const&)
-    {
-        this->viewModel.SaveSettings({
-            .HookEnabled = this->HookSwitch().IsOn(),
-            .UseHookPopup = this->PopupSwitch().IsOn(),
-            .NotifyIconEnabled = this->NotifyIconSwitch().IsOn(),
-            .MainWindowOpened = this->MainWindowSwitch().IsOn(),
-        });
-    }
-
-    void SettingsPage::OnCancelClick(IInspectable const&, RoutedEventArgs const&)
-    {
-        this->HookSwitch().IsOn(this->viewModel.HookEnabled());
-        this->PopupSwitch().IsOn(this->viewModel.UseHookPopup());
-        this->NotifyIconSwitch().IsOn(this->viewModel.NotifyIconEnabled());
-        this->MainWindowSwitch().IsOn(this->viewModel.MainWindowOpened());
-    }
-
     fire_and_forget SettingsPage::OnSettingsChanged(IInspectable const&, PropertyChangedEventArgs const& e)
     {
         const auto propertyName{ e.PropertyName() };

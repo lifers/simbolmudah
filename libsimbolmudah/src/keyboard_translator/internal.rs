@@ -2,6 +2,7 @@ use std::{collections::HashMap, fmt::Debug, ptr::null_mut};
 
 use windows::{
     core::{h, Error, Interface, Result, Weak, HRESULT, HSTRING},
+    Foundation::TypedEventHandler,
     Win32::{
         Foundation::{ERROR_NO_UNICODE_TRANSLATION, E_INVALIDARG, E_NOTIMPL, E_POINTER},
         UI::Input::KeyboardAndMouse::{ToUnicodeEx, HKL, VK_CONTROL, VK_MENU, VK_SHIFT, VK_SPACE},
@@ -45,9 +46,11 @@ impl Into<String> for StringVariant {
 #[allow(non_snake_case)]
 pub(super) struct KeyboardTranslatorInternal {
     pub(super) keyboard_layout: HKL,
-    pub(super) OnInvalid: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
-    pub(super) OnTranslated: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
-    pub(super) OnKeyTranslated: DelegateStorage<bindings::KeyboardTranslator, HSTRING>,
+    pub(super) OnInvalid: DelegateStorage<TypedEventHandler<bindings::KeyboardTranslator, HSTRING>>,
+    pub(super) OnTranslated:
+        DelegateStorage<TypedEventHandler<bindings::KeyboardTranslator, HSTRING>>,
+    pub(super) OnKeyTranslated:
+        DelegateStorage<TypedEventHandler<bindings::KeyboardTranslator, HSTRING>>,
     possible_altgr: HashMap<String, String>,
     possible_dead: HashMap<String, u16>,
     pub(super) state: String,
@@ -75,7 +78,7 @@ impl KeyboardTranslatorInternal {
 
     fn report_invalid(&mut self, message: &HSTRING) -> Result<()> {
         self.OnInvalid
-            .invoke_all(&get_strong_ref(&self.parent)?, Some(message))
+            .invoke_all(|d| d.Invoke(&get_strong_ref(&self.parent)?, message))
     }
 
     pub(super) fn translate(
@@ -141,9 +144,9 @@ impl KeyboardTranslatorInternal {
     ) -> Result<()> {
         match result {
             Ok(s) => {
-                let _ = send_text_clipboard(s.clone())?;
+                let _ = send_text_clipboard(&s.clone().into())?;
                 self.OnTranslated
-                    .invoke_all(&self.get_parent_ref()?, Some(&s.into()))?;
+                    .invoke_all(|d| d.Invoke(&get_strong_ref(&self.parent)?, &(&s).into()))?;
                 Ok(())
             }
             Err(SequenceDefinitionError::ValueNotFound) => {
@@ -159,7 +162,7 @@ impl KeyboardTranslatorInternal {
 
     pub(super) fn report_key(&mut self, key: &str) -> Result<()> {
         self.OnKeyTranslated
-            .invoke_all(&self.get_parent_ref()?, Some(&key.into()))
+            .invoke_all(|d| d.Invoke(&get_strong_ref(&self.parent)?, &(key).into()))
     }
 
     pub(super) fn analyze_layout(&mut self) -> Result<()> {
@@ -202,12 +205,6 @@ impl KeyboardTranslatorInternal {
         }
 
         Ok(())
-    }
-
-    fn get_parent_ref(&self) -> Result<bindings::KeyboardTranslator> {
-        self.parent
-            .upgrade()
-            .ok_or_else(|| Error::new(E_POINTER, "Weak pointer died"))
     }
 
     fn get_seqdef_ref(&self) -> Result<bindings::SequenceDefinition> {

@@ -11,6 +11,5 @@ namespace simbolmudah_ui
             LibSimbolMudah.NotifyIcon notifyIcon);
 
         void UpdateOpenSettings(LibSimbolMudah.NotifyIcon notifyIcon);
-        void NavigateToSettings(Microsoft.UI.Xaml.Media.Animation.NavigationTransitionInfo transitionInfo);
     }
 }

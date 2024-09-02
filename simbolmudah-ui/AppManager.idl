@@ -13,13 +13,9 @@ namespace simbolmudah_ui
     {
         AppManager(Windows.Storage.ApplicationDataContainer localSettings);
 
-        void SaveSettings(SettingsObject settings);
-
         Boolean HookEnabled;
         Boolean UseHookPopup;
         Boolean NotifyIconEnabled;
         Boolean MainWindowOpened;
-
-        event Windows.Foundation.EventHandler<LibSimbolMudah.NotifyIcon> NotifyIconChanged;
     }
 }

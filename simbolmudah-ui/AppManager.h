@@ -11,18 +11,22 @@ namespace winrt::simbolmudah_ui::implementation
         AppManager(AppManager const&) = delete;
         AppManager& operator=(AppManager const&) = delete;
 
-        fire_and_forget SaveSettings(simbolmudah_ui::SettingsObject settings);
-
-        WIL_NOTIFYING_PROPERTY(bool, HookEnabled, false);
-        WIL_NOTIFYING_PROPERTY(bool, UseHookPopup, false);
-        WIL_NOTIFYING_PROPERTY(bool, NotifyIconEnabled, true);
-        WIL_NOTIFYING_PROPERTY(bool, MainWindowOpened, true);
-
-        wil::untyped_event<LibSimbolMudah::NotifyIcon> NotifyIconChanged;
+        bool HookEnabled() const noexcept { return this->hookEnabled; }
+        void HookEnabled(bool value);
+        bool UseHookPopup() const noexcept { return this->useHookPopup; }
+        void UseHookPopup(bool value);
+        bool NotifyIconEnabled() const noexcept { return this->notifyIconEnabled; }
+        void NotifyIconEnabled(bool value);
+        bool MainWindowOpened() const noexcept { return this->mainWindowOpened; }
+        void MainWindowOpened(bool value);
 
     private:
-        const apartment_context main_thread;
+        const apartment_context main_thread{ apartment_context() };
         const Windows::Storage::ApplicationDataContainer localSettings;
+        bool hookEnabled{ false };
+        bool useHookPopup{ false };
+        bool notifyIconEnabled{ true };
+        bool mainWindowOpened{ true };
     };
 }
 
