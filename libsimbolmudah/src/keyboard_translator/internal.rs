@@ -4,7 +4,7 @@ use windows::{
     core::{h, Error, Interface, Result, Weak, HRESULT, HSTRING},
     Foundation::TypedEventHandler,
     Win32::{
-        Foundation::{ERROR_NO_UNICODE_TRANSLATION, E_INVALIDARG, E_NOTIMPL, E_POINTER},
+        Foundation::{ERROR_NO_UNICODE_TRANSLATION, E_INVALIDARG, E_POINTER},
         UI::Input::KeyboardAndMouse::{ToUnicodeEx, HKL, VK_CONTROL, VK_MENU, VK_SHIFT, VK_SPACE},
     },
 };
@@ -132,7 +132,20 @@ impl KeyboardTranslatorInternal {
             }
             1 => {
                 // Forward to UnicodeTranslator
-                Err(SequenceDefinitionError::Failure(E_NOTIMPL.into()))
+                self.state.push_str(&value);
+                match self.parse_as_unicode() {
+                    Ok(s) => {
+                        self.state.clear();
+                        Ok(s)
+                    }
+                    Err(SequenceDefinitionError::Incomplete) => {
+                        Err(SequenceDefinitionError::Incomplete)
+                    }
+                    Err(e) => {
+                        self.state.clear();
+                        Err(e)
+                    }
+                }
             }
             _ => Err(SequenceDefinitionError::Failure(E_INVALIDARG.into())),
         }
@@ -211,6 +224,19 @@ impl KeyboardTranslatorInternal {
         self.sequence_definition
             .upgrade()
             .ok_or_else(|| Error::new(E_POINTER, "Weak pointer died"))
+    }
+
+    fn parse_as_unicode(&self) -> std::result::Result<String, SequenceDefinitionError> {
+        if self.state.ends_with(char::is_whitespace) {
+            Ok(char::from_u32(
+                u32::from_str_radix(&self.state[1..].trim(), 16)
+                    .map_err(|_| SequenceDefinitionError::ValueNotFound)?,
+            )
+            .ok_or(SequenceDefinitionError::ValueNotFound)?
+            .to_string())
+        } else {
+            Err(SequenceDefinitionError::Incomplete)
+        }
     }
 }
 
