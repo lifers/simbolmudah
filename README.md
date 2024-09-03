@@ -18,14 +18,15 @@ This is inspired by the Compose Key mechanism from Freedesktop's X project.
 - [x] Popup window for hints
   - [x] Display a small popup near the cursor for mode indicator (similar to Windows' autocomplete)
   - [x] Unicode name search mode basic frontend
-- [ ] Unicode name search mode
+- [x] Unicode name search mode
   - [ ] Use fuzzy text search engine
   - [x] Implement recommendations
-  - [ ] Implement Emoji variants
+  - [ ] Implement specific UI for Emoji variants
 - [x] Tray menu
   - [x] Add exit button
   - [x] Add hover info
 - [x] Settings UI
+- [ ] In-app user guide 
 - [ ] Custom compose rules
   - [ ] Custom compose key
 - [ ] Internationalisation
