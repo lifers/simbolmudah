@@ -212,7 +212,7 @@ pub struct ISenderStatics_Vtbl {
 windows_core::imp::define_interface!(
     ISequenceDefinition,
     ISequenceDefinition_Vtbl,
-    0xcccb020c_3758_51d7_8349_915ba28e271b
+    0x7a043f70_8240_547c_984e_2686f3948559
 );
 impl windows_core::RuntimeType for ISequenceDefinition {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -232,6 +232,11 @@ pub struct ISequenceDefinition_Vtbl {
         core::mem::MaybeUninit<windows_core::HSTRING>,
         u32,
         *mut *mut core::ffi::c_void,
+    ) -> windows_core::HRESULT,
+    pub GetLocalizedName: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        u32,
+        *mut core::mem::MaybeUninit<SequenceDescription>,
     ) -> windows_core::HRESULT,
 }
 windows_core::imp::define_interface!(
@@ -781,6 +786,18 @@ impl SequenceDefinition {
                 windows_core::Interface::as_raw(this),
                 core::mem::transmute_copy(sequence),
                 limit,
+                &mut result__,
+            )
+            .and_then(|| windows_core::Type::from_abi(result__))
+        }
+    }
+    pub fn GetLocalizedName(&self, codepoint: u32) -> windows_core::Result<SequenceDescription> {
+        let this = self;
+        unsafe {
+            let mut result__ = core::mem::zeroed();
+            (windows_core::Interface::vtable(this).GetLocalizedName)(
+                windows_core::Interface::as_raw(this),
+                codepoint,
                 &mut result__,
             )
             .and_then(|| windows_core::Type::from_abi(result__))
@@ -1577,6 +1594,7 @@ pub trait ISequenceDefinition_Impl: Sized {
         sequence: &windows_core::HSTRING,
         limit: u32,
     ) -> windows_core::Result<windows::Foundation::Collections::IVectorView<SequenceDescription>>;
+    fn GetLocalizedName(&self, codepoint: u32) -> windows_core::Result<SequenceDescription>;
 }
 impl windows_core::RuntimeName for ISequenceDefinition {
     const NAME: &'static str = "LibSimbolMudah.ISequenceDefinition";
@@ -1635,10 +1653,32 @@ impl ISequenceDefinition_Vtbl {
                 Err(err) => err.into(),
             }
         }
+        unsafe extern "system" fn GetLocalizedName<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            codepoint: u32,
+            result__: *mut core::mem::MaybeUninit<SequenceDescription>,
+        ) -> windows_core::HRESULT
+        where
+            Identity: ISequenceDefinition_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            match ISequenceDefinition_Impl::GetLocalizedName(this, codepoint) {
+                Ok(ok__) => {
+                    result__.write(core::mem::transmute_copy(&ok__));
+                    core::mem::forget(ok__);
+                    windows_core::HRESULT(0)
+                }
+                Err(err) => err.into(),
+            }
+        }
         Self {
             base__: windows_core::IInspectable_Vtbl::new::<Identity, ISequenceDefinition, OFFSET>(),
             PotentialPrefix: PotentialPrefix::<Identity, OFFSET>,
             Search: Search::<Identity, OFFSET>,
+            GetLocalizedName: GetLocalizedName::<Identity, OFFSET>,
         }
     }
     pub fn matches(iid: &windows_core::GUID) -> bool {

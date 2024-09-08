@@ -24,6 +24,7 @@ namespace winrt::simbolmudah_ui::implementation
         const Microsoft::UI::Xaml::Controls::Page defaultPage;
         const simbolmudah_ui::SequencePopup sequencePopup;
         const simbolmudah_ui::SearchPopup searchPopup;
+        const simbolmudah_ui::UnicodePopup unicodePopup;
     };
 }
 

@@ -19,6 +19,9 @@
       <Filter>Popup</Filter>
     </Page>
     <Page Include="CustomSeqPage.xaml" />
+    <Page Include="UnicodePopup.xaml">
+      <Filter>Popup</Filter>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />

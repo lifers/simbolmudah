@@ -241,6 +241,10 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
       <DependentUpon>SettingsPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClInclude>
+    <ClInclude Include="UnicodePopup.xaml.h">
+      <DependentUpon>UnicodePopup.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml" />
@@ -259,6 +263,9 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
       <SubType>Designer</SubType>
     </Page>
     <Page Include="SettingsPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="UnicodePopup.xaml">
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
@@ -300,6 +307,10 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
       <DependentUpon>SettingsPage.xaml</DependentUpon>
       <SubType>Code</SubType>
     </ClCompile>
+    <ClCompile Include="UnicodePopup.xaml.cpp">
+      <DependentUpon>UnicodePopup.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="AppManager.idl" />
@@ -331,6 +342,10 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
     </Midl>
     <Midl Include="SettingsPage.idl">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Midl>
+    <Midl Include="UnicodePopup.idl">
+      <DependentUpon>UnicodePopup.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Midl>
   </ItemGroup>

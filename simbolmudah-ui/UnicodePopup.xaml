@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="simbolmudah_ui.UnicodePopup"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:simbolmudah_ui"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <DataTemplate x:Key="SequenceTemplate" x:DataType="x:String">
+            <Border Background="{ThemeResource AccentFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource AccentControlElevationBorderBrush}"
+            BorderThickness="1"
+            Width="32"
+            Height="32"
+            CornerRadius="4">
+                <TextBlock Text="{x:Bind}"
+                   Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                   Style="{ThemeResource BodyStrongTextBlockStyle}"
+                   FontSize="16"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"/>
+            </Border>
+        </DataTemplate>
+    </Page.Resources>
+
+    <StackPanel Orientation="Vertical" Padding="8" Spacing="8">
+        <Border Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource ControlElevationBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Height="40">
+            <ItemsRepeater ItemsSource="{x:Bind HexCode, Mode=OneWay}"
+                           VerticalAlignment="Center"
+                           ItemTemplate="{StaticResource SequenceTemplate}">
+                <ItemsRepeater.Layout>
+                    <StackLayout Orientation="Horizontal" Spacing="2"/>
+                </ItemsRepeater.Layout>
+            </ItemsRepeater>
+        </Border>
+
+        <Grid ColumnDefinitions="1*, 9*" VerticalAlignment="Center">
+            <Grid.Shadow>
+                <ThemeShadow/>
+            </Grid.Shadow>
+            
+            <Border Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Width="32"
+                    Height="32"
+                    CornerRadius="4"
+                    Grid.Column="0">
+                <TextBlock x:Name="Result"
+                           Style="{ThemeResource DisplayTextBlockStyle}"
+                           FontSize="16"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Border>
+
+            <TextBlock x:Name="Label"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       TextWrapping="Wrap"
+                       Grid.Column="1"/>
+        </Grid>
+    </StackPanel>
+</Page>

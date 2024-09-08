@@ -229,7 +229,7 @@ impl KeyboardTranslatorInternal {
     fn parse_as_unicode(&self) -> std::result::Result<String, SequenceDefinitionError> {
         if self.state.ends_with(char::is_whitespace) {
             Ok(char::from_u32(
-                u32::from_str_radix(&self.state[1..].trim(), 16)
+                u32::from_str_radix(&self.state.trim_end(), 16)
                     .map_err(|_| SequenceDefinitionError::ValueNotFound)?,
             )
             .ok_or(SequenceDefinitionError::ValueNotFound)?

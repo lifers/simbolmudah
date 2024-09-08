@@ -49,7 +49,7 @@
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
     <AppInstallerUri>F:\apps</AppInstallerUri>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-    <PackageCertificateThumbprint>54D2D694C0844265D9911B3EC25F2F49B28435AD</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>CB89A555EA48226888B375F5BBF0EBDE71219800</PackageCertificateThumbprint>
     <GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">

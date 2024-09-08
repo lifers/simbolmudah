@@ -13,6 +13,7 @@ namespace LibSimbolMudah
 
         IVectorView<SequenceDescription> PotentialPrefix(String sequence, UInt32 limit);
         IVectorView<SequenceDescription> Search(String sequence, UInt32 limit);
+        SequenceDescription GetLocalizedName(UInt32 codepoint);
     }
 
     runtimeclass KeyboardTranslator
