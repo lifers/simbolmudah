@@ -19,9 +19,6 @@
       <Filter>Popup</Filter>
     </Page>
     <Page Include="CustomSeqPage.xaml" />
-    <Page Include="UnicodePopup.xaml">
-      <Filter>Popup</Filter>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="MainWindow.idl" />
@@ -51,6 +48,13 @@
       <Filter>AppManager</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="pcm.ixx" />
+    <ClCompile Include="SequenceTemplate.cpp">
+      <Filter>Popup</Filter>
+    </ClCompile>
+    <ClCompile Include="UnicodePopup.cpp">
+      <Filter>Popup</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.hpp" />
@@ -62,6 +66,12 @@
     </ClInclude>
     <ClInclude Include="AppManager.h">
       <Filter>AppManager</Filter>
+    </ClInclude>
+    <ClInclude Include="SequenceTemplate.h">
+      <Filter>Popup</Filter>
+    </ClInclude>
+    <ClInclude Include="UnicodePopup.h">
+      <Filter>Popup</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

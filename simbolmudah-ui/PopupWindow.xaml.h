@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PopupWindow.g.h"
+#include "UnicodePopup.h"
 
 namespace winrt::simbolmudah_ui::implementation
 {

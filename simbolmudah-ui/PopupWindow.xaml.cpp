@@ -3,7 +3,6 @@
 #if __has_include("PopupWindow.g.cpp")
 #include "PopupWindow.g.cpp"
 #endif
-#include "UnicodePopup.xaml.h"
 #include <Microsoft.UI.Xaml.Window.h>
 #include <wil/cppwinrt_helpers.h>
 
@@ -163,10 +162,10 @@ namespace winrt::simbolmudah_ui::implementation
             this->sequencePopup.Sequence().Append(key);
             this->sequencePopup.FindPotentialPrefix();
         }
-        else if (this->Content() == this->unicodePopup)
+        else if (this->Content() == this->unicodePopup.innerPage)
         {
-            this->unicodePopup.HexCode().Append(key);
-            get_self<UnicodePopup>(this->unicodePopup)->ShowAnswer();
+            this->unicodePopup.hexCodes.Append(key);
+            this->unicodePopup.ShowAnswer();
         }
     }
 
@@ -192,8 +191,8 @@ namespace winrt::simbolmudah_ui::implementation
             this->AppWindow().Show(true);
             co_return;
         case 6: // UnicodeMode
-            get_self<UnicodePopup>(this->unicodePopup)->ResetState();
-            this->Content(this->unicodePopup);
+            this->unicodePopup.ResetState();
+            this->Content(this->unicodePopup.innerPage);
             this->AppWindow().Show(true);
             co_return;
         }

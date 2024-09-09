@@ -1,9 +1,0 @@
-namespace simbolmudah_ui
-{
-    [default_interface]
-    runtimeclass UnicodePopup : Microsoft.UI.Xaml.Controls.Page
-    {
-        UnicodePopup(LibSimbolMudah.SequenceDefinition definition);
-        IObservableVector<String> HexCode{ get; };
-    }
-}
