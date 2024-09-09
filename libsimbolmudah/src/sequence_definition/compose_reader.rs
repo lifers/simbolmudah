@@ -1,11 +1,7 @@
 use super::{keysym_reader::KeySymDef, mapped_string::MappedString};
 use crate::utils::functions::{fail, fail_message};
 use regex::Regex;
-use std::{
-    collections::BTreeMap,
-    fs::File,
-    io::{BufRead, BufReader},
-};
+use std::{collections::BTreeMap, io::Read};
 use windows::core::Result;
 
 const COMPOSE_REGEX_2_STR: &str =
@@ -35,16 +31,17 @@ impl IntoIterator for ComposeDef {
 }
 
 fn get_compose_def(keysym: &KeySymDef, path: &str) -> Result<BTreeMap<String, MappedString>> {
-    let file = File::open(path).map_err(fail)?;
-    let reader = BufReader::new(file);
+    let mut file = std::fs::File::open(path).map_err(fail)?;
+    let mut input = brotli_decompressor::Decompressor::new(&mut file, 4096);
+    let mut buf = String::new();
+    let _num = input.read_to_string(&mut buf).map_err(fail)?;
 
     let mut result = BTreeMap::new();
     let regex2 = Regex::new(COMPOSE_REGEX_2_STR).map_err(fail)?;
     let regex3 = Regex::new(COMPOSE_REGEX_3_STR).map_err(fail)?;
     let regex4 = Regex::new(COMPOSE_REGEX_4_STR).map_err(fail)?;
 
-    for line in reader.lines() {
-        let line = line.map_err(fail)?;
+    for line in buf.lines() {
         if let Ok((key, value)) = decode_entry(&line, &regex2, &regex3, &regex4, keysym) {
             result.insert(key, value);
         }
@@ -149,8 +146,8 @@ fn decode_entry(
 mod tests {
     use super::*;
 
-    const KEYSYMDEF: &str = "../git-deps/xorgproto/include/X11/keysymdef.h";
-    const COMPOSEDEF: &str = "../git-deps/libX11/nls/en_US.UTF-8/Compose.pre";
+    const KEYSYMDEF: &str = "x11-defs/keysymdef.h.br";
+    const COMPOSEDEF: &str = "x11-defs/Compose.pre.br";
 
     #[test]
     fn test_compose_regex() {
@@ -171,10 +168,7 @@ mod tests {
         let keysymdef = KeySymDef::new(KEYSYMDEF).unwrap(); // Assuming a constructor for simplicity
 
         let line = "<Multi_key> <A> <B> : \"C\".";
-        let expected = Ok((
-            "AB".to_string(),
-            MappedString::Basic("C".into()),
-        ));
+        let expected = Ok(("AB".to_string(), MappedString::Basic("C".into())));
         let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
 
         assert_eq!(result, expected);
@@ -188,10 +182,7 @@ mod tests {
         let keysymdef = KeySymDef::new(KEYSYMDEF).unwrap(); // Assuming a constructor for simplicity
 
         let line = "<Multi_key> <A> <B> <C> : \"D\".";
-        let expected = Ok((
-            "ABC".to_string(),
-            MappedString::Basic("D".into()),
-        ));
+        let expected = Ok(("ABC".to_string(), MappedString::Basic("D".into())));
         let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
 
         assert_eq!(result, expected);
@@ -205,10 +196,7 @@ mod tests {
         let keysymdef = KeySymDef::new(KEYSYMDEF).unwrap(); // Assuming a constructor for simplicity
 
         let line = "<Multi_key> <A> <B> <C> <D> : \"E\".";
-        let expected = Ok((
-            "ABCD".to_string(),
-            MappedString::Basic("E".into()),
-        ));
+        let expected = Ok(("ABCD".to_string(), MappedString::Basic("E".into())));
         let result = decode_entry(line, &regex2, &regex3, &regex4, &keysymdef);
 
         assert_eq!(result, expected);
@@ -220,10 +208,7 @@ mod tests {
         let map = get_compose_def(&keysymdef, COMPOSEDEF).unwrap();
 
         assert!(map.contains_key("wkwk"));
-        assert_eq!(
-            map.get("wkwk").unwrap(),
-            &MappedString::Basic("🤣".into())
-        );
+        assert_eq!(map.get("wkwk").unwrap(), &MappedString::Basic("🤣".into()));
         assert!(map.contains_key("pr"));
         assert_eq!(
             map.get("pr").unwrap(),
