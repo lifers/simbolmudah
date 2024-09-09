@@ -184,7 +184,6 @@ impl KeyboardHookInternal {
                 } else if is_keydown && input.wVk == VK_U {
                     self.stage = Stage::UnicodeMode;
                     get_strong_ref(&self.keyboard_translator)?.CheckLayoutAndUpdate()?;
-                    self.translate_and_forward(input)?;
                 } else {
                     self.stage = Stage::SequenceMode;
                     get_strong_ref(&self.keyboard_translator)?.CheckLayoutAndUpdate()?;
@@ -283,10 +282,10 @@ extern "system" fn keyboard_procedure(ncode: i32, wparam: WPARAM, lparam: LPARAM
                         .report_key_event(input)
                         .expect("report_key_event should succeed");
 
-                    if internal.process_input(input).is_ok() {
-                        Some(LRESULT(1))
-                    } else {
+                    if let Err(_) = internal.process_input(input) {
                         None
+                    } else {
+                        Some(LRESULT(1))
                     }
                 })
             } {

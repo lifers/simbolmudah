@@ -134,7 +134,7 @@ namespace winrt::simbolmudah_ui::implementation
     using namespace Controls;
 
     PopupWindow::PopupWindow(KeyboardTranslator const& translator, KeyboardHook const& hook, SequenceDefinition const& definition) :
-        defaultPage{ Page() }, sequencePopup{ definition }, searchPopup{ hook, definition },
+        defaultPage{ Page() }, sequencePopup{ definition }, searchPopup{ hook, definition }, unicodePopup{ definition },
         keyTranslatedToken{ translator.OnKeyTranslated(auto_revoke, { this->get_weak(), &PopupWindow::OnKeyTranslated }) },
         stateChangedToken{ hook.OnStateChanged(auto_revoke, { this->get_weak(), &PopupWindow::OnStateChanged }) }
     {
@@ -157,8 +157,16 @@ namespace winrt::simbolmudah_ui::implementation
     {
         const auto key{ message };
         co_await wil::resume_foreground(this->DispatcherQueue());
-        this->sequencePopup.Sequence().Append(key);
-        this->sequencePopup.FindPotentialPrefix();
+        if (this->Content() == this->sequencePopup)
+        {
+            this->sequencePopup.Sequence().Append(key);
+            this->sequencePopup.FindPotentialPrefix();
+        }
+        else if (this->Content() == this->unicodePopup.innerPage)
+        {
+            this->unicodePopup.hexCodes.Append(key);
+            this->unicodePopup.ShowAnswer();
+        }
     }
 
     fire_and_forget PopupWindow::OnStateChanged(KeyboardHook const&, uint8_t state) const
@@ -180,6 +188,11 @@ namespace winrt::simbolmudah_ui::implementation
         case 5: // SearchMode
             this->searchPopup.SearchResults().Clear();
             this->Content(this->searchPopup);
+            this->AppWindow().Show(true);
+            co_return;
+        case 6: // UnicodeMode
+            this->unicodePopup.ResetState();
+            this->Content(this->unicodePopup.innerPage);
             this->AppWindow().Show(true);
             co_return;
         }

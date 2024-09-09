@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PopupWindow.g.h"
+#include "UnicodePopup.h"
 
 namespace winrt::simbolmudah_ui::implementation
 {
@@ -24,6 +25,7 @@ namespace winrt::simbolmudah_ui::implementation
         const Microsoft::UI::Xaml::Controls::Page defaultPage;
         const simbolmudah_ui::SequencePopup sequencePopup;
         const simbolmudah_ui::SearchPopup searchPopup;
+        const simbolmudah_ui::UnicodePopup unicodePopup;
     };
 }
 

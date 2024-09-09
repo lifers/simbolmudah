@@ -49,8 +49,8 @@
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
     <AppInstallerUri>F:\apps</AppInstallerUri>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-    <PackageCertificateThumbprint>54D2D694C0844265D9911B3EC25F2F49B28435AD</PackageCertificateThumbprint>
     <GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
+    <PackageCertificateKeyFile>simbolmudah-ui %28Package%29_TemporaryKey.pfx</PackageCertificateKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <AppxBundle>Always</AppxBundle>
@@ -84,8 +84,8 @@
     <Content Include="Assets\Annotations\id-annotationsDerived.xml.br" />
     <Content Include="Assets\Annotations\jv-annotations.xml.br" />
     <Content Include="Assets\Annotations\jv-annotationsDerived.xml.br" />
-    <Content Include="Assets\Resources\Compose.pre" />
-    <Content Include="Assets\Resources\keysymdef.h" />
+    <Content Include="Assets\Resources\Compose.pre.br" />
+    <Content Include="Assets\Resources\keysymdef.h.br" />
     <Content Include="Images\AppList.scale-100.png" />
     <Content Include="Images\AppList.scale-125.png" />
     <Content Include="Images\AppList.scale-150.png" />
@@ -151,7 +151,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240802000">
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.240829007">
       <IncludeAssets>build</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="[10.0.22621.756]">

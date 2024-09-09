@@ -10,8 +10,8 @@
 
   <Identity
     Name="NagataAptana.simbolmudah"
-    Publisher="CN=AF85BA48-FC91-4A94-9204-8A1B58A2CEC8"
-    Version="0.4.2.0" />
+    Publisher="CN=Nagata"
+    Version="0.4.3.0" />
 
   <mp:PhoneIdentity PhoneProductId="c5fddb92-078a-4bbf-a1ea-c9b5d913903c" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 

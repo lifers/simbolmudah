@@ -13,12 +13,12 @@ use fst::{automaton::Str, Automaton, IntoStreamer, Map, MapBuilder, Streamer};
 use keysym_reader::KeySymDef;
 use mapped_string::MappedString;
 use windows::{
-    core::{implement, Error, IInspectable, Result, HSTRING, PSTR},
+    core::{h, implement, Error, IInspectable, Result, HSTRING, PSTR},
     Foundation::Collections::IVectorView,
     Globalization::Language,
     System::UserProfile::GlobalizationPreferences,
     Win32::{
-        Foundation::E_NOTIMPL,
+        Foundation::{ERROR_NO_UNICODE_TRANSLATION, E_NOTIMPL},
         Globalization::{u_charName, UErrorCode, U_EXTENDED_CHAR_NAME},
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
     },
@@ -88,9 +88,12 @@ impl SequenceDefinition {
                     sequence: unsafe { str::from_utf8_unchecked(seq) }.into(),
                     result: mapped_value.to_string().into(),
                     description: match mapped_value {
-                        MappedString::Basic(c) => {
-                            self.char_to_name.get(&c.to_string()).unwrap().to_string().into()
-                        }
+                        MappedString::Basic(c) => self
+                            .char_to_name
+                            .get(&c.to_string())
+                            .unwrap()
+                            .to_string()
+                            .into(),
                         MappedString::Extra(s) => s.to_string().into(),
                     },
                 });
@@ -233,6 +236,23 @@ impl bindings::ISequenceDefinition_Impl for SequenceDefinition_Impl {
         self.filter_sequence(self.tokenize(sequence), limit as usize, &user_langs)
             .try_into()
     }
+
+    fn GetLocalizedName(&self, codepoint: u32) -> Result<bindings::SequenceDescription> {
+        let valid_char = char::from_u32(codepoint).ok_or_else(|| ERROR_NO_UNICODE_TRANSLATION)?;
+        let valid_string = valid_char.to_string();
+        let description = if let Some(mapped) = self.char_to_name.get(&valid_string) {
+            mapped.to_string()
+        } else {
+            char_to_unicode_name(valid_char)?.to_string()
+        }
+        .into();
+
+        Ok(bindings::SequenceDescription {
+            sequence: h!("").to_owned(),
+            result: valid_string.into(),
+            description,
+        })
+    }
 }
 
 #[implement(IActivationFactory, bindings::ISequenceDefinitionFactory)]
@@ -356,8 +376,8 @@ mod tests {
     use bindings::ISequenceDefinitionFactory_Impl;
     use windows_core::{Interface, Result};
 
-    const KEYSYMDEF: &str = "../git-deps/xorgproto/include/X11/keysymdef.h";
-    const COMPOSEDEF: &str = "../git-deps/libX11/nls/en_US.UTF-8/Compose.pre";
+    const KEYSYMDEF: &str = "x11-defs/keysymdef.h.br";
+    const COMPOSEDEF: &str = "x11-defs/Compose.pre.br";
 
     #[test]
     fn test_check_languages() -> Result<()> {

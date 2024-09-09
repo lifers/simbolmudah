@@ -85,6 +85,40 @@ fn compress_annotations() {
     });
 }
 
+fn compress_x11_files() {
+    println!("cargo:rerun-if-changed=../git-deps/libX11");
+    let params = BrotliEncoderParams {
+        mode: BrotliEncoderMode::BROTLI_MODE_TEXT,
+        quality: 11,
+        lgwin: 22,
+        ..Default::default()
+    };
+
+    std::thread::scope(|s| {
+        let params_clone = params.clone();
+        s.spawn(move || {
+            let outpath = "x11-defs/Compose.pre.br";
+            let mut output = fs::File::create(outpath).unwrap();
+            let mut compressed =
+                CompressorWriter::with_params(&mut output, 4096, &params_clone);
+            let inpath = "../git-deps/libX11/nls/en_US.UTF-8/Compose.pre";
+            let input = fs::read(inpath).unwrap();
+            compressed.write_all(input.as_slice()).unwrap();
+        });
+
+        let params_clone = params.clone();
+        s.spawn(move || {
+            let outpath = "x11-defs/keysymdef.h.br";
+            let mut output = fs::File::create(outpath).unwrap();
+            let mut compressed =
+                CompressorWriter::with_params(&mut output, 4096, &params_clone);
+            let inpath = "../git-deps/xorgproto/include/X11/keysymdef.h";
+            let input = fs::read(inpath).unwrap();
+            compressed.write_all(input.as_slice()).unwrap();
+        });
+    })
+}
+
 fn main() {
     let is_debug = std::env::var("PROFILE").unwrap() == "debug";
     if is_debug {
@@ -102,5 +136,12 @@ fn main() {
         compress_annotations();
     } else {
         println!("cargo:warning=The 'annotations' feature is not enabled. The compressed annotations will not be available.");
+    }
+
+    let x11_defs_enabled = std::env::var("CARGO_FEATURE_BUILD_X11_DEFS").is_ok();
+    if x11_defs_enabled {
+        compress_x11_files();
+    } else {
+        println!("cargo:warning=The 'x11-defs' feature is not enabled. The compressed X11 files will not be available.");
     }
 }

@@ -3,8 +3,7 @@ use regex::Regex;
 use std::{
     cell::{LazyCell, RefCell},
     collections::HashMap,
-    fs::File,
-    io::{BufRead, BufReader},
+    io::Read,
 };
 use windows::{
     core::{Error, Result},
@@ -49,13 +48,14 @@ impl KeySymDef {
 }
 
 fn get_general_keysym(unicode_regex: &Regex, path: &str) -> Result<HashMap<String, char>> {
-    let file = File::open(path).map_err(fail)?;
-    let reader = BufReader::new(file);
+    let mut file = std::fs::File::open(path).map_err(fail)?;
+    let mut input = brotli_decompressor::Decompressor::new(&mut file, 4096);
+    let mut buf = String::new();
+    let _num = input.read_to_string(&mut buf).map_err(fail)?;
 
     let mut result = HashMap::new();
 
-    for line in reader.lines() {
-        let line = line.map_err(fail)?;
+    for line in buf.lines() {
         if let Some(caps) = unicode_regex.captures(&line) {
             let name = caps
                 .get(1)
