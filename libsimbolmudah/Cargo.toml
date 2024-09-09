@@ -47,7 +47,7 @@ windows-core = "0.58.0"
 regex = "1.10.6"
 fst = "0.4.7"
 concat-idents = "1.1.5"
-serde = { version = "1.0.209", features = ["derive"] }
+serde = { version = "1.0.210", features = ["derive"] }
 quick-xml = { version = "0.36.1", features = ["serialize"] }
 brotli-decompressor = "4.0.1"
 
