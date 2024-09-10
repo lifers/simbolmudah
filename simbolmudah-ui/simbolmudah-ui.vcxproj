@@ -368,6 +368,11 @@ xcopy.exe /y /d "$(MSBuildThisFileDirectory)..\libsimbolmudah\target\release\lib
       <IsWinMDFile>true</IsWinMDFile>
     </Reference>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\in-app-tutorial\in-app-tutorial.vcxproj">
+      <Project>{f8c6b6e1-2e84-4211-953f-5188fc39c349}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\Microsoft.Windows.CppWinRT.2.0.240405.15\build\native\Microsoft.Windows.CppWinRT.targets" Condition="Exists('..\packages\Microsoft.Windows.CppWinRT.2.0.240405.15\build\native\Microsoft.Windows.CppWinRT.targets')" />

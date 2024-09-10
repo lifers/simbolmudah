@@ -1,6 +1,7 @@
 #include "pch.hpp"
 #include "App.xaml.h"
 #include "MainWindow.xaml.h"
+#include <winrt/in_app_tutorial.h>
 #include <wil/cppwinrt_helpers.h>
 
 
@@ -73,6 +74,9 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     void App::OnLaunched(LaunchActivatedEventArgs const&)
     {
+        // Initialize the tutorial dialog.
+        in_app_tutorial::TutorialDialog::Initialize(this->Resources());
+
         if (this->appManager.MainWindowOpened())
         {
             this->OpenWindow();

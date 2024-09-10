@@ -630,6 +630,18 @@ https://github.com/CommunityToolkit/Windows/blob/c532c1128de4fcb6bb0cb6f5f0918e9
 
     <ScrollViewer>
         <StackPanel Padding="56">
+            <Border Background="{ThemeResource LayerOnAcrylicFillColorDefaultBrush}"
+                    Padding="12"
+                    CornerRadius="8"
+                    HorizontalAlignment="Left">
+                <StackPanel>
+                    <TextBlock Text="How to use the app?" Style="{ThemeResource CaptionTextBlockStyle}"/>
+                    <Button Background="{ThemeResource AccentAcrylicInAppFillColorDefaultBrush}"
+                            Content="Watch Tutorial"
+                            Margin="0,0,0,12"
+                            Click="OpenTutorial"/>
+                </StackPanel>
+            </Border>
             <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0,4,0,4" IsExpanded="True">
                 <Expander.Header>
                     <Grid Padding="0,16,0,16">

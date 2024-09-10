@@ -1,0 +1,9 @@
+namespace in_app_tutorial
+{
+    [default_interface]
+    static runtimeclass TutorialDialog
+    {
+        static void Initialize(Microsoft.UI.Xaml.ResourceDictionary resCache);
+        static Microsoft.UI.Xaml.Controls.ContentDialog AttachTutorialDialog(Microsoft.UI.Xaml.XamlRoot xamlRoot);
+    }
+}
