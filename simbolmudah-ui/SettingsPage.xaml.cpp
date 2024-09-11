@@ -37,7 +37,8 @@ namespace winrt::simbolmudah_ui::implementation
 
     void SettingsPage::OpenTutorial(IInspectable const&, RoutedEventArgs const&) const
     {
-        const auto& dialog{ in_app_tutorial::TutorialDialog::AttachTutorialDialog(this->XamlRoot()) };
+        const auto& dialog{ in_app_tutorial::TutorialDialog::GetDialog() };
+        dialog.XamlRoot(this->XamlRoot());
         dialog.ShowAsync();
     }
 

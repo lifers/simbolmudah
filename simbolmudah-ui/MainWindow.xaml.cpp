@@ -207,13 +207,4 @@ namespace winrt::simbolmudah_ui::implementation
     {
         this->openSettingsRevoker.revoke();
     }
-
-    void MainWindow::SetSequenceDefinition(SequenceDefinition const& seqdef)
-    {
-        this->sequenceDefinition = seqdef;
-        if (const auto& f{ this->ContentFrame() }; f.CurrentSourcePageType().Name == L"simbolmudah_ui.SearchPage")
-        {
-            get_self<implementation::SearchPage>(f.Content().as<simbolmudah_ui::SearchPage>())->SetSequenceDefinition(seqdef);
-        }
-    }
 }

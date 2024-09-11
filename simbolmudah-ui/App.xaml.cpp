@@ -22,16 +22,10 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     App::App() :
         mainThread{ DispatcherQueue::GetForCurrentThread() },
-        keyboardThread{ DispatcherQueueController::CreateOnDedicatedThread() },
+        sequenceDefinition{}, keyboardTranslator{ this->sequenceDefinition },
         appManager{ ApplicationData::Current().LocalSettings() },
         settingsChangedRevoker{ appManager.PropertyChanged(auto_revoke, { this->get_weak(), &App::OnSettingsChanged }) }
     {
-        // Initialize the keyboard STA.
-        this->keyboardThread.DispatcherQueue().TryEnqueue(
-            DispatcherQueuePriority::High,
-            []() { init_apartment(apartment_type::single_threaded); }
-        );
-
         // Do not close the application when the last window is closed.
         this->DispatcherShutdownMode(DispatcherShutdownMode::OnExplicitShutdown);
 
@@ -54,19 +48,44 @@ namespace winrt::simbolmudah_ui::implementation
         });
 #endif
     }
-
-    fire_and_forget App::InitializeKeyboardHook()
+    
+    void App::SwitchPopupWindow(bool state)
     {
-        this->keyboardHook = KeyboardHook{ this->keyboardTranslator };
-
-        co_await wil::resume_foreground(this->mainThread);
-        if (this->appManager.UseHookPopup())
+        if (state)
         {
-            this->popupWindow = simbolmudah_ui::PopupWindow{
-                this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+            if (!this->popupWindow)
+            {
+                this->popupWindow = simbolmudah_ui::PopupWindow{
+                    this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
+            }
+        }
+        else
+        {
+            if (this->popupWindow)
+            {
+                this->popupWindow.Close();
+                this->popupWindow = nullptr;
+            }
+        }
+    }
+
+    void App::SwitchKeyboardHook(bool state)
+    {
+        if (state)
+        {
+            if (!this->keyboardHook)
+            {
+                this->keyboardHook = KeyboardHook{ this->keyboardTranslator };
+                if (this->appManager.UseHookPopup()) { this->SwitchPopupWindow(true); }
+            }
+        }
+        else
+        {
+            this->SwitchPopupWindow(false);
+            this->keyboardHook = nullptr;
         }
 
-        if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(true); }
+        if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(state); }
     }
 
     /// <summary>
@@ -75,7 +94,21 @@ namespace winrt::simbolmudah_ui::implementation
     void App::OnLaunched(LaunchActivatedEventArgs const&)
     {
         // Initialize the tutorial dialog.
-        in_app_tutorial::TutorialDialog::Initialize(this->Resources());
+        in_app_tutorial::TutorialDialog::Initialize(this->Resources(), [weak{ this->get_weak() }](auto&&, bool state) {
+            if (const auto self{ weak.get() }; self) { self->SwitchKeyboardHook(state); }
+        });
+        const auto& dialog{ in_app_tutorial::TutorialDialog::GetDialog() };
+        this->tutorialOpenedToken = dialog.Opened(auto_revoke, [weak{ this->get_weak() }](auto&&, auto&&) {
+            // Temporarily disable the keyboard hook.
+            if (const auto self{ weak.get() }; self) { self->SwitchKeyboardHook(false); }
+        });
+        this->tutorialClosingToken = dialog.Closing(auto_revoke, [weak{ this->get_weak() }](auto&&, auto&&) {
+            // Re-enable the keyboard hook according to current settings.
+            if (const auto self{ weak.get() }; self && self->appManager.HookEnabled())
+            {
+                self->SwitchKeyboardHook(true);
+            }
+        });
 
         if (this->appManager.MainWindowOpened())
         {
@@ -84,7 +117,7 @@ namespace winrt::simbolmudah_ui::implementation
 
         if (this->appManager.NotifyIconEnabled())
         {
-            this->InitializeNotifyIcon();
+            this->SwitchNotifyIcon(true);
         }
     }
 
@@ -93,36 +126,10 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     IAsyncAction App::RebuildDefinition()
     {
-        if (const auto mainWindowImpl{ get_self<implementation::MainWindow>(this->mainWindow.get()) }; mainWindowImpl)
-        {
-            mainWindowImpl->SetSequenceDefinition(nullptr);
-        }
         co_await resume_background();
-        this->sequenceDefinition = nullptr;
-        this->keyboardTranslator = nullptr;
-        if (this->popupWindow)
-        {
-            this->popupWindow.Close();
-            this->popupWindow = nullptr;
-        }
-        this->popupWindow = nullptr;
-        // TODO: disable the notify icon entry
-
         const auto keysymdef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.h.br")) };
         const auto composedef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre.br")) };
-        this->sequenceDefinition = SequenceDefinition{ (co_await keysymdef_path).Path(), (co_await composedef_path).Path() };
-        this->keyboardTranslator = KeyboardTranslator{ this->sequenceDefinition };
-
-        co_await wil::resume_foreground(this->mainThread);
-        if (this->appManager.HookEnabled())
-        {
-            this->keyboardThread.DispatcherQueue().TryEnqueue({ this->get_weak(), &App::InitializeKeyboardHook });
-        }
-
-        if (const auto mainWindowImpl{ get_self<implementation::MainWindow>(this->mainWindow.get()) }; mainWindowImpl)
-        {
-            mainWindowImpl->SetSequenceDefinition(this->sequenceDefinition);
-        }
+        this->sequenceDefinition.Rebuild((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
     }
 
     /// <summary>
@@ -130,52 +137,9 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     void App::OnSettingsChanged(IInspectable const&, PropertyChangedEventArgs const&)
     {
-        // Update the keyboard hook and popup window.
-        // Only do this if the build progress is not running.
-        if (this->buildProgress.Status() != AsyncStatus::Started)
-        {
-            if (this->appManager.HookEnabled() && !this->keyboardHook)
-            {
-                this->keyboardThread.DispatcherQueue().TryEnqueue({ this->get_weak(), &App::InitializeKeyboardHook });
-            }
-            else if (!this->appManager.HookEnabled() && this->keyboardHook)
-            {
-                if (this->notifyIcon) { this->notifyIcon.GetHookEnabled(false); }
-
-                if (this->popupWindow)
-                {
-                    this->popupWindow.Close();
-                    this->popupWindow = nullptr;
-                }
-                this->keyboardHook = nullptr;
-            }
-
-            // Update the popup window, given the hook is enabled.
-            if (this->appManager.HookEnabled() && this->appManager.UseHookPopup() && !this->popupWindow)
-            {
-                this->popupWindow = simbolmudah_ui::PopupWindow{
-                    this->keyboardTranslator, this->keyboardHook, this->sequenceDefinition };
-            }
-            else if (!this->appManager.UseHookPopup() && this->popupWindow)
-            {
-                this->popupWindow.Close();
-                this->popupWindow = nullptr;
-            }
-        }
-
-        // Update the notify icon and main window.
-        if (this->appManager.NotifyIconEnabled() && !this->notifyIcon)
-        {
-            this->InitializeNotifyIcon();
-        }
-        else if (!this->appManager.NotifyIconEnabled() && this->notifyIcon)
-        {
-            this->notifyIcon.OnOpenSettings(this->openSettingsToken);
-            this->notifyIcon.OnSetHookEnabled(this->notifyIconSetHookToken);
-            this->notifyIcon.OnExitApp(this->appExitToken);
-            this->notifyIcon = nullptr;
-            if (const auto& w{ this->mainWindow.get() }; w) { w.UpdateOpenSettings(this->notifyIcon); }
-        }
+        this->SwitchKeyboardHook(this->appManager.HookEnabled());
+        this->SwitchPopupWindow(this->appManager.UseHookPopup() && this->appManager.HookEnabled());
+        this->SwitchNotifyIcon(this->appManager.NotifyIconEnabled());
     }
 
     fire_and_forget App::OnNotifyIconPathInitialized(IAsyncOperation<StorageFile> const& op, AsyncStatus)
@@ -186,30 +150,45 @@ namespace winrt::simbolmudah_ui::implementation
 
         if (this->delayNotifyIcon)
         {
-            this->InitializeNotifyIcon();
+            this->SwitchNotifyIcon(true);
         }
     }
 
     /// <summary>
     /// Initializes the notify icon. Must be called on the UI thread.
     /// </summary>
-    void App::InitializeNotifyIcon()
+    void App::SwitchNotifyIcon(bool state)
     {
-        if (!this->mainThread.HasThreadAccess())
+        if (!this->mainThread.HasThreadAccess()) { throw hresult_wrong_thread(); }
+
+        if (state)
         {
-            throw hresult_wrong_thread();
-        }
-        else if (this->notifyIconPath != L"")
-        {
-            this->notifyIcon = NotifyIcon(this->notifyIconPath, this->appManager.HookEnabled());
-            if (const auto& w{ this->mainWindow.get() }; w) { w.UpdateOpenSettings(this->notifyIcon); }
-            this->openSettingsToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
-            this->notifyIconSetHookToken = this->notifyIcon.OnSetHookEnabled({ this->get_weak(), &App::OnNotifyIconSetHook });
-            this->appExitToken = this->notifyIcon.OnExitApp({ this->get_weak(), &App::OnAppExit });
+            if (this->notifyIconPath != L"")
+            {
+                if (!this->notifyIcon)
+                {
+                    this->notifyIcon = NotifyIcon(this->notifyIconPath, this->appManager.HookEnabled());
+                    if (const auto& w{ this->mainWindow.get() }; w) { w.UpdateOpenSettings(this->notifyIcon); }
+                    this->openSettingsToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
+                    this->notifyIconSetHookToken = this->notifyIcon.OnSetHookEnabled({ this->get_weak(), &App::OnNotifyIconSetHook });
+                    this->appExitToken = this->notifyIcon.OnExitApp({ this->get_weak(), &App::OnAppExit });
+                }
+            }
+            else
+            {
+                this->delayNotifyIcon = true;
+            }
         }
         else
         {
-            this->delayNotifyIcon = true;
+            if (this->notifyIcon)
+            {
+                this->notifyIcon.OnOpenSettings(this->openSettingsToken);
+                this->notifyIcon.OnSetHookEnabled(this->notifyIconSetHookToken);
+                this->notifyIcon.OnExitApp(this->appExitToken);
+                this->notifyIcon = nullptr;
+                if (const auto& w{ this->mainWindow.get() }; w) { w.UpdateOpenSettings(this->notifyIcon); }
+            }
         }
     }
 

@@ -4,6 +4,9 @@ import pcm;
 
 namespace tut
 {
-    using namespace winrt::Microsoft::UI::Xaml;
-    export Controls::StackPanel UnicodeView(ResourceDictionary const& resCache);
+    using namespace winrt;
+    using namespace Microsoft::UI::Xaml;
+    using namespace Windows::Foundation;
+    export Controls::StackPanel UnicodeView(
+        ResourceDictionary const& resCache, EventHandler<bool> const& hookPopup);
 }

@@ -3,10 +3,13 @@ module;
 #include <Windows.h>
 module TutorialDialog:SearchView;
 
+using namespace winrt;
+using namespace Microsoft::UI::Xaml;
+using namespace Windows::Foundation;
 namespace tut
 {
-    using namespace winrt::Microsoft::UI::Xaml;
-    Controls::StackPanel SearchView(ResourceDictionary const&)
+    Controls::StackPanel SearchView(
+        ResourceDictionary const&, EventHandler<bool> const&)
     {
         const Controls::TextBlock text{};
         text.Text(L"SearchView");

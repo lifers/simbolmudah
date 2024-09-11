@@ -4,7 +4,11 @@ mod keysym_reader;
 mod mapped_string;
 
 use core::str;
-use std::{collections::HashMap, rc::Rc};
+use std::{
+    collections::HashMap,
+    rc::Rc,
+    sync::{RwLock, RwLockReadGuard},
+};
 
 use crate::{bindings, utils::functions::fail};
 use cldr::{load_annotation_file, AnnotationPair, SupportedLocale};
@@ -13,12 +17,12 @@ use fst::{automaton::Str, Automaton, IntoStreamer, Map, MapBuilder, Streamer};
 use keysym_reader::KeySymDef;
 use mapped_string::MappedString;
 use windows::{
-    core::{h, implement, Error, IInspectable, Result, HSTRING, PSTR},
+    core::{h, implement, Error, IInspectable, HSTRING, PSTR},
     Foundation::Collections::IVectorView,
     Globalization::Language,
     System::UserProfile::GlobalizationPreferences,
     Win32::{
-        Foundation::{ERROR_NO_UNICODE_TRANSLATION, E_NOTIMPL},
+        Foundation::{ERROR_NO_UNICODE_TRANSLATION, E_INVALIDARG},
         Globalization::{u_charName, UErrorCode, U_EXTENDED_CHAR_NAME},
         System::WinRT::{IActivationFactory, IActivationFactory_Impl},
     },
@@ -37,41 +41,57 @@ impl From<Error> for SequenceDefinitionError {
     }
 }
 
+impl Into<Error> for SequenceDefinitionError {
+    fn into(self) -> Error {
+        match self {
+            Self::ValueNotFound => ERROR_NO_UNICODE_TRANSLATION.into(),
+            Self::Incomplete => Error::new(E_INVALIDARG, "Incomplete sequence"),
+            Self::Failure(e) => e,
+        }
+    }
+}
+
 #[implement(bindings::SequenceDefinition)]
+#[derive(Default)]
 pub(crate) struct SequenceDefinition {
-    prefix_map: Map<Vec<u8>>,
-    value_to_string: HashMap<u64, MappedString>,
-    char_to_name: HashMap<String, Box<str>>,
-    string_to_sequence: HashMap<String, String>,
-    annotations: HashMap<SupportedLocale, Box<[AnnotationPair]>>,
+    prefix_map: RwLock<Map<Vec<u8>>>,
+    value_to_string: RwLock<HashMap<u64, MappedString>>,
+    char_to_name: RwLock<HashMap<String, Box<str>>>,
+    string_to_sequence: RwLock<HashMap<String, String>>,
+    annotations: RwLock<HashMap<SupportedLocale, Box<[AnnotationPair]>>>,
 }
 
 impl SequenceDefinition {
     pub(crate) fn translate_sequence(
         &self,
         sequence: &str,
-    ) -> std::result::Result<String, SequenceDefinitionError> {
-        self.prefix_map.get(sequence.as_bytes()).map_or_else(
-            || {
-                Err(if self.potential_prefix(sequence, 1).is_empty() {
-                    SequenceDefinitionError::ValueNotFound
-                } else {
-                    SequenceDefinitionError::Incomplete
-                })
-            },
-            |value| {
-                Ok(self
-                    .value_to_string
-                    .get(&value)
-                    .expect("value previously mapped")
-                    .to_string())
-            },
-        )
+    ) -> Result<String, SequenceDefinitionError> {
+        read_lock(&self.prefix_map)?
+            .get(sequence.as_bytes())
+            .map_or_else(
+                || {
+                    Err(if self.potential_prefix(sequence, 1)?.is_empty() {
+                        SequenceDefinitionError::ValueNotFound
+                    } else {
+                        SequenceDefinitionError::Incomplete
+                    })
+                },
+                |value| {
+                    Ok(read_lock(&self.value_to_string)?
+                        .get(&value)
+                        .expect("value previously mapped")
+                        .to_string())
+                },
+            )
     }
 
-    fn potential_prefix(&self, sequence: &str, limit: usize) -> Vec<bindings::SequenceDescription> {
-        let mut stream = self
-            .prefix_map
+    fn potential_prefix(
+        &self,
+        sequence: &str,
+        limit: usize,
+    ) -> Result<Vec<bindings::SequenceDescription>, SequenceDefinitionError> {
+        let prefix_map = read_lock(&self.prefix_map)?;
+        let mut stream = prefix_map
             .search(Str::new(sequence).starts_with())
             .into_stream();
         let mut result = Vec::with_capacity(limit);
@@ -79,17 +99,16 @@ impl SequenceDefinition {
         for _ in 0..limit {
             if let Some(element) = stream.next() {
                 let (seq, value) = element;
-                let mapped_value = self
-                    .value_to_string
+                let mapped_value = read_lock(&self.value_to_string)?
                     .get(&value)
-                    .expect("value previously mapped");
+                    .expect("value previously mapped")
+                    .clone();
 
                 result.push(bindings::SequenceDescription {
                     sequence: unsafe { str::from_utf8_unchecked(seq) }.into(),
                     result: mapped_value.to_string().into(),
                     description: match mapped_value {
-                        MappedString::Basic(c) => self
-                            .char_to_name
+                        MappedString::Basic(c) => read_lock(&self.char_to_name)?
                             .get(&c.to_string())
                             .unwrap()
                             .to_string()
@@ -98,11 +117,11 @@ impl SequenceDefinition {
                     },
                 });
             } else {
-                return result;
+                return Ok(result);
             }
         }
 
-        result
+        Ok(result)
     }
 
     fn filter_sequence(
@@ -110,20 +129,22 @@ impl SequenceDefinition {
         tokens: Vec<String>,
         limit: usize,
         languages: &[SupportedLocale],
-    ) -> Vec<bindings::SequenceDescription> {
+    ) -> Result<Vec<bindings::SequenceDescription>, SequenceDefinitionError> {
         let mut result_map = HashMap::new();
 
         // prioritize exact character match
         for lang in languages {
-            let annotations = self.annotations.get(lang).unwrap();
-            for pair in annotations
+            let annotation_map = read_lock(&self.annotations)?;
+            for pair in annotation_map
+                .get(lang)
+                .expect("language supported")
                 .iter()
                 .filter(|pair| tokens.iter().any(|t| pair.char.contains(&t.to_lowercase())))
             {
                 if !result_map.contains_key(&pair.char.to_string()) {
                     result_map.insert(
                         pair.char.to_string(),
-                        self.char_to_name
+                        read_lock(&self.char_to_name)?
                             .get(&pair.char.to_string())
                             .expect("already indexed")
                             .to_string(),
@@ -138,7 +159,7 @@ impl SequenceDefinition {
 
         for token in tokens.iter() {
             if !result_map.contains_key(token) {
-                if let Some(name) = self.char_to_name.get(&token.to_string()) {
+                if let Some(name) = read_lock(&self.char_to_name)?.get(&token.to_string()) {
                     result_map.insert(token.to_string(), name.to_string());
                 }
             }
@@ -150,15 +171,17 @@ impl SequenceDefinition {
 
         // search in descriptions
         for lang in languages {
-            let annotations = self.annotations.get(lang).unwrap();
-            for pair in annotations
+            let annotation_map = read_lock(&self.annotations)?;
+            for pair in annotation_map
+                .get(lang)
+                .expect("language supported")
                 .iter()
                 .filter(|pair| tokens.iter().all(|t| pair.desc.contains(&t.to_lowercase())))
             {
                 if !result_map.contains_key(&pair.char.to_string()) {
                     result_map.insert(
                         pair.char.to_string(),
-                        self.char_to_name
+                        read_lock(&self.char_to_name)?
                             .get(&pair.char.to_string())
                             .expect("already indexed")
                             .to_string(),
@@ -171,8 +194,7 @@ impl SequenceDefinition {
             }
         }
 
-        for (c, n) in self
-            .char_to_name
+        for (c, n) in read_lock(&self.char_to_name)?
             .iter()
             .filter(|(_, n)| tokens.iter().all(|t| n.contains(&t.to_uppercase())))
         {
@@ -189,14 +211,18 @@ impl SequenceDefinition {
         self.process_map(&result_map)
     }
 
-    fn process_map(&self, map: &HashMap<String, String>) -> Vec<bindings::SequenceDescription> {
+    fn process_map(
+        &self,
+        map: &HashMap<String, String>,
+    ) -> Result<Vec<bindings::SequenceDescription>, SequenceDefinitionError> {
         let mut result = Vec::with_capacity(map.len());
         for (char, desc) in map {
-            let given_sequence = if let Some(sequence) = self.string_to_sequence.get(char) {
-                sequence.into()
-            } else {
-                HSTRING::from("")
-            };
+            let given_sequence =
+                if let Some(sequence) = read_lock(&self.string_to_sequence)?.get(char) {
+                    sequence.into()
+                } else {
+                    HSTRING::from("")
+                };
 
             result.push(bindings::SequenceDescription {
                 sequence: given_sequence,
@@ -205,7 +231,7 @@ impl SequenceDefinition {
             });
         }
 
-        return result;
+        Ok(result)
     }
 
     fn tokenize(&self, keyword: &HSTRING) -> Vec<String> {
@@ -218,58 +244,7 @@ impl SequenceDefinition {
 }
 
 impl bindings::ISequenceDefinition_Impl for SequenceDefinition_Impl {
-    fn PotentialPrefix(
-        &self,
-        sequence: &HSTRING,
-        limit: u32,
-    ) -> Result<IVectorView<bindings::SequenceDescription>> {
-        self.potential_prefix(&sequence.to_string(), limit as usize)
-            .try_into()
-    }
-
-    fn Search(
-        &self,
-        sequence: &HSTRING,
-        limit: u32,
-    ) -> Result<IVectorView<bindings::SequenceDescription>> {
-        let user_langs = get_user_langs()?;
-        self.filter_sequence(self.tokenize(sequence), limit as usize, &user_langs)
-            .try_into()
-    }
-
-    fn GetLocalizedName(&self, codepoint: u32) -> Result<bindings::SequenceDescription> {
-        let valid_char = char::from_u32(codepoint).ok_or_else(|| ERROR_NO_UNICODE_TRANSLATION)?;
-        let valid_string = valid_char.to_string();
-        let description = if let Some(mapped) = self.char_to_name.get(&valid_string) {
-            mapped.to_string()
-        } else {
-            char_to_unicode_name(valid_char)?.to_string()
-        }
-        .into();
-
-        Ok(bindings::SequenceDescription {
-            sequence: h!("").to_owned(),
-            result: valid_string.into(),
-            description,
-        })
-    }
-}
-
-#[implement(IActivationFactory, bindings::ISequenceDefinitionFactory)]
-pub(super) struct SequenceDefinitionFactory;
-
-impl IActivationFactory_Impl for SequenceDefinitionFactory_Impl {
-    fn ActivateInstance(&self) -> Result<IInspectable> {
-        Err(E_NOTIMPL.into())
-    }
-}
-
-impl bindings::ISequenceDefinitionFactory_Impl for SequenceDefinitionFactory_Impl {
-    fn CreateInstance(
-        &self,
-        keysymdef: &HSTRING,
-        composedef: &HSTRING,
-    ) -> Result<bindings::SequenceDefinition> {
+    fn Rebuild(&self, keysymdef: &HSTRING, composedef: &HSTRING) -> windows_core::Result<()> {
         let keysymdef = KeySymDef::new(&keysymdef.to_string())?;
         let composedef = ComposeDef::build(&keysymdef, &composedef.to_string())?;
 
@@ -333,20 +308,70 @@ impl bindings::ISequenceDefinitionFactory_Impl for SequenceDefinitionFactory_Imp
             }
         }
 
-        let instance: bindings::SequenceDefinition = SequenceDefinition {
-            prefix_map: build.into_map(),
-            value_to_string,
-            char_to_name,
-            string_to_sequence,
-            annotations,
+        *self.prefix_map.write().map_err(fail)? = build.into_map();
+        *self.value_to_string.write().map_err(fail)? = value_to_string;
+        *self.char_to_name.write().map_err(fail)? = char_to_name;
+        *self.string_to_sequence.write().map_err(fail)? = string_to_sequence;
+        *self.annotations.write().map_err(fail)? = annotations;
+
+        Ok(())
+    }
+
+    fn PotentialPrefix(
+        &self,
+        sequence: &HSTRING,
+        limit: u32,
+    ) -> windows_core::Result<IVectorView<bindings::SequenceDescription>> {
+        self.potential_prefix(&sequence.to_string(), limit as usize)
+            .map_err(|e| Into::<Error>::into(e))?
+            .try_into()
+    }
+
+    fn Search(
+        &self,
+        sequence: &HSTRING,
+        limit: u32,
+    ) -> windows_core::Result<IVectorView<bindings::SequenceDescription>> {
+        let user_langs = get_user_langs()?;
+        self.filter_sequence(self.tokenize(sequence), limit as usize, &user_langs)
+            .map_err(|e| Into::<Error>::into(e))?
+            .try_into()
+    }
+
+    fn GetLocalizedName(
+        &self,
+        codepoint: u32,
+    ) -> windows_core::Result<bindings::SequenceDescription> {
+        let valid_char = char::from_u32(codepoint).ok_or_else(|| ERROR_NO_UNICODE_TRANSLATION)?;
+        let valid_string = valid_char.to_string();
+        let description = if let Some(mapped) = read_lock(&self.char_to_name)
+            .map_err(|e| Into::<Error>::into(e))?
+            .get(&valid_string)
+        {
+            mapped.to_string()
+        } else {
+            char_to_unicode_name(valid_char)?.to_string()
         }
         .into();
 
-        Ok(instance)
+        Ok(bindings::SequenceDescription {
+            sequence: h!("").to_owned(),
+            result: valid_string.into(),
+            description,
+        })
     }
 }
 
-fn get_user_langs() -> Result<Box<[SupportedLocale]>> {
+#[implement(IActivationFactory)]
+pub(super) struct SequenceDefinitionFactory;
+
+impl IActivationFactory_Impl for SequenceDefinitionFactory_Impl {
+    fn ActivateInstance(&self) -> windows_core::Result<IInspectable> {
+        Ok(SequenceDefinition::default().into())
+    }
+}
+
+fn get_user_langs() -> windows_core::Result<Box<[SupportedLocale]>> {
     let user_langs = GlobalizationPreferences::Languages()?;
     let mut valid_langs = Vec::new();
     for lang in user_langs {
@@ -355,7 +380,7 @@ fn get_user_langs() -> Result<Box<[SupportedLocale]>> {
     Ok(valid_langs.into_boxed_slice())
 }
 
-fn char_to_unicode_name(value: char) -> Result<Box<str>> {
+fn char_to_unicode_name(value: char) -> windows_core::Result<Box<str>> {
     let mut buffer = [0; 88];
     let pstr = PSTR::from_raw(buffer.as_mut_ptr());
     let mut errcode = UErrorCode::default();
@@ -368,26 +393,24 @@ fn char_to_unicode_name(value: char) -> Result<Box<str>> {
     Ok(name.into_boxed_str())
 }
 
+fn read_lock<T>(
+    lock: &RwLock<T>,
+) -> std::result::Result<RwLockReadGuard<'_, T>, SequenceDefinitionError> {
+    lock.read().map_err(|e| fail(e).into())
+}
+
 #[cfg(test)]
 mod tests {
     use std::str;
 
     use super::*;
-    use bindings::ISequenceDefinitionFactory_Impl;
-    use windows_core::{Interface, Result};
+    use windows_core::{ComObjectInner, Interface, Result};
 
     const KEYSYMDEF: &str = "x11-defs/keysymdef.h.br";
     const COMPOSEDEF: &str = "x11-defs/Compose.pre.br";
 
     #[test]
     fn test_check_languages() -> Result<()> {
-        let factory: IActivationFactory = SequenceDefinitionFactory.into();
-        let seqdef = factory
-            .cast_object_ref::<SequenceDefinitionFactory>()?
-            .CreateInstance(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
-
-        let _seqdef = seqdef.cast_object_ref::<SequenceDefinition>()?;
-
         // print BCP-47 language tag
         let user_langs = GlobalizationPreferences::Languages()?;
         for lang in user_langs.into_iter() {
@@ -400,16 +423,17 @@ mod tests {
     #[test]
     fn test_translate_incomplete_sequence() -> Result<()> {
         // Create and build the SequenceDefinition
-        let factory: IActivationFactory = SequenceDefinitionFactory.into();
-        let seqdef = factory
-            .cast_object_ref::<SequenceDefinitionFactory>()?
-            .CreateInstance(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
+        let seqdef = SequenceDefinitionFactory
+            .into_object()
+            .ActivateInstance()?
+            .cast::<bindings::SequenceDefinition>()?;
 
-        // Cast SequenceDefinition to its object
-        let seqdef_ref = seqdef.cast_object_ref::<SequenceDefinition>()?;
+        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
 
         // Attempt to translate an incomplete sequence
-        let result = seqdef_ref.translate_sequence("f");
+        let result = seqdef
+            .cast_object_ref::<SequenceDefinition>()?
+            .translate_sequence("f");
         assert!(matches!(result, Err(SequenceDefinitionError::Incomplete)));
         Ok(())
     }
@@ -417,16 +441,17 @@ mod tests {
     #[test]
     fn test_translate_value_not_found() -> Result<()> {
         // Create and build the SequenceDefinition
-        let factory: IActivationFactory = SequenceDefinitionFactory.into();
-        let seqdef = factory
-            .cast_object_ref::<SequenceDefinitionFactory>()?
-            .CreateInstance(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
+        let seqdef = SequenceDefinitionFactory
+            .into_object()
+            .ActivateInstance()?
+            .cast::<bindings::SequenceDefinition>()?;
 
-        // Cast SequenceDefinition to its object
-        let seqdef = seqdef.cast_object_ref::<SequenceDefinition>()?;
+        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
 
         // Attempt to translate a nonexistent sequence
-        let result = seqdef.translate_sequence("nonexistent");
+        let result = seqdef
+            .cast_object_ref::<SequenceDefinition>()?
+            .translate_sequence("nonexistent");
         assert!(matches!(
             result,
             Err(SequenceDefinitionError::ValueNotFound)
@@ -437,16 +462,17 @@ mod tests {
     #[test]
     fn test_translate_valid_sequence() -> Result<()> {
         // Create and build the SequenceDefinition
-        let factory: IActivationFactory = SequenceDefinitionFactory.into();
-        let seqdef = factory
-            .cast_object_ref::<SequenceDefinitionFactory>()?
-            .CreateInstance(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
+        let seqdef = SequenceDefinitionFactory
+            .into_object()
+            .ActivateInstance()?
+            .cast::<bindings::SequenceDefinition>()?;
 
-        // Cast SequenceDefinition to its object
-        let seqdef = seqdef.cast_object_ref::<SequenceDefinition>()?;
+        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
 
         // Assuming "fl" is a valid sequence mapped to a basic MappedString for this test
-        let result = seqdef.translate_sequence("fl");
+        let result = seqdef
+            .cast_object_ref::<SequenceDefinition>()?
+            .translate_sequence("fl");
         assert!(result.is_ok());
         let expected = "ﬂ"; // Expected result for the sequence "fl"
         assert_eq!(result.unwrap(), expected);

@@ -27,12 +27,14 @@ namespace winrt::in_app_tutorial::implementation
     using TutorialDialogT = TutorialDialog_base<D, I...>;
 
     using namespace Microsoft::UI::Xaml;
+    using namespace Windows::Foundation;
+    using namespace LibSimbolMudah;
     struct TutorialDialog : TutorialDialogT<TutorialDialog>
     {
         TutorialDialog() = delete;
 
-        static void Initialize(ResourceDictionary const& resCache);
-        static Controls::ContentDialog AttachTutorialDialog(XamlRoot const& xamlRoot);
+        static void Initialize(ResourceDictionary const& resCache, EventHandler<bool> const& hookPopup);
+        static Controls::ContentDialog GetDialog();
     };
 }
 
@@ -40,6 +42,7 @@ namespace winrt::in_app_tutorial::factory_implementation
 {
     using namespace Microsoft::UI::Xaml;
     using namespace Windows::Foundation;
+    using namespace LibSimbolMudah;
     template <typename D, typename T, typename... I>
     struct __declspec(empty_bases) TutorialDialogT : implements<D, IActivationFactory, in_app_tutorial::ITutorialDialogStatics, I...>
     {
@@ -49,13 +52,13 @@ namespace winrt::in_app_tutorial::factory_implementation
         {
             return L"in_app_tutorial.TutorialDialog";
         }
-        auto Initialize(ResourceDictionary const& resCache)
+        auto Initialize(ResourceDictionary const& resCache, EventHandler<bool> const& hookPopup)
         {
-            return T::Initialize(resCache);
+            return T::Initialize(resCache, hookPopup);
         }
-        auto AttachTutorialDialog(XamlRoot const& xamlRoot)
+        auto GetDialog()
         {
-            return T::AttachTutorialDialog(xamlRoot);
+            return T::GetDialog();
         }
         [[noreturn]] IInspectable ActivateInstance() const
         {

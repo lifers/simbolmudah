@@ -8,7 +8,7 @@ namespace tut
     using namespace winrt;
     using namespace Microsoft::UI::Xaml;
 
-    Controls::StackPanel WelcomeView(ResourceDictionary const& resCache)
+    Controls::ScrollViewer WelcomeView(ResourceDictionary const& resCache)
     {
         const Controls::TextBlock title{};
         title.Text(L"Welcome to SimbolMudah!");
@@ -32,9 +32,16 @@ namespace tut
 
         const Controls::StackPanel panel{};
         panel.HorizontalAlignment(HorizontalAlignment::Center);
+        panel.VerticalAlignment(VerticalAlignment::Top);
         panel.Padding(ThicknessHelper::FromUniformLength(32));
         panel.Spacing(16);
         panel.Children().ReplaceAll({ title, desc, instr, proceed });
-        return panel;
+
+        const Controls::ScrollViewer scroll{};
+        scroll.HorizontalAlignment(HorizontalAlignment::Center);
+        scroll.VerticalAlignment(VerticalAlignment::Top);
+        scroll.Content(panel);
+
+        return scroll;
     }
 }

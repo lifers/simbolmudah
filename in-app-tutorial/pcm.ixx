@@ -19,5 +19,6 @@ export module pcm;
 #include <winrt/Microsoft.UI.Xaml.Shapes.h>
 #include <winrt/Microsoft.UI.Dispatching.h>
 #include <winrt/in_app_tutorial.h>
+#include <winrt/LibSimbolMudah.h>
 //#include <wil/cppwinrt_helpers.h>
 #pragma warning(default: 5244)

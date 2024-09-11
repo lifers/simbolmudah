@@ -5,5 +5,5 @@ import pcm;
 namespace tut
 {
     using namespace winrt::Microsoft::UI::Xaml;
-    export Controls::StackPanel WelcomeView(ResourceDictionary const& resCache);
+    export Controls::ScrollViewer WelcomeView(ResourceDictionary const& resCache);
 }
