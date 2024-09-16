@@ -1,6 +1,5 @@
 module;
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <corecrt_memcpy_s.h>
 module TutorialDialog:SearchView;
 
 using namespace winrt;

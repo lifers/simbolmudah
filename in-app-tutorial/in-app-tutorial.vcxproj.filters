@@ -8,6 +8,9 @@
     <Filter Include="Generated Files">
       <UniqueIdentifier>{926ab91d-31b4-48c3-b9a4-e681349f27f0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{f4772fc0-94e2-41f7-b430-0616fc06a150}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
@@ -24,6 +27,15 @@
     <ClCompile Include="UnicodeView.cpp" />
     <ClCompile Include="ClosingView.cpp" />
     <ClCompile Include="ClosingView.ixx" />
+    <ClCompile Include="SequenceTemplate.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SequenceTemplate.ixx">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Common.ixx">
+      <Filter>Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="TutorialDialog.idl" />

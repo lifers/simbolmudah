@@ -104,6 +104,12 @@
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">true</BuildStlModules>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BuildStlModules>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BuildStlModules>
+      <ScanSourceForModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">false</ScanSourceForModuleDependencies>
+      <TranslateIncludes Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">false</TranslateIncludes>
+      <ScanSourceForModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ScanSourceForModuleDependencies>
+      <TranslateIncludes Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</TranslateIncludes>
+      <ScanSourceForModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ScanSourceForModuleDependencies>
+      <TranslateIncludes Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</TranslateIncludes>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
@@ -121,6 +127,12 @@
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">true</BuildStlModules>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</BuildStlModules>
       <BuildStlModules Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</BuildStlModules>
+      <ScanSourceForModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">false</ScanSourceForModuleDependencies>
+      <TranslateIncludes Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">false</TranslateIncludes>
+      <ScanSourceForModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ScanSourceForModuleDependencies>
+      <TranslateIncludes Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</TranslateIncludes>
+      <ScanSourceForModuleDependencies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ScanSourceForModuleDependencies>
+      <TranslateIncludes Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</TranslateIncludes>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -134,6 +146,7 @@
       <SubType>Code</SubType>
       <DependentUpon>ClosingView.cpp</DependentUpon>
     </ClCompile>
+    <ClCompile Include="Common.ixx" />
     <ClCompile Include="NormalView.cpp" />
     <ClCompile Include="NormalView.ixx">
       <SubType>Code</SubType>
@@ -144,6 +157,11 @@
     <ClCompile Include="SearchView.ixx">
       <SubType>Code</SubType>
       <DependentUpon>SearchView.cpp</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="SequenceTemplate.cpp" />
+    <ClCompile Include="SequenceTemplate.ixx">
+      <SubType>Code</SubType>
+      <DependentUpon>SequenceTemplate.cpp</DependentUpon>
     </ClCompile>
     <ClCompile Include="TutorialDialog.cpp" />
     <ClCompile Include="TutorialDialog.ixx">

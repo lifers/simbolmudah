@@ -1,23 +1,22 @@
 module;
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <crtdbg.h>
+#include <corecrt_memcpy_s.h>
 module TutorialDialog;
 
-using namespace winrt;
-using namespace Microsoft::UI::Xaml;
-using namespace Windows::Foundation;
-using namespace LibSimbolMudah;
-
+import pcm;
 import :WelcomeView;
 import :NormalView;
 import :UnicodeView;
 import :SearchView;
 import :ClosingView;
 
+using namespace winrt;
+using namespace Microsoft::UI::Xaml;
+using namespace Windows::Foundation;
+using namespace LibSimbolMudah;
 namespace
 {
     thread_local Controls::ContentDialog tutorialDialog{ nullptr };
+    thread_local bool hookPopupState{ false };
 
     Controls::Grid CreateTutorialContent(
         ResourceDictionary const& resCache, EventHandler<bool> const& hookPopup)
@@ -27,7 +26,7 @@ namespace
         flipView.VerticalAlignment(VerticalAlignment::Top);
         flipView.Items().ReplaceAll({
             WelcomeView(resCache),
-            NormalView(resCache, hookPopup),
+            NormalView(resCache, hookPopup, hookPopupState),
             UnicodeView(resCache, hookPopup),
             SearchView(resCache, hookPopup),
             ClosingView(resCache)

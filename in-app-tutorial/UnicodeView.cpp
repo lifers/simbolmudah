@@ -1,7 +1,7 @@
 ﻿module;
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <corecrt_memcpy_s.h>
 module TutorialDialog:UnicodeView;
+
 
 using namespace winrt;
 using namespace Microsoft::UI::Xaml;
