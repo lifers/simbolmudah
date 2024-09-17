@@ -26,10 +26,14 @@ namespace
         flipView.VerticalAlignment(VerticalAlignment::Top);
         flipView.Items().ReplaceAll({
             WelcomeView(resCache),
-            NormalView(resCache, hookPopup, hookPopupState),
-            UnicodeView(resCache, hookPopup),
-            SearchView(resCache, hookPopup),
+            NormalView(resCache, hookPopup, hookPopupState, flipView),
+            UnicodeView(resCache, hookPopup, hookPopupState, flipView),
+            SearchView(resCache, hookPopup, hookPopupState, flipView),
             ClosingView(resCache)
+        });
+        flipView.Unloaded([](IInspectable const& src, auto&&) {
+            src.as<Controls::FlipView>().SelectedIndex(0);
+            hookPopupState = false;
         });
 
         const Controls::PipsPager pipsPager{};

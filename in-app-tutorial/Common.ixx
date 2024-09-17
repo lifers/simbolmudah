@@ -3,3 +3,4 @@ module;
 export module Common;
 
 export import :SequenceTemplate;
+export import :TextBlock;

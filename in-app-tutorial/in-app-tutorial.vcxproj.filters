@@ -36,6 +36,12 @@
     <ClCompile Include="Common.ixx">
       <Filter>Common</Filter>
     </ClCompile>
+    <ClCompile Include="TextBlock.ixx">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="TextBlock.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="TutorialDialog.idl" />

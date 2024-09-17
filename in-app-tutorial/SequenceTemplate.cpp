@@ -63,4 +63,14 @@ namespace com
 
         return border;
     }
+
+    std::vector<Controls::Border> CreateElement(ResourceDictionary const& resCache, std::vector<hstring> const& seq)
+    {
+        std::vector<Controls::Border> elements;
+        for (const auto& key : seq)
+        {
+            elements.emplace_back(CreateElement(resCache, key));
+        }
+        return elements;
+    }
 }

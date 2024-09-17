@@ -163,6 +163,11 @@
       <SubType>Code</SubType>
       <DependentUpon>SequenceTemplate.cpp</DependentUpon>
     </ClCompile>
+    <ClCompile Include="TextBlock.cpp" />
+    <ClCompile Include="TextBlock.ixx">
+      <SubType>Code</SubType>
+      <DependentUpon>TextBlock.cpp</DependentUpon>
+    </ClCompile>
     <ClCompile Include="TutorialDialog.cpp" />
     <ClCompile Include="TutorialDialog.ixx">
       <SubType>Code</SubType>

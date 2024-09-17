@@ -18,4 +18,5 @@ namespace com {
     };
 
     export Controls::Border CreateElement(ResourceDictionary const& resCache, hstring const& name);
+    export std::vector<Controls::Border> CreateElement(ResourceDictionary const& resCache, std::vector<hstring> const& keys);
 }
