@@ -20,7 +20,7 @@ namespace tut
 
         const Controls::TextBlock desc{};
         desc.Text(L"To compose a character, you need to press a certain sequence of keys without\
- holding any of them. Try out these examples!");
+ holding any of them. Press ESC to cancel. Try out these examples!");
         desc.TextWrapping(TextWrapping::Wrap);
         desc.Foreground(resCache.Lookup(box_value(L"TextFillColorSecondaryBrush")).as<Media::Brush>());
 
