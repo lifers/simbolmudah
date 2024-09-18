@@ -17,7 +17,7 @@ namespace tut
         goodbye.Style(resCache.Lookup(box_value(L"TitleTextBlockStyle")).as<Style>());
 
         const auto instr{ com::SecondaryTextBlock(resCache, L"Go to Settings when you're ready to enable simbolmudah.\
- If you close this window, simbolmudah will run in the bacground. You can access it from the tray icon.") };
+ If you close this window, simbolmudah will run in the background. You can access it from the tray icon.") };
 
         const Documents::Run issuesText{};
         issuesText.Text(L"our GitHub issues.");

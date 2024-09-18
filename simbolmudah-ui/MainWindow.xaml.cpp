@@ -57,7 +57,7 @@ namespace winrt::simbolmudah_ui::implementation
         }
 
         this->ExtendsContentIntoTitleBar(true);
-        this->AppWindow().Resize({ 800, 600 });
+        this->AppWindow().Resize({ 800, 800 });
         this->Closed({ this, &MainWindow::OnClosed });
         this->SetMinimumWindowSize();
     }

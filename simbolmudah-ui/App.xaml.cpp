@@ -1,12 +1,14 @@
 #include "pch.hpp"
 #include "App.xaml.h"
 #include "MainWindow.xaml.h"
+#include "AppManager.h"
 #include <winrt/in_app_tutorial.h>
 #include <wil/cppwinrt_helpers.h>
 
 
 namespace winrt::simbolmudah_ui::implementation
 {
+    using namespace in_app_tutorial;
     using namespace LibSimbolMudah;
     using namespace Microsoft::UI;
     using namespace Dispatching;
@@ -42,7 +44,7 @@ namespace winrt::simbolmudah_ui::implementation
         {
             if (::IsDebuggerPresent())
             {
-                const auto errorMessage = e.Message();
+                const auto errorMessage{ e.Message() };
                 ::__debugbreak();
             }
         });
@@ -94,10 +96,13 @@ namespace winrt::simbolmudah_ui::implementation
     void App::OnLaunched(LaunchActivatedEventArgs const&)
     {
         // Initialize the tutorial dialog.
-        in_app_tutorial::TutorialDialog::Initialize(this->Resources(), [weak{ this->get_weak() }](auto&&, bool state) {
-            if (const auto self{ weak.get() }; self) { self->SwitchKeyboardHook(state); }
+        TutorialDialog::Initialize(this->Resources(), [weak{ this->get_weak() }](auto&&, bool state) {
+            if (const auto self{ weak.get() }; self) {
+                self->SwitchKeyboardHook(state);
+                self->SwitchPopupWindow(state);
+            }
         });
-        const auto& dialog{ in_app_tutorial::TutorialDialog::GetDialog() };
+        const auto& dialog{ TutorialDialog::GetDialog() };
         this->tutorialOpenedToken = dialog.Opened(auto_revoke, [weak{ this->get_weak() }](auto&&, auto&&) {
             // Temporarily disable the keyboard hook.
             if (const auto self{ weak.get() }; self) { self->SwitchKeyboardHook(false); }
@@ -115,10 +120,7 @@ namespace winrt::simbolmudah_ui::implementation
             this->OpenWindow();
         }
 
-        if (this->appManager.NotifyIconEnabled())
-        {
-            this->SwitchNotifyIcon(true);
-        }
+        this->OnSettingsChanged(nullptr, nullptr);
     }
 
     /// <summary>
@@ -201,6 +203,15 @@ namespace winrt::simbolmudah_ui::implementation
             w = simbolmudah_ui::MainWindow{
                 this->sequenceDefinition, this->appManager, this->notifyIcon };
             this->mainWindow = make_weak(w);
+        }
+        if (const auto a{ get_self<implementation::AppManager>(this->appManager) }; a->FirstInstall())
+        {
+            a->FirstInstall(false);
+            get_self<implementation::MainWindow>(w)->RootGrid().Loaded([](IInspectable const& src, auto&&) {
+                const auto& dialog{ TutorialDialog::GetDialog() };
+                dialog.XamlRoot(src.as<Controls::Grid>().XamlRoot());
+                dialog.ShowAsync();
+            });
         }
         w.Activate();
     }

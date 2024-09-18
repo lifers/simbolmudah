@@ -10,7 +10,7 @@
     Title="simbolmudah"
     SizeChanged="Window_SizeChanged">
    
-    <Grid>
+    <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="32"/>
             <RowDefinition/>
