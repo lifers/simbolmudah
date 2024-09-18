@@ -11,7 +11,7 @@ namespace LibSimbolMudah
     {
         SequenceDefinition();
 
-        void Rebuild(String keysymdef, String composedef);
+        void Rebuild(String keysymdef, String composedef, String annotations);
         IVectorView<SequenceDescription> PotentialPrefix(String sequence, UInt32 limit);
         IVectorView<SequenceDescription> Search(String sequence, UInt32 limit);
         SequenceDescription GetLocalizedName(UInt32 codepoint);

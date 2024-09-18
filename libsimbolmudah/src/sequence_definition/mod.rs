@@ -20,6 +20,7 @@ use windows::{
     core::{h, implement, Error, IInspectable, HSTRING, PSTR},
     Foundation::Collections::IVectorView,
     Globalization::Language,
+    Storage::StorageFile,
     System::UserProfile::GlobalizationPreferences,
     Win32::{
         Foundation::{ERROR_NO_UNICODE_TRANSLATION, E_INVALIDARG},
@@ -244,19 +245,37 @@ impl SequenceDefinition {
 }
 
 impl bindings::ISequenceDefinition_Impl for SequenceDefinition_Impl {
-    fn Rebuild(&self, keysymdef: &HSTRING, composedef: &HSTRING) -> windows_core::Result<()> {
+    fn Rebuild(
+        &self,
+        keysymdef: &HSTRING,
+        composedef: &HSTRING,
+        annotations: &HSTRING,
+    ) -> windows_core::Result<()> {
         let keysymdef = KeySymDef::new(&keysymdef.to_string())?;
         let composedef = ComposeDef::build(&keysymdef, &composedef.to_string())?;
 
-        let mut annotations = HashMap::new();
+        let mut annotation_map = HashMap::new();
         let mut char_to_name: HashMap<String, Box<str>> = HashMap::new();
         let languages = get_user_langs()?;
-        for locale in languages.iter() {
+        let prefetch = languages
+            .iter()
+            .map(|locale| {
+                (
+                    locale,
+                    ["annotations", "annotationsDerived"].map(move |variant| {
+                        StorageFile::GetFileFromPathAsync(
+                            &format!("{}\\{locale}-{variant}.xml.br", annotations.to_string())
+                                .into(),
+                        )
+                    }),
+                )
+            })
+            .collect::<Vec<_>>();
+
+        for (locale, files) in prefetch {
             let mut result_vec = Vec::new();
-            for variant in ["annotations", "annotationsDerived"] {
-                for a in load_annotation_file(&format!(
-                    "ms-appx:///Assets/Annotations/{locale}-{variant}.xml.br"
-                ))? {
+            for variant in files {
+                for a in load_annotation_file(&variant?.get()?.Path()?)? {
                     if a.r#type.is_some() {
                         if !char_to_name.contains_key(&a.cp) {
                             char_to_name.insert(a.cp, Box::from(a.text));
@@ -278,7 +297,7 @@ impl bindings::ISequenceDefinition_Impl for SequenceDefinition_Impl {
                 }
             }
 
-            annotations.insert(*locale, result_vec.into_boxed_slice());
+            annotation_map.insert(*locale, result_vec.into_boxed_slice());
         }
 
         let mut build = MapBuilder::memory();
@@ -312,7 +331,7 @@ impl bindings::ISequenceDefinition_Impl for SequenceDefinition_Impl {
         *self.value_to_string.write().map_err(fail)? = value_to_string;
         *self.char_to_name.write().map_err(fail)? = char_to_name;
         *self.string_to_sequence.write().map_err(fail)? = string_to_sequence;
-        *self.annotations.write().map_err(fail)? = annotations;
+        *self.annotations.write().map_err(fail)? = annotation_map;
 
         Ok(())
     }
@@ -408,6 +427,7 @@ mod tests {
 
     const KEYSYMDEF: &str = "x11-defs/keysymdef.h.br";
     const COMPOSEDEF: &str = "x11-defs/Compose.pre.br";
+    const ANNOTATIONS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "\\cldr");
 
     #[test]
     fn test_check_languages() -> Result<()> {
@@ -428,7 +448,7 @@ mod tests {
             .ActivateInstance()?
             .cast::<bindings::SequenceDefinition>()?;
 
-        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
+        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &ANNOTATIONS.into())?;
 
         // Attempt to translate an incomplete sequence
         let result = seqdef
@@ -446,7 +466,7 @@ mod tests {
             .ActivateInstance()?
             .cast::<bindings::SequenceDefinition>()?;
 
-        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
+        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &ANNOTATIONS.into())?;
 
         // Attempt to translate a nonexistent sequence
         let result = seqdef
@@ -467,7 +487,7 @@ mod tests {
             .ActivateInstance()?
             .cast::<bindings::SequenceDefinition>()?;
 
-        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
+        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &ANNOTATIONS.into())?;
 
         // Assuming "fl" is a valid sequence mapped to a basic MappedString for this test
         let result = seqdef

@@ -212,7 +212,7 @@ pub struct ISenderStatics_Vtbl {
 windows_core::imp::define_interface!(
     ISequenceDefinition,
     ISequenceDefinition_Vtbl,
-    0xcdf27923_cc0b_5963_8dfa_8a943086ae33
+    0x941c8f8e_077d_5e40_932c_fe75ed30af2f
 );
 impl windows_core::RuntimeType for ISequenceDefinition {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -223,6 +223,7 @@ pub struct ISequenceDefinition_Vtbl {
     pub base__: windows_core::IInspectable_Vtbl,
     pub Rebuild: unsafe extern "system" fn(
         *mut core::ffi::c_void,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
         core::mem::MaybeUninit<windows_core::HSTRING>,
         core::mem::MaybeUninit<windows_core::HSTRING>,
     ) -> windows_core::HRESULT,
@@ -760,6 +761,7 @@ impl SequenceDefinition {
         &self,
         keysymdef: &windows_core::HSTRING,
         composedef: &windows_core::HSTRING,
+        annotations: &windows_core::HSTRING,
     ) -> windows_core::Result<()> {
         let this = self;
         unsafe {
@@ -767,6 +769,7 @@ impl SequenceDefinition {
                 windows_core::Interface::as_raw(this),
                 core::mem::transmute_copy(keysymdef),
                 core::mem::transmute_copy(composedef),
+                core::mem::transmute_copy(annotations),
             )
             .ok()
         }
@@ -1576,6 +1579,7 @@ pub trait ISequenceDefinition_Impl: Sized {
         &self,
         keysymdef: &windows_core::HSTRING,
         composedef: &windows_core::HSTRING,
+        annotations: &windows_core::HSTRING,
     ) -> windows_core::Result<()>;
     fn PotentialPrefix(
         &self,
@@ -1605,6 +1609,7 @@ impl ISequenceDefinition_Vtbl {
             this: *mut core::ffi::c_void,
             keysymdef: core::mem::MaybeUninit<windows_core::HSTRING>,
             composedef: core::mem::MaybeUninit<windows_core::HSTRING>,
+            annotations: core::mem::MaybeUninit<windows_core::HSTRING>,
         ) -> windows_core::HRESULT
         where
             Identity: ISequenceDefinition_Impl,
@@ -1614,6 +1619,7 @@ impl ISequenceDefinition_Vtbl {
                 this,
                 core::mem::transmute(&keysymdef),
                 core::mem::transmute(&composedef),
+                core::mem::transmute(&annotations),
             )
             .into()
         }

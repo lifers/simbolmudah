@@ -2,9 +2,7 @@ use std::{fmt::Display, io::Read, rc::Rc};
 
 use quick_xml::de::from_str;
 use serde::Deserialize;
-use windows::{
-    Foundation::Uri, Globalization::Language, Storage::StorageFile, Win32::Foundation::E_INVALIDARG,
-};
+use windows::{core::HSTRING, Globalization::Language, Win32::Foundation::E_INVALIDARG};
 
 use crate::utils::functions::fail;
 
@@ -93,14 +91,8 @@ impl From<&str> for SupportedLocale {
     }
 }
 
-pub(super) fn load_annotation_file(application_uri: &str) -> windows_core::Result<Vec<Annotation>> {
-    let path =
-        StorageFile::GetFileFromApplicationUriAsync(&Uri::CreateUri(&application_uri.into())?)?
-            .get()?
-            .Path()?
-            .to_string();
-
-    let mut file = std::fs::File::open(path).map_err(fail)?;
+pub(super) fn load_annotation_file(path: &HSTRING) -> windows_core::Result<Vec<Annotation>> {
+    let mut file = std::fs::File::open(path.to_string()).map_err(fail)?;
     let mut input = brotli_decompressor::Decompressor::new(&mut file, 4096);
     let mut buf = String::new();
     let _num = input.read_to_string(&mut buf).map_err(fail)?;

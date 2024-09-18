@@ -121,6 +121,7 @@ mod tests {
 
     const KEYSYMDEF: &str = "x11-defs/keysymdef.h.br";
     const COMPOSEDEF: &str = "x11-defs/Compose.pre.br";
+    const ANNOTATIONS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "\\cldr");
 
     #[test]
     fn test_activate_instance() -> Result<()> {
@@ -155,7 +156,7 @@ mod tests {
             .ActivateInstance()?
             .cast::<bindings::SequenceDefinition>()?;
 
-        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
+        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &ANNOTATIONS.into())?;
 
         // Create a new instance of KeyboardTranslator
         let _instance = KeyboardTranslatorFactory
@@ -186,7 +187,7 @@ mod tests {
             .ActivateInstance()?
             .cast::<bindings::SequenceDefinition>()?;
 
-        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
+        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &ANNOTATIONS.into())?;
 
         // Create a new instance of KeyboardTranslator
         let factory: IActivationFactory = KeyboardTranslatorFactory.into();

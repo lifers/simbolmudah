@@ -129,9 +129,11 @@ namespace winrt::simbolmudah_ui::implementation
     IAsyncAction App::RebuildDefinition()
     {
         co_await resume_background();
-        const auto keysymdef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/keysymdef.h.br")) };
-        const auto composedef_path{ StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Assets/Resources/Compose.pre.br")) };
-        this->sequenceDefinition.Rebuild((co_await keysymdef_path).Path(), (co_await composedef_path).Path());
+        const auto packageLocation{ ApplicationModel::Package::Current().InstalledLocation().Path() };
+        const auto keysymdefPath{ packageLocation + L"\\Assets\\Resources\\keysymdef.h.br" };
+        const auto composedefPath{ packageLocation + L"\\Assets\\Resources\\Compose.pre.br" };
+        const auto annotationPath{ packageLocation + L"\\Assets\\Annotations" };
+        this->sequenceDefinition.Rebuild(keysymdefPath, composedefPath, annotationPath);
     }
 
     /// <summary>
