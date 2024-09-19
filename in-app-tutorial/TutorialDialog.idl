@@ -1,0 +1,11 @@
+namespace in_app_tutorial
+{
+    [default_interface]
+    static runtimeclass TutorialDialog
+    {
+        static void Initialize(
+            Microsoft.UI.Xaml.ResourceDictionary resCache,
+            Windows.Foundation.EventHandler<Boolean> hookPopup);
+        static Microsoft.UI.Xaml.Controls.ContentDialog GetDialog();
+    }
+}

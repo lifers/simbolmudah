@@ -19,6 +19,8 @@ namespace winrt::simbolmudah_ui::implementation
         void NotifyIconEnabled(bool value);
         bool MainWindowOpened() const noexcept { return this->mainWindowOpened; }
         void MainWindowOpened(bool value);
+        bool FirstInstall() const noexcept { return !this->localSettings.Values().HasKey(L"firstInstall"); }
+        void FirstInstall(bool value) { this->localSettings.Values().Insert(L"firstInstall", box_value(value)); }
 
     private:
         const apartment_context main_thread{ apartment_context() };

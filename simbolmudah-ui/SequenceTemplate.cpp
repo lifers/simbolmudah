@@ -23,7 +23,7 @@ SequenceTemplate::SequenceTemplate() : resourceCache(GetResourceCache()) {}
 
 UIElement SequenceTemplate::GetElement(ElementFactoryGetArgs const& args)
 {
-    return CreateElement(args.Data().as<hstring>());
+    return this->CreateElement(args.Data().as<hstring>());
 }
 
 void SequenceTemplate::RecycleElement(ElementFactoryRecycleArgs const&)

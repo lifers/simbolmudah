@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resources">
+      <UniqueIdentifier>accd3aa8-1ba0-4223-9bbe-0c431709210b</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Generated Files">
+      <UniqueIdentifier>{926ab91d-31b4-48c3-b9a4-e681349f27f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{f4772fc0-94e2-41f7-b430-0616fc06a150}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
+    <ClCompile Include="pcm.ixx" />
+    <ClCompile Include="TutorialDialog.ixx" />
+    <ClCompile Include="TutorialDialog.cpp" />
+    <ClCompile Include="WelcomeView.cpp" />
+    <ClCompile Include="WelcomeView.ixx" />
+    <ClCompile Include="NormalView.ixx" />
+    <ClCompile Include="UnicodeView.ixx" />
+    <ClCompile Include="SearchView.ixx" />
+    <ClCompile Include="NormalView.cpp" />
+    <ClCompile Include="SearchView.cpp" />
+    <ClCompile Include="UnicodeView.cpp" />
+    <ClCompile Include="ClosingView.cpp" />
+    <ClCompile Include="ClosingView.ixx" />
+    <ClCompile Include="SequenceTemplate.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="SequenceTemplate.ixx">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Common.ixx">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="TextBlock.ixx">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="TextBlock.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="TutorialDialog.idl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="in_app_tutorial.def" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="readme.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="$(MSBuildThisFileDirectory)..\..\natvis\wil.natvis" />
+  </ItemGroup>
+</Project>

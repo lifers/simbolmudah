@@ -212,7 +212,7 @@ pub struct ISenderStatics_Vtbl {
 windows_core::imp::define_interface!(
     ISequenceDefinition,
     ISequenceDefinition_Vtbl,
-    0x7a043f70_8240_547c_984e_2686f3948559
+    0x941c8f8e_077d_5e40_932c_fe75ed30af2f
 );
 impl windows_core::RuntimeType for ISequenceDefinition {
     const SIGNATURE: windows_core::imp::ConstBuffer =
@@ -221,6 +221,12 @@ impl windows_core::RuntimeType for ISequenceDefinition {
 #[repr(C)]
 pub struct ISequenceDefinition_Vtbl {
     pub base__: windows_core::IInspectable_Vtbl,
+    pub Rebuild: unsafe extern "system" fn(
+        *mut core::ffi::c_void,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
+        core::mem::MaybeUninit<windows_core::HSTRING>,
+    ) -> windows_core::HRESULT,
     pub PotentialPrefix: unsafe extern "system" fn(
         *mut core::ffi::c_void,
         core::mem::MaybeUninit<windows_core::HSTRING>,
@@ -237,25 +243,6 @@ pub struct ISequenceDefinition_Vtbl {
         *mut core::ffi::c_void,
         u32,
         *mut core::mem::MaybeUninit<SequenceDescription>,
-    ) -> windows_core::HRESULT,
-}
-windows_core::imp::define_interface!(
-    ISequenceDefinitionFactory,
-    ISequenceDefinitionFactory_Vtbl,
-    0x26c0758a_c0fe_50cc_a153_2ae0dec46c32
-);
-impl windows_core::RuntimeType for ISequenceDefinitionFactory {
-    const SIGNATURE: windows_core::imp::ConstBuffer =
-        windows_core::imp::ConstBuffer::for_interface::<Self>();
-}
-#[repr(C)]
-pub struct ISequenceDefinitionFactory_Vtbl {
-    pub base__: windows_core::IInspectable_Vtbl,
-    pub CreateInstance: unsafe extern "system" fn(
-        *mut core::ffi::c_void,
-        core::mem::MaybeUninit<windows_core::HSTRING>,
-        core::mem::MaybeUninit<windows_core::HSTRING>,
-        *mut *mut core::ffi::c_void,
     ) -> windows_core::HRESULT,
 }
 #[repr(transparent)]
@@ -755,6 +742,38 @@ windows_core::imp::interface_hierarchy!(
     windows_core::IInspectable
 );
 impl SequenceDefinition {
+    pub fn new() -> windows_core::Result<Self> {
+        Self::IActivationFactory(|f| f.ActivateInstance::<Self>())
+    }
+    fn IActivationFactory<
+        R,
+        F: FnOnce(&windows_core::imp::IGenericFactory) -> windows_core::Result<R>,
+    >(
+        callback: F,
+    ) -> windows_core::Result<R> {
+        static SHARED: windows_core::imp::FactoryCache<
+            SequenceDefinition,
+            windows_core::imp::IGenericFactory,
+        > = windows_core::imp::FactoryCache::new();
+        SHARED.call(callback)
+    }
+    pub fn Rebuild(
+        &self,
+        keysymdef: &windows_core::HSTRING,
+        composedef: &windows_core::HSTRING,
+        annotations: &windows_core::HSTRING,
+    ) -> windows_core::Result<()> {
+        let this = self;
+        unsafe {
+            (windows_core::Interface::vtable(this).Rebuild)(
+                windows_core::Interface::as_raw(this),
+                core::mem::transmute_copy(keysymdef),
+                core::mem::transmute_copy(composedef),
+                core::mem::transmute_copy(annotations),
+            )
+            .ok()
+        }
+    }
     pub fn PotentialPrefix(
         &self,
         sequence: &windows_core::HSTRING,
@@ -802,34 +821,6 @@ impl SequenceDefinition {
             )
             .and_then(|| windows_core::Type::from_abi(result__))
         }
-    }
-    pub fn CreateInstance(
-        keysymdef: &windows_core::HSTRING,
-        composedef: &windows_core::HSTRING,
-    ) -> windows_core::Result<SequenceDefinition> {
-        Self::ISequenceDefinitionFactory(|this| unsafe {
-            let mut result__ = core::mem::zeroed();
-            (windows_core::Interface::vtable(this).CreateInstance)(
-                windows_core::Interface::as_raw(this),
-                core::mem::transmute_copy(keysymdef),
-                core::mem::transmute_copy(composedef),
-                &mut result__,
-            )
-            .and_then(|| windows_core::Type::from_abi(result__))
-        })
-    }
-    #[doc(hidden)]
-    pub fn ISequenceDefinitionFactory<
-        R,
-        F: FnOnce(&ISequenceDefinitionFactory) -> windows_core::Result<R>,
-    >(
-        callback: F,
-    ) -> windows_core::Result<R> {
-        static SHARED: windows_core::imp::FactoryCache<
-            SequenceDefinition,
-            ISequenceDefinitionFactory,
-        > = windows_core::imp::FactoryCache::new();
-        SHARED.call(callback)
     }
 }
 impl windows_core::RuntimeType for SequenceDefinition {
@@ -1584,6 +1575,12 @@ impl ISenderStatics_Vtbl {
     }
 }
 pub trait ISequenceDefinition_Impl: Sized {
+    fn Rebuild(
+        &self,
+        keysymdef: &windows_core::HSTRING,
+        composedef: &windows_core::HSTRING,
+        annotations: &windows_core::HSTRING,
+    ) -> windows_core::Result<()>;
     fn PotentialPrefix(
         &self,
         sequence: &windows_core::HSTRING,
@@ -1605,6 +1602,27 @@ impl ISequenceDefinition_Vtbl {
     where
         Identity: ISequenceDefinition_Impl,
     {
+        unsafe extern "system" fn Rebuild<
+            Identity: windows_core::IUnknownImpl,
+            const OFFSET: isize,
+        >(
+            this: *mut core::ffi::c_void,
+            keysymdef: core::mem::MaybeUninit<windows_core::HSTRING>,
+            composedef: core::mem::MaybeUninit<windows_core::HSTRING>,
+            annotations: core::mem::MaybeUninit<windows_core::HSTRING>,
+        ) -> windows_core::HRESULT
+        where
+            Identity: ISequenceDefinition_Impl,
+        {
+            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+            ISequenceDefinition_Impl::Rebuild(
+                this,
+                core::mem::transmute(&keysymdef),
+                core::mem::transmute(&composedef),
+                core::mem::transmute(&annotations),
+            )
+            .into()
+        }
         unsafe extern "system" fn PotentialPrefix<
             Identity: windows_core::IUnknownImpl,
             const OFFSET: isize,
@@ -1676,6 +1694,7 @@ impl ISequenceDefinition_Vtbl {
         }
         Self {
             base__: windows_core::IInspectable_Vtbl::new::<Identity, ISequenceDefinition, OFFSET>(),
+            Rebuild: Rebuild::<Identity, OFFSET>,
             PotentialPrefix: PotentialPrefix::<Identity, OFFSET>,
             Search: Search::<Identity, OFFSET>,
             GetLocalizedName: GetLocalizedName::<Identity, OFFSET>,
@@ -1683,60 +1702,5 @@ impl ISequenceDefinition_Vtbl {
     }
     pub fn matches(iid: &windows_core::GUID) -> bool {
         iid == &<ISequenceDefinition as windows_core::Interface>::IID
-    }
-}
-pub trait ISequenceDefinitionFactory_Impl: Sized {
-    fn CreateInstance(
-        &self,
-        keysymdef: &windows_core::HSTRING,
-        composedef: &windows_core::HSTRING,
-    ) -> windows_core::Result<SequenceDefinition>;
-}
-impl windows_core::RuntimeName for ISequenceDefinitionFactory {
-    const NAME: &'static str = "LibSimbolMudah.ISequenceDefinitionFactory";
-}
-impl ISequenceDefinitionFactory_Vtbl {
-    pub const fn new<Identity: windows_core::IUnknownImpl, const OFFSET: isize>(
-    ) -> ISequenceDefinitionFactory_Vtbl
-    where
-        Identity: ISequenceDefinitionFactory_Impl,
-    {
-        unsafe extern "system" fn CreateInstance<
-            Identity: windows_core::IUnknownImpl,
-            const OFFSET: isize,
-        >(
-            this: *mut core::ffi::c_void,
-            keysymdef: core::mem::MaybeUninit<windows_core::HSTRING>,
-            composedef: core::mem::MaybeUninit<windows_core::HSTRING>,
-            result__: *mut *mut core::ffi::c_void,
-        ) -> windows_core::HRESULT
-        where
-            Identity: ISequenceDefinitionFactory_Impl,
-        {
-            let this: &Identity = &*((this as *const *const ()).offset(OFFSET) as *const Identity);
-            match ISequenceDefinitionFactory_Impl::CreateInstance(
-                this,
-                core::mem::transmute(&keysymdef),
-                core::mem::transmute(&composedef),
-            ) {
-                Ok(ok__) => {
-                    result__.write(core::mem::transmute_copy(&ok__));
-                    core::mem::forget(ok__);
-                    windows_core::HRESULT(0)
-                }
-                Err(err) => err.into(),
-            }
-        }
-        Self {
-            base__: windows_core::IInspectable_Vtbl::new::<
-                Identity,
-                ISequenceDefinitionFactory,
-                OFFSET,
-            >(),
-            CreateInstance: CreateInstance::<Identity, OFFSET>,
-        }
-    }
-    pub fn matches(iid: &windows_core::GUID) -> bool {
-        iid == &<ISequenceDefinitionFactory as windows_core::Interface>::IID
     }
 }

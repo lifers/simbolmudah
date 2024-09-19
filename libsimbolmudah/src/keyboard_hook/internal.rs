@@ -8,9 +8,7 @@ use windows::{
         System::LibraryLoader::GetModuleHandleW,
         UI::{
             Input::KeyboardAndMouse::{
-                GetKeyState, KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP,
-                KEYEVENTF_SCANCODE, VIRTUAL_KEY, VK_CAPITAL, VK_LSHIFT, VK_RMENU, VK_RSHIFT,
-                VK_SHIFT, VK_U,
+                GetKeyState, KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE, VIRTUAL_KEY, VK_CAPITAL, VK_ESCAPE, VK_LSHIFT, VK_RMENU, VK_RSHIFT, VK_SHIFT, VK_U
             },
             WindowsAndMessaging::{
                 CallNextHookEx, SetWindowsHookExW, HC_ACTION, HHOOK, KBDLLHOOKSTRUCT,
@@ -152,6 +150,9 @@ impl KeyboardHookInternal {
                     self.has_capslock = !self.has_capslock;
                 }
                 return Err(fail_message("do not capture capslock key"));
+            }
+            VK_ESCAPE => {
+                return self.reset_state();
             }
             _ => {}
         }

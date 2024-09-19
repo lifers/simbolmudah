@@ -57,7 +57,7 @@ namespace winrt::simbolmudah_ui::implementation
         }
 
         this->ExtendsContentIntoTitleBar(true);
-        this->AppWindow().Resize({ 800, 600 });
+        this->AppWindow().Resize({ 800, 800 });
         this->Closed({ this, &MainWindow::OnClosed });
         this->SetMinimumWindowSize();
     }
@@ -206,14 +206,5 @@ namespace winrt::simbolmudah_ui::implementation
     void MainWindow::OnClosed(IInspectable const&, WindowEventArgs const&)
     {
         this->openSettingsRevoker.revoke();
-    }
-
-    void MainWindow::SetSequenceDefinition(SequenceDefinition const& seqdef)
-    {
-        this->sequenceDefinition = seqdef;
-        if (const auto& f{ this->ContentFrame() }; f.CurrentSourcePageType().Name == L"simbolmudah_ui.SearchPage")
-        {
-            get_self<implementation::SearchPage>(f.Content().as<simbolmudah_ui::SearchPage>())->SetSequenceDefinition(seqdef);
-        }
     }
 }

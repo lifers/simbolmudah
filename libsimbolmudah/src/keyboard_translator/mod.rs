@@ -111,30 +111,29 @@ impl bindings::IKeyboardTranslatorFactory_Impl for KeyboardTranslatorFactory_Imp
 
 #[cfg(test)]
 mod tests {
-    use bindings::{IKeyboardTranslatorFactory_Impl, ISequenceDefinitionFactory_Impl};
+    use bindings::IKeyboardTranslatorFactory_Impl;
 
     use crate::sequence_definition::{SequenceDefinitionError, SequenceDefinitionFactory};
 
     use super::*;
     use std::thread::sleep;
-    use windows_core::Result;
+    use windows_core::{ComObjectInner, Result};
 
     const KEYSYMDEF: &str = "x11-defs/keysymdef.h.br";
     const COMPOSEDEF: &str = "x11-defs/Compose.pre.br";
+    const ANNOTATIONS: &str = concat!(env!("CARGO_MANIFEST_DIR"), "\\cldr");
 
     #[test]
     fn test_activate_instance() -> Result<()> {
         // Create an empty SequenceDefinition
-        let factory: IActivationFactory = SequenceDefinitionFactory.into();
-        let seqdef = factory
-            .cast_object_ref::<SequenceDefinitionFactory>()?
-            .CreateInstance(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
-
-        let factory: IActivationFactory = KeyboardTranslatorFactory.into();
+        let seqdef = SequenceDefinitionFactory
+            .into_object()
+            .ActivateInstance()?
+            .cast::<bindings::SequenceDefinition>()?;
 
         // Create a new instance of KeyboardTranslator
-        let instance = factory
-            .cast_object_ref::<KeyboardTranslatorFactory>()?
+        let instance = KeyboardTranslatorFactory
+            .into_object()
             .CreateInstance(Some(&seqdef))?;
 
         INTERNAL.with_borrow(move |internal| {
@@ -152,16 +151,17 @@ mod tests {
     #[test]
     fn test_state_clear_after_translation() -> Result<()> {
         // Create and build the SequenceDefinition
-        let factory: IActivationFactory = SequenceDefinitionFactory.into();
-        let seqdef = factory
-            .cast_object_ref::<SequenceDefinitionFactory>()?
-            .CreateInstance(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
+        let seqdef = SequenceDefinitionFactory
+            .into_object()
+            .ActivateInstance()?
+            .cast::<bindings::SequenceDefinition>()?;
 
-        let factory: IActivationFactory = KeyboardTranslatorFactory.into();
+        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &ANNOTATIONS.into())?;
+
         // Create a new instance of KeyboardTranslator
-        let _instance = factory
-            .cast_object_ref::<KeyboardTranslatorFactory>()?
-            .CreateInstance(Some(&seqdef.cast::<bindings::SequenceDefinition>()?))?;
+        let _instance = KeyboardTranslatorFactory
+            .into_object()
+            .CreateInstance(Some(&seqdef))?;
 
         // Assuming "omg" is an invalid sequence for this test
         INTERNAL.with_borrow_mut(|internal| {
@@ -182,16 +182,18 @@ mod tests {
     #[test]
     fn test_state_accumulation() -> Result<()> {
         // Create and build the SequenceDefinition
-        let factory: IActivationFactory = SequenceDefinitionFactory.into();
-        let seqdef = factory
-            .cast_object_ref::<SequenceDefinitionFactory>()?
-            .CreateInstance(&KEYSYMDEF.into(), &COMPOSEDEF.into())?;
+        let seqdef = SequenceDefinitionFactory
+            .into_object()
+            .ActivateInstance()?
+            .cast::<bindings::SequenceDefinition>()?;
+
+        seqdef.Rebuild(&KEYSYMDEF.into(), &COMPOSEDEF.into(), &ANNOTATIONS.into())?;
 
         // Create a new instance of KeyboardTranslator
         let factory: IActivationFactory = KeyboardTranslatorFactory.into();
         let _instance = factory
             .cast_object_ref::<KeyboardTranslatorFactory>()?
-            .CreateInstance(Some(&seqdef.cast::<bindings::SequenceDefinition>()?))?;
+            .CreateInstance(Some(&seqdef))?;
 
         INTERNAL.with_borrow_mut(|internal| {
             assert_eq!(

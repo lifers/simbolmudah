@@ -188,7 +188,12 @@ namespace winrt::simbolmudah_ui::implementation
         case 5: // SearchMode
             this->searchPopup.SearchResults().Clear();
             this->Content(this->searchPopup);
-            this->AppWindow().Show(true);
+            {
+                const auto& appWindow{ this->AppWindow() };
+                appWindow.Show(true);
+                appWindow.MoveInZOrderAtTop();
+                ::SetFocus(this->GetWindowHandle());
+            }
             co_return;
         case 6: // UnicodeMode
             this->unicodePopup.ResetState();
@@ -210,11 +215,16 @@ namespace winrt::simbolmudah_ui::implementation
         appWindow.Show(false);
     }
 
-    int32_t PopupWindow::GetDpi() const
+    HWND PopupWindow::GetWindowHandle() const
     {
         const auto windowNative{ this->m_inner.as<::IWindowNative>() };
         HWND hwnd{};
         check_hresult(windowNative->get_WindowHandle(&hwnd));
-        return static_cast<int32_t>(::GetDpiForWindow(hwnd));
+        return hwnd;
+    }
+
+    int32_t PopupWindow::GetDpi() const
+    {
+        return static_cast<int32_t>(::GetDpiForWindow(this->GetWindowHandle()));
     }
 }
