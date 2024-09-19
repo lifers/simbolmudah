@@ -18,9 +18,14 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+
+    - name: setup-msbuild
+      uses: microsoft/setup-msbuild@v2
+
     - name: Build
       working-directory: .\libsimbolmudah
       run: cargo build --verbose --features=build-headers,build-annotations,build-x11-defs
+
     - name: Run tests
       working-directory: .\libsimbolmudah
       run: cargo test --verbose --features=build-headers,build-annotations,build-x11-defs
