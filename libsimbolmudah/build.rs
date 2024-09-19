@@ -46,6 +46,11 @@ fn generate_bindgen() {
 fn compress_annotations() {
     println!("cargo:rerun-if-changed=../git-deps/cldr");
 
+    let cldr_dir = "cldr";
+    if fs::metadata(cldr_dir).is_err() {
+        fs::create_dir(cldr_dir).unwrap();
+    }
+
     let params = BrotliEncoderParams {
         mode: BrotliEncoderMode::BROTLI_MODE_TEXT,
         quality: 11,
@@ -87,6 +92,12 @@ fn compress_annotations() {
 
 fn compress_x11_files() {
     println!("cargo:rerun-if-changed=../git-deps/libX11");
+
+    let x11_defs_dir = "x11-defs";
+    if fs::metadata(x11_defs_dir).is_err() {
+        fs::create_dir(x11_defs_dir).unwrap();
+    }
+
     let params = BrotliEncoderParams {
         mode: BrotliEncoderMode::BROTLI_MODE_TEXT,
         quality: 11,
