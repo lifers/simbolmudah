@@ -20,7 +20,7 @@ jobs:
         submodules: recursive
     - name: Build
       working-directory: .\libsimbolmudah
-      run: cargo build --verbose
+      run: cargo build --verbose --features=build-headers,build-annotations,build-x11-defs
     - name: Run tests
       working-directory: .\libsimbolmudah
-      run: cargo test --verbose
+      run: cargo test --verbose --features=build-headers,build-annotations,build-x11-defs
