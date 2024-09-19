@@ -116,7 +116,6 @@ mod tests {
     use crate::sequence_definition::{SequenceDefinitionError, SequenceDefinitionFactory};
 
     use super::*;
-    use std::thread::sleep;
     use windows_core::{ComObjectInner, Result};
 
     const KEYSYMDEF: &str = "x11-defs/keysymdef.h.br";
@@ -145,7 +144,7 @@ mod tests {
             Ok(())
         })?;
 
-        INTERNAL.destroy()
+        INTERNAL.destroy()?.get()
     }
 
     #[test]
@@ -173,10 +172,7 @@ mod tests {
             Ok(())
         })?;
 
-        INTERNAL.destroy()?;
-
-        sleep(std::time::Duration::from_secs(5));
-        Ok(())
+        INTERNAL.destroy()?.get()
     }
 
     #[test]
@@ -205,9 +201,6 @@ mod tests {
             Ok(())
         })?;
 
-        INTERNAL.destroy()?;
-
-        sleep(std::time::Duration::from_secs(5));
-        Ok(())
+        INTERNAL.destroy()?.get()
     }
 }

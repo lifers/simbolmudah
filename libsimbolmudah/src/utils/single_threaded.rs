@@ -6,6 +6,7 @@ use std::{
 
 use windows::{
     core::{Error, Result},
+    Foundation::IAsyncAction,
     System::{DispatcherQueueController, DispatcherQueueHandler},
     Win32::Foundation::E_FAIL,
 };
@@ -128,7 +129,7 @@ impl<T: 'static> SingleThreaded<T> {
             .with_borrow_mut(|data: &mut Option<T>| f(data.as_mut().expect("must be initialized")))
     }
 
-    pub(crate) fn destroy(&'static self) -> Result<()> {
+    pub(crate) fn destroy(&'static self) -> Result<IAsyncAction> {
         if let Some(controller) = self.thread.write().map_err(fail)?.take() {
             controller
                 .DispatcherQueue()?
@@ -136,8 +137,9 @@ impl<T: 'static> SingleThreaded<T> {
                     let _ = self.data.take();
                     Ok(())
                 }))?;
-            let _ = controller.ShutdownQueueAsync()?;
+            controller.ShutdownQueueAsync()
+        } else {
+            Err(fail_message("Not initialized"))
         }
-        Ok(())
     }
 }
