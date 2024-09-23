@@ -48,7 +48,7 @@ regex = "1.10.6"
 fst = "0.4.7"
 concat-idents = "1.1.5"
 serde = { version = "1.0.210", features = ["derive"] }
-quick-xml = { version = "0.36.1", features = ["serialize"] }
+quick-xml = { version = "0.36.2", features = ["serialize"] }
 brotli-decompressor = "4.0.1"
 
 [build-dependencies]
