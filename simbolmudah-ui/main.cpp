@@ -19,7 +19,6 @@ namespace
     fire_and_forget Redirect(AppInstance const& keyInstance, AppActivationArguments const& args, wil::unique_event const& redirectHandle)
     {
         const auto ensure_signaled{ wil::SetEvent_scope_exit(redirectHandle.get()) };
-        keyInstance.Activated({ OnActivated });
         co_await keyInstance.RedirectActivationToAsync(args);
     }
 }
@@ -30,6 +29,7 @@ int WINAPI wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int)
 
     if (const auto& keyInstance{ AppInstance::FindOrRegisterForKey(L"simbolmudah") }; keyInstance.IsCurrent())
     {
+        keyInstance.Activated({ OnActivated });
         Application::Start([](auto&&) { make<App>(); });
     }
     else
@@ -38,7 +38,8 @@ int WINAPI wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPWSTR, _In_ int)
         redirectHandle.create();
         Redirect(keyInstance, AppInstance::GetCurrent().GetActivatedEventArgs(), redirectHandle);
         DWORD handleIndex{};
-        check_hresult(CoWaitForMultipleObjects(CWMO_DEFAULT, INFINITE, 1, redirectHandle.addressof(), &handleIndex));
+        const auto handle{ redirectHandle.get() };
+        check_hresult(CoWaitForMultipleObjects(CWMO_DEFAULT, INFINITE, 1, &handle, &handleIndex));
     }
 
     return 0;

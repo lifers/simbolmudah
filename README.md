@@ -1,34 +1,30 @@
 # simbolmudah
-Makes it easier for Windows users to input symbols, accented characters, and emojis.
-This is inspired by the Compose Key mechanism from Freedesktop's X project.
+An experimental [compose key](https://en.wikipedia.org/wiki/Compose_key) implementation on Windows.
+Type mathematical symbols, emojis, and Unicode symbols in a few keystrokes.
 
-## Roadmap
-- [x] Basic mechanism for composing key
-  - [x] Translate keyboard input into internal representation
-  - [x] Translate internal representation into output
-  - [x] Store and release intermediate keys during composing operation
-  - [x] Example compose sequence for basic usage
-- [x] Compose mode
-  - [x] Get compose sequence from Freedesktop's X project
-  - [x] Parse keysym definitions from keysymdef.txt
-  - [x] Parse basic compose sequences from en_US.UTF-8/Compose.pre
-  - [x] Connect the two and generate mappings from keysym sequence to the resulting Unicode
-  - [x] Rework the compose search engine to use the mappings
-- [x] Unicode explicit code input mode
-- [x] Popup window for hints
-  - [x] Display a small popup near the cursor for mode indicator (similar to Windows' autocomplete)
-  - [x] Unicode name search mode basic frontend
-- [x] Unicode name search mode
-  - [ ] Use fuzzy text search engine
-  - [x] Implement recommendations
-  - [ ] Implement specific UI for Emoji variants
-- [x] Tray menu
-  - [x] Add exit button
-  - [x] Add hover info
-- [x] Settings UI
-- [ ] In-app user guide 
-- [ ] Custom compose rules
-  - [ ] Custom compose key
-- [ ] Internationalisation
-  - [ ] Make it work on non-US keyboards (VERY HARD)
-  - [ ] Add translations for UI
+![hero2](https://github.com/user-attachments/assets/c83dc0d0-647f-4b02-82bc-098524ace9cc)
+
+## Features
+- Compose key that runs in background
+- Unicode codepoint input mode
+- Search symbol by its name
+
+![hero1](https://github.com/user-attachments/assets/1a416700-dce3-47a7-9272-80936d8e3d6e)
+
+## Support
+This software is tested on Windows 11. There is no guarantee that this will work on Windows 10 or lower.
+So far the UI is English-only with future plans of translation. For symbol names, we support English, French, Indonesian, and Javanese.
+
+## Build
+In order to build this program, you need a working installation of:
+- Visual Studio 2022 (>=17.11.4, community or more)
+- Rust toolchain (>=1.81.0)
+
+Follow these steps:
+1. Open _x64 Native Tools Command Prompt for VS 2022_ and go to `simbolmudah/` subdirectory
+2. Build the Rust library and wait for it to finish.
+```{powershell}
+cargo build --release --features=build-headers,build-annotations,build-x11-defs
+```
+3. Open `simbolmudah.sln` in Visual Studio 2022. Set the target to `Release` and `x64`, then choose `Build` ⇒ `Build Solution`.
+   

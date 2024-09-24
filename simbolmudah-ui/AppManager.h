@@ -25,8 +25,8 @@ namespace winrt::simbolmudah_ui::implementation
     private:
         const apartment_context main_thread{ apartment_context() };
         const Windows::Storage::ApplicationDataContainer localSettings;
-        bool hookEnabled{ false };
-        bool useHookPopup{ false };
+        bool hookEnabled{ true };
+        bool useHookPopup{ true };
         bool notifyIconEnabled{ true };
         bool mainWindowOpened{ true };
     };

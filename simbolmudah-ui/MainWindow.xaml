@@ -21,7 +21,7 @@
                    HorizontalAlignment="Left" 
                    Width="16" Height="16" 
                    Margin="8,0"/>
-            <TextBlock x:Name="AppTitleTextBlock" Text="App title"
+            <TextBlock x:Name="AppTitleTextBlock" Text="simbolmudah 0.4.3 (beta)"
                        TextWrapping="NoWrap"
                        Style="{StaticResource CaptionTextBlockStyle}" 
                        VerticalAlignment="Center"
