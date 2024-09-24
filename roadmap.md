@@ -26,7 +26,7 @@ This is inspired by the Compose Key mechanism from Freedesktop's X project.
   - [x] Add exit button
   - [x] Add hover info
 - [x] Settings UI
-- [ ] In-app user guide 
+- [x] In-app user guide
 - [ ] Custom compose rules
   - [ ] Custom compose key
 - [ ] Internationalisation
