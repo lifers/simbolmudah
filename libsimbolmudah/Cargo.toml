@@ -53,7 +53,7 @@ brotli-decompressor = "4.0.1"
 
 [build-dependencies]
 windows-bindgen = "0.58"
-brotli = "6.0.0"
+brotli = "7.0.0"
 
 [profile.release]
 lto = true
