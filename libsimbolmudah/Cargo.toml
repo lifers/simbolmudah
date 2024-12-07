@@ -55,6 +55,10 @@ brotli-decompressor = "4.0.1"
 windows-bindgen = "0.58"
 brotli = "6.0.0"
 
+[profile.release]
+lto = true
+codegen-units = 1
+
 # libx11 = { git = "https://gitlab.freedesktop.org/xorg/lib/libx11.git", tag = "libX11-1.8.6" }
 # xcompose = { git = "https://github.com/kragen/xcompose.git", branch = "master" }
 # wincompose = { git = "https://github.com/samhocevar/wincompose.git", tag = "0.9.11" }

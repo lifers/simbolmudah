@@ -48,7 +48,6 @@
       <Filter>AppManager</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="pcm.ixx" />
     <ClCompile Include="SequenceTemplate.cpp">
       <Filter>Popup</Filter>
     </ClCompile>

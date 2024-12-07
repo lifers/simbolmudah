@@ -26,31 +26,75 @@ namespace winrt::simbolmudah_ui::implementation
         mainThread{ DispatcherQueue::GetForCurrentThread() },
         sequenceDefinition{}, keyboardTranslator{ this->sequenceDefinition },
         appManager{ ApplicationData::Current().LocalSettings() },
-        settingsChangedRevoker{ appManager.PropertyChanged(auto_revoke, { this->get_weak(), &App::OnSettingsChanged }) }
+        settingsChangedRevoker{ appManager.PropertyChanged(auto_revoke, { this->get_weak(), &App::OnSettingsChanged }) },
+        notifyIconPath{ ApplicationModel::Package::Current().InstalledLocation().Path() + L"\\Images\\favicon.ico" }
     {
         // Do not close the application when the last window is closed.
         this->DispatcherShutdownMode(DispatcherShutdownMode::OnExplicitShutdown);
-
-        // Load the tray icon path.
-        StorageFile::GetFileFromApplicationUriAsync(Uri(L"ms-appx:///Images/favicon.ico")).Completed({
-            this->get_weak(), &App::OnNotifyIconPathInitialized
-        });
 
         // Build the keyboard translator finite state automaton.
         this->buildProgress = this->RebuildDefinition();
 
 #if defined _DEBUG && !defined DISABLE_XAML_GENERATED_BREAK_ON_UNHANDLED_EXCEPTION
         this->UnhandledException([](IInspectable const&, UnhandledExceptionEventArgs const& e)
-        {
-            if (::IsDebuggerPresent())
             {
-                const auto errorMessage{ e.Message() };
-                ::__debugbreak();
-            }
-        });
+                if (::IsDebuggerPresent())
+                {
+                    const auto errorMessage{ e.Message() };
+                    ::__debugbreak();
+                }
+            });
 #endif
     }
-    
+
+    void App::SwitchTutorialDialog(bool state, XamlRoot const& src)
+    {
+        if (state)
+        {
+            if (!this->tutorialDialog)
+            {
+                this->tutorialDialog = TutorialDialog().GetDialog(this->Resources(),
+                    [weak{ this->get_weak() }](auto&&, bool state) {
+                        if (const auto self{ weak.get() }; self) {
+                            self->SwitchKeyboardHook(state);
+                            self->SwitchPopupWindow(state);
+                        }
+                    }
+                );
+
+                this->tutorialOpenedToken = this->tutorialDialog.Opened(auto_revoke,
+                    [weak{ this->get_weak() }](auto&&, auto&&) {
+                        // Temporarily disable the keyboard hook.
+                        if (const auto self{ weak.get() }; self) { self->SwitchKeyboardHook(false); }
+                    }
+                );
+
+                this->tutorialClosingToken = this->tutorialDialog.Closing(auto_revoke,
+                    [weak{ this->get_weak() }](auto&&, auto&&) {
+                        // Re-enable the keyboard hook according to current settings.
+                        if (const auto self{ weak.get() }; self && self->appManager.HookEnabled())
+                        {
+                            self->SwitchKeyboardHook(true);
+                            self->SwitchTutorialDialog(false, nullptr);
+                        }
+                    }
+                );
+
+                this->tutorialDialog.XamlRoot(src);
+                this->tutorialDialog.ShowAsync();
+            }
+        }
+        else
+        {
+            if (this->tutorialDialog)
+            {
+                this->tutorialOpenedToken.revoke();
+                this->tutorialClosingToken.revoke();
+                this->tutorialDialog = nullptr;
+            }
+        }
+    }
+
     void App::SwitchPopupWindow(bool state)
     {
         if (state)
@@ -95,26 +139,6 @@ namespace winrt::simbolmudah_ui::implementation
     /// </summary>
     void App::OnLaunched(LaunchActivatedEventArgs const&)
     {
-        // Initialize the tutorial dialog.
-        TutorialDialog::Initialize(this->Resources(), [weak{ this->get_weak() }](auto&&, bool state) {
-            if (const auto self{ weak.get() }; self) {
-                self->SwitchKeyboardHook(state);
-                self->SwitchPopupWindow(state);
-            }
-        });
-        const auto& dialog{ TutorialDialog::GetDialog() };
-        this->tutorialOpenedToken = dialog.Opened(auto_revoke, [weak{ this->get_weak() }](auto&&, auto&&) {
-            // Temporarily disable the keyboard hook.
-            if (const auto self{ weak.get() }; self) { self->SwitchKeyboardHook(false); }
-        });
-        this->tutorialClosingToken = dialog.Closing(auto_revoke, [weak{ this->get_weak() }](auto&&, auto&&) {
-            // Re-enable the keyboard hook according to current settings.
-            if (const auto self{ weak.get() }; self && self->appManager.HookEnabled())
-            {
-                self->SwitchKeyboardHook(true);
-            }
-        });
-
         if (this->appManager.MainWindowOpened())
         {
             this->OpenWindow();
@@ -146,18 +170,6 @@ namespace winrt::simbolmudah_ui::implementation
         this->SwitchNotifyIcon(this->appManager.NotifyIconEnabled());
     }
 
-    fire_and_forget App::OnNotifyIconPathInitialized(IAsyncOperation<StorageFile> const& op, AsyncStatus)
-    {
-        const auto filepath{ op.GetResults().Path() };
-        co_await wil::resume_foreground(this->mainThread);
-        this->notifyIconPath = filepath;
-
-        if (this->delayNotifyIcon)
-        {
-            this->SwitchNotifyIcon(true);
-        }
-    }
-
     /// <summary>
     /// Initializes the notify icon. Must be called on the UI thread.
     /// </summary>
@@ -167,20 +179,13 @@ namespace winrt::simbolmudah_ui::implementation
 
         if (state)
         {
-            if (this->notifyIconPath != L"")
+            if (!this->notifyIcon)
             {
-                if (!this->notifyIcon)
-                {
-                    this->notifyIcon = NotifyIcon(this->notifyIconPath, this->appManager.HookEnabled());
-                    if (const auto& w{ this->mainWindow.get() }; w) { w.UpdateOpenSettings(this->notifyIcon); }
-                    this->openSettingsToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
-                    this->notifyIconSetHookToken = this->notifyIcon.OnSetHookEnabled({ this->get_weak(), &App::OnNotifyIconSetHook });
-                    this->appExitToken = this->notifyIcon.OnExitApp({ this->get_weak(), &App::OnAppExit });
-                }
-            }
-            else
-            {
-                this->delayNotifyIcon = true;
+                this->notifyIcon = NotifyIcon(this->notifyIconPath, this->appManager.HookEnabled());
+                if (const auto& w{ this->mainWindow.get() }; w) { w.UpdateOpenSettings(this->notifyIcon); }
+                this->openSettingsToken = this->notifyIcon.OnOpenSettings({ this->get_weak(), &App::OnOpenSettings });
+                this->notifyIconSetHookToken = this->notifyIcon.OnSetHookEnabled({ this->get_weak(), &App::OnNotifyIconSetHook });
+                this->appExitToken = this->notifyIcon.OnExitApp({ this->get_weak(), &App::OnAppExit });
             }
         }
         else
@@ -209,11 +214,13 @@ namespace winrt::simbolmudah_ui::implementation
         if (const auto a{ get_self<implementation::AppManager>(this->appManager) }; a->FirstInstall())
         {
             a->FirstInstall(false);
-            get_self<implementation::MainWindow>(w)->RootGrid().Loaded([](IInspectable const& src, auto&&) {
-                const auto& dialog{ TutorialDialog::GetDialog() };
-                dialog.XamlRoot(src.as<Controls::Grid>().XamlRoot());
-                dialog.ShowAsync();
-            });
+            get_self<implementation::MainWindow>(w)->RootGrid().Loaded(
+                [weak{ this->get_weak() }](IInspectable const& src, auto&&) {
+                    if (const auto self{ weak.get() }; self) {
+                        self->SwitchTutorialDialog(true, src.as<Controls::Grid>().XamlRoot());
+                    }
+                }
+            );
         }
         w.Activate();
     }
