@@ -5,6 +5,7 @@
 #endif
 #include <winrt/in_app_tutorial.h>
 #include <wil/cppwinrt_helpers.h>
+#include "App.xaml.h"
 
 namespace winrt::simbolmudah_ui::implementation
 {
@@ -37,9 +38,7 @@ namespace winrt::simbolmudah_ui::implementation
 
     void SettingsPage::OpenTutorial(IInspectable const&, RoutedEventArgs const&) const
     {
-        const auto& dialog{ in_app_tutorial::TutorialDialog::GetDialog() };
-        dialog.XamlRoot(this->XamlRoot());
-        dialog.ShowAsync();
+        Application::Current().as<App>()->SwitchTutorialDialog(true, this->XamlRoot());
     }
 
     fire_and_forget SettingsPage::OnSettingsChanged(IInspectable const&, PropertyChangedEventArgs const& e)

@@ -6,6 +6,9 @@ import pcm;
 
 export void* winrt_make_in_app_tutorial_TutorialDialog();
 
+using namespace winrt;
+using namespace Microsoft::UI::Xaml;
+using namespace Windows::Foundation;
 namespace winrt::in_app_tutorial::implementation
 {
     template <typename D, typename... I>
@@ -25,25 +28,21 @@ namespace winrt::in_app_tutorial::implementation
     template <typename D, typename... I>
     using TutorialDialogT = TutorialDialog_base<D, I...>;
 
-    using namespace Microsoft::UI::Xaml;
-    using namespace Windows::Foundation;
-    using namespace LibSimbolMudah;
     struct TutorialDialog : TutorialDialogT<TutorialDialog>
     {
-        TutorialDialog() = delete;
+        TutorialDialog() = default;
 
-        static void Initialize(ResourceDictionary const& resCache, EventHandler<bool> const& hookPopup);
-        static Controls::ContentDialog GetDialog();
+        Controls::ContentDialog GetDialog(ResourceDictionary const& resCache, EventHandler<bool> const& hookPopup);
+
+    private:
+        bool hookPopupState{ false };
     };
 }
 
 namespace winrt::in_app_tutorial::factory_implementation
 {
-    using namespace Microsoft::UI::Xaml;
-    using namespace Windows::Foundation;
-    using namespace LibSimbolMudah;
     template <typename D, typename T, typename... I>
-    struct __declspec(empty_bases) TutorialDialogT : implements<D, IActivationFactory, in_app_tutorial::ITutorialDialogStatics, I...>
+    struct __declspec(empty_bases) TutorialDialogT : implements<D, winrt::Windows::Foundation::IActivationFactory, I...>
     {
         using instance_type = in_app_tutorial::TutorialDialog;
 
@@ -51,17 +50,9 @@ namespace winrt::in_app_tutorial::factory_implementation
         {
             return L"in_app_tutorial.TutorialDialog";
         }
-        auto Initialize(ResourceDictionary const& resCache, EventHandler<bool> const& hookPopup)
+        auto ActivateInstance() const
         {
-            return T::Initialize(resCache, hookPopup);
-        }
-        auto GetDialog()
-        {
-            return T::GetDialog();
-        }
-        [[noreturn]] IInspectable ActivateInstance() const
-        {
-            throw hresult_not_implemented();
+            return make<T>();
         }
     };
 

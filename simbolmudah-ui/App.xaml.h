@@ -11,13 +11,11 @@ namespace winrt::simbolmudah_ui::implementation
 
         void OnLaunched(Microsoft::UI::Xaml::LaunchActivatedEventArgs const&);
         fire_and_forget OpenWindow();
+        void SwitchTutorialDialog(bool state, Microsoft::UI::Xaml::XamlRoot const& src);
 
     private:
         Windows::Foundation::IAsyncAction RebuildDefinition();
         void OnSettingsChanged(IInspectable const&, Microsoft::UI::Xaml::Data::PropertyChangedEventArgs const&);
-        fire_and_forget OnNotifyIconPathInitialized(
-            Windows::Foundation::IAsyncOperation<Windows::Storage::StorageFile> const& op,
-            Windows::Foundation::AsyncStatus);
         void SwitchPopupWindow(bool state);
         void SwitchNotifyIcon(bool state);
         void SwitchKeyboardHook(bool state);
@@ -39,11 +37,11 @@ namespace winrt::simbolmudah_ui::implementation
         event_token openSettingsToken;
         event_token notifyIconSetHookToken;
         event_token appExitToken;
+        Microsoft::UI::Xaml::Controls::ContentDialog tutorialDialog{ nullptr };
         Microsoft::UI::Xaml::Controls::ContentDialog::Opened_revoker tutorialOpenedToken;
         Microsoft::UI::Xaml::Controls::ContentDialog::Closing_revoker tutorialClosingToken;
         Windows::Foundation::IAsyncAction buildProgress;
 
-        hstring notifyIconPath;
-        bool delayNotifyIcon{ false };
+        const hstring notifyIconPath;
     };
 }

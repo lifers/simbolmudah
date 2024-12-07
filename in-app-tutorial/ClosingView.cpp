@@ -9,7 +9,7 @@ namespace tut
     using namespace winrt;
     using namespace Microsoft::UI::Xaml;
     using namespace Windows::Foundation;
-    Controls::ScrollView ClosingView(ResourceDictionary const& resCache)
+    Controls::ScrollView ClosingView(ResourceDictionary const& resCache) noexcept
     {
         const Controls::TextBlock goodbye{};
         goodbye.Text(L"You're set!");
@@ -24,7 +24,7 @@ namespace tut
         const Documents::Hyperlink issues{};
         issues.NavigateUri(Uri(L"https://github.com/lifers/simbolmudah/issues"));
         issues.Inlines().Append(issuesText);
-        
+
         const auto feedback{ com::SecondaryTextBlock(resCache, L"Please provide feedback to help us improve simbolmudah.\
  Send your feedback to ") };
         feedback.Inlines().Append(issues);
