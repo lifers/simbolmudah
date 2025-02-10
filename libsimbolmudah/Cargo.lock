@@ -95,12 +95,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ab85b9b05e3978cc9a9cf8fea7f01b494e1a09ed3037e16ba39edc7a29eb61a"
 
 [[package]]
-name = "itoa"
-version = "1.0.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
-
-[[package]]
 name = "libsimbolmudah"
 version = "0.4.3"
 dependencies = [
@@ -200,12 +194,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 
 [[package]]
-name = "ryu"
-version = "1.0.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
-
-[[package]]
 name = "serde"
 version = "1.0.217"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -223,18 +211,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "serde_json"
-version = "1.0.125"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83c8e735a073ccf5be70aa8066aa984eaf2fa000db6c8d0100ae605b366d31ed"
-dependencies = [
- "itoa",
- "memchr",
- "ryu",
- "serde",
 ]
 
 [[package]]
@@ -266,16 +242,11 @@ dependencies = [
 
 [[package]]
 name = "windows-bindgen"
-version = "0.58.0"
+version = "0.59.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91cd28d93c692351f3a6e5615567c56756e330bee1c99c6bdd57bfc5ab15f589"
+checksum = "9b7fb600834d7e868f6e5bb748a86101427330fafbf9485c331b9d5f562d54a5"
 dependencies = [
- "proc-macro2",
  "rayon",
- "serde",
- "serde_json",
- "syn",
- "windows-metadata",
 ]
 
 [[package]]
@@ -347,12 +318,6 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "windows-metadata"
-version = "0.58.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e837f3c3012cfe9e7086302a93f441a7999439be1ad4c530d55d2f6d2921809"
 
 [[package]]
 name = "windows-result"
