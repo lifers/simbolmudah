@@ -52,7 +52,7 @@ quick-xml = { version = "0.37.1", features = ["serialize"] }
 brotli-decompressor = "4.0.2"
 
 [build-dependencies]
-windows-bindgen = "0.58"
+windows-bindgen = "0.59"
 brotli = "7.0.0"
 
 [profile.release]
